@@ -2,3 +2,4 @@ nodo_modules,
 dist,
 .env,
 .next,
+node_modules

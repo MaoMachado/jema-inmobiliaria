@@ -2,4 +2,5 @@ packages:
   - 'apps/*'
   - 'packages/*'
   - 'shared/*'
-
+allowBuilds:
+  unrs-resolver: true
