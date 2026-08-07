@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { PropiedadesService } from './propiedades.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { type CreatePropiedad } from './propiedades.types';
 
 interface RequestWithUser {
   user: { id: string; email: string };
@@ -22,7 +23,7 @@ export class PropiedadesController {
 
   @UseGuards(JwtAuthGuard)
   @Post()
-  create(@Body() body, @Req() req: RequestWithUser) {
+  create(@Body() body: CreatePropiedad, @Req() req: RequestWithUser) {
     return this.propiedadesService.create(body, req.user.id);
   }
 
@@ -38,7 +39,11 @@ export class PropiedadesController {
 
   @UseGuards(JwtAuthGuard)
   @Patch(':id')
-  update(@Param('id') id: string, @Body() body, @Req() req: RequestWithUser) {
+  update(
+    @Param('id') id: string,
+    @Body() body: Partial<CreatePropiedad>,
+    @Req() req: RequestWithUser,
+  ) {
     return this.propiedadesService.update(id, body, req.user.id);
   }
 

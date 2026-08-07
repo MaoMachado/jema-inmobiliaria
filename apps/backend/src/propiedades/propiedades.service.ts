@@ -1,24 +1,12 @@
 import {
   BadRequestException,
-  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Prisma } from '../generated/prisma';
+import { CreatePropiedad } from './propiedades.types';
 
-interface CreatePropiedad {
-  titulo: string;
-  descripcion: string;
-  precio: number;
-  ciudad: string;
-  barrio: string;
-  tipo: string;
-  habitaciones: number;
-  banos: number;
-  area: number;
-}
 
 @Injectable()
 export class PropiedadesService {
