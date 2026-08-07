@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Post, UseGuards, Req } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { JwtAuthGuards } from './guards/jwt-auth.guards';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { Request } from 'express';
 
 interface RequestWithUser extends Request {
   user: {
@@ -23,7 +24,7 @@ export class AuthController {
     return this.authService.login(body.email, body.password);
   }
 
-  @UseGuards(JwtAuthGuards)
+  @UseGuards(JwtAuthGuard)
   @Get('me')
   me(@Req() req: RequestWithUser) {
     return req.user;
