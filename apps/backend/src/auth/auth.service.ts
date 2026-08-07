@@ -1,5 +1,11 @@
-import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { Prisma } from '../generated/prisma';
 import { PrismaService } from '../prisma/prisma.service';
 import bcrypt from 'bcryptjs';
 
@@ -28,7 +34,12 @@ export class AuthService {
       const { password: _, ...result } = user;
       return result;
     } catch (error) {
-      console.error(error);
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException('Ese email ya está registrado');
+      }
       throw error;
     }
   }
