@@ -69,8 +69,11 @@ export class AuthService {
       email: user.email,
     });
 
+    const { password: _, ...userPublic } = user;
+
     return {
       token,
+      user: userPublic,
     };
   }
 }
