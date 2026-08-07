@@ -18,7 +18,7 @@ export class AuthService {
 
   async register(email: string, password: string) {
     if (!email || !password) {
-      throw new Error('Email y contraseña son obligatorios');
+      throw new BadRequestException('Email y contraseña son obligatorios');
     }
 
     try {
