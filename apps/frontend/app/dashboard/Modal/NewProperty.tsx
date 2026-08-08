@@ -55,7 +55,13 @@ const formData = [
   },
 ];
 
-const FormField = ({ name, label, type, value, onChange }: any) => {
+interface FormFieldProps {
+  name: string;
+  label: string;
+  type: string;
+}
+
+const FormField = ({ name, label, type }: FormFieldProps) => {
   return (
     <div className="flex flex-col">
       <label htmlFor={name}>{label}</label>
@@ -63,8 +69,6 @@ const FormField = ({ name, label, type, value, onChange }: any) => {
         type={type}
         id={name}
         name={name}
-        value={value}
-        onChange={onChange}
         className="bg-white/20 border border-gray-300 rounded-md px-2 py-1"
       />
     </div>

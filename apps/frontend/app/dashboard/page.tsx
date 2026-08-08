@@ -70,16 +70,19 @@ export default function Dashboard() {
       payload[key] = Number(payload[key]);
     }
 
+    const isEmpty = (v: unknown) =>
+      v === "" || v === null || v === undefined || Number.isNaN(v);
+
     if (
-      !payload.titulo ||
-      !payload.descripcion ||
-      !payload.precio ||
-      !payload.ciudad ||
-      !payload.barrio ||
-      !payload.tipo ||
-      !payload.habitaciones ||
-      !payload.banos ||
-      !payload.area
+      isEmpty(payload.titulo) ||
+      isEmpty(payload.descripcion) ||
+      isEmpty(payload.precio) ||
+      isEmpty(payload.ciudad) ||
+      isEmpty(payload.barrio) ||
+      isEmpty(payload.tipo) ||
+      isEmpty(payload.habitaciones) ||
+      isEmpty(payload.banos) ||
+      isEmpty(payload.area)
     ) {
       setError("Todos los campos son obligatorios");
       setSaving(false);

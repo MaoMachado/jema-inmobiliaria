@@ -7,7 +7,6 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePropiedad } from './propiedades.types';
 
-
 @Injectable()
 export class PropiedadesService {
   constructor(private readonly prisma: PrismaService) {}
