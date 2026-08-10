@@ -1,34 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import api from "../lib/api";
-import { NewPropertyModal } from "./Modal/NewProperty";
+import { useEffect, useState } from "react";
 
-export interface Propiedad {
-  id: string;
-  titulo: string;
-  descripcion: string;
-  precio: number;
-  ciudad: string;
-  barrio: string;
-  tipo: string;
-  habitaciones: number;
-  banos: number;
-  area: number;
-}
+import AdminView from "./views/AdminView";
+import UserView from "./views/UserView";
 
 export default function Dashboard() {
-  const [error, setError] = useState<string>("");
-  const [loadingUser, setLoadingUser] = useState<boolean>(false);
-  const [loadingProperties, setLoadingProperties] = useState<boolean>(false);
-  const [user, setUser] = useState<{ email: string } | null>(null);
-  const [properties, setProperties] = useState<Propiedad[]>([]);
+  const [user, setUser] = useState<{ email: string; role: string } | null>(
+    null,
+  );
 
-  const [modalOpen, setModalOpen] = useState<boolean>(false);
-  const [saving, setSaving] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(false);
+
+  const role = user?.role;
 
   const loadUser = async () => {
-    setLoadingUser(true);
+    setLoading(true);
 
     try {
       const res = await api.get("/auth/me");
@@ -38,72 +27,12 @@ export default function Dashboard() {
       setError("Error al cargar el usuario");
       window.location.href = "/";
     } finally {
-      setLoadingUser(false);
-    }
-  };
-
-  const loadProperties = async () => {
-    setLoadingProperties(true);
-    setError("");
-
-    try {
-      const res = await api.get("/propiedades");
-      setProperties(res.data);
-    } catch (error) {
-      console.error("Error al cargar las propiedades", error);
-      setError("Error al cargar las propiedades");
-    } finally {
-      setLoadingProperties(false);
-    }
-  };
-
-  const handleSubmitPropiedad = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setSaving(true);
-
-    const formData = new FormData(e.currentTarget);
-    const payload: Record<string, unknown> = Object.fromEntries(
-      formData.entries(),
-    );
-
-    for (const key of ["precio", "habitaciones", "banos", "area"]) {
-      payload[key] = Number(payload[key]);
-    }
-
-    const isEmpty = (v: unknown) =>
-      v === "" || v === null || v === undefined || Number.isNaN(v);
-
-    if (
-      isEmpty(payload.titulo) ||
-      isEmpty(payload.descripcion) ||
-      isEmpty(payload.precio) ||
-      isEmpty(payload.ciudad) ||
-      isEmpty(payload.barrio) ||
-      isEmpty(payload.tipo) ||
-      isEmpty(payload.habitaciones) ||
-      isEmpty(payload.banos) ||
-      isEmpty(payload.area)
-    ) {
-      setError("Todos los campos son obligatorios");
-      setSaving(false);
-      return;
-    }
-
-    try {
-      await api.post("/propiedades", payload);
-      loadProperties();
-      setModalOpen(false);
-    } catch (error) {
-      console.error("Error al crear la propiedad", error);
-      setError("Error al crear la propiedad");
-    } finally {
-      setSaving(false);
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     loadUser();
-    loadProperties();
   }, []);
 
   const handleLogout = () => {
@@ -120,14 +49,16 @@ export default function Dashboard() {
           </h1>
 
           <section className="flex items-center gap-6">
-            {user ? <p>Bienvenido, {user.email}</p> : <p>Bienvenido</p>}
-
-            <button
-              onClick={() => setModalOpen(true)}
-              className="text-white bg-blue-700/40 hover:bg-blue-500/50 rounded-md box-border border border-transparent hover:bg-brand-strong  shadow-xs font-medium leading-5 rounded-base text-sm px-4 py-2.5 focus:outline-none cursor-pointer"
-            >
-              Nueva Propiedad
-            </button>
+            {user ? (
+              <p className="flex items-center gap-2">
+                Bienvenido, {user.email}
+                <span className="bg-blue-800/50 text-blue-300 px-2 py-1 rounded-full text-xs ml-2">
+                  {user.role}
+                </span>
+              </p>
+            ) : (
+              <p>Bienvenido</p>
+            )}
 
             <button
               onClick={handleLogout}
@@ -139,41 +70,21 @@ export default function Dashboard() {
         </div>
       </header>
 
-      <section className="mt-10">
-        <div className="max-w-7xl mx-auto px-6">
-          <h2 className="text-2xl font-bold mb-6">Propiedades</h2>
-
-          {loadingProperties ? (
-            <p>Cargando propiedades</p>
-          ) : properties.length > 0 ? (
-            <article className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-              {properties.map((propiedad) => (
-                <div
-                  key={propiedad.id}
-                  className="border border-blue-900/30 p-3 rounded-md shadow-sm shadow-blue-500/30"
-                >
-                  <h3 className="text-center font-semibold mb-3 text-lg">
-                    {propiedad.titulo}
-                  </h3>
-                  <p className="text-center mb-3">Ciudad: {propiedad.ciudad}</p>
-                  <p className="text-center">Precio: {propiedad.precio}</p>
-                </div>
-              ))}
-            </article>
+      <section>
+        <div className="max-w-7xl mx-auto px-6 mt-10">
+          {loading ? (
+            <p>Cargando...</p>
+          ) : role === "ADMIN" ? (
+            <AdminView />
+          ) : role === "USER" ? (
+            <UserView />
           ) : (
-            <p>Sin propiedades</p>
+            <p>Rol no reconocido</p>
           )}
+
+          {error && <p className="text-red-500">{error}</p>}
         </div>
       </section>
-
-      {modalOpen && (
-        <NewPropertyModal
-          handleSubmit={handleSubmitPropiedad}
-          onClose={() => setModalOpen(false)}
-          error={error}
-          saving={saving}
-        />
-      )}
     </main>
   );
 }

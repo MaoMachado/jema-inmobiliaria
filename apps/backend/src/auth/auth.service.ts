@@ -16,9 +16,16 @@ export class AuthService {
     private readonly prisma: PrismaService,
   ) {}
 
-  async register(email: string, password: string) {
-    if (!email || !password) {
-      throw new BadRequestException('Email y contraseña son obligatorios');
+  async register(
+    nombres: string,
+    apellidos: string,
+    celular: string,
+    email: string,
+    password: string,
+    foto?: string,
+  ) {
+    if (!email || !password || !nombres || !apellidos) {
+      throw new BadRequestException('Faltan campos obligatorios');
     }
 
     try {
@@ -26,8 +33,12 @@ export class AuthService {
 
       const user = await this.prisma.usuario.create({
         data: {
+          nombres,
+          apellidos,
+          celular,
           email,
           password: hashedPassword,
+          foto,
         },
       });
 
@@ -67,6 +78,7 @@ export class AuthService {
     const token = this.jwtService.sign({
       id: user.id,
       email: user.email,
+      role: user.role,
     });
 
     const { password: _, ...userPublic } = user;
