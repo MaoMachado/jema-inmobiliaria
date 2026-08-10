@@ -3,10 +3,10 @@
 import api from "./lib/api";
 import { Login } from "./page/Login";
 import { Register } from "./page/Register";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function Home() {
-  const [type, setType] = useState<"register" | "login">("register");
+  const [type, setType] = useState<"register" | "login">("login");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -44,30 +44,70 @@ export default function Home() {
 
   const handleSubmitRegister = async (
     e: React.FormEvent,
+    nombres: string,
+    apellidos: string,
+    celular: string,
     email: string,
     password: string,
+    confirmPassword: string,
+    confirmEmail: string,
+    foto?: string,
   ) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
-    if (!email || !password) {
+    if (!email || !password || !nombres || !apellidos || !celular) {
       setLoading(false);
       setError("Todos los campos son obligatorios");
       return;
     }
 
+    if (password.trim() !== confirmPassword.trim()) {
+      setLoading(false);
+      setError("Las contraseñas no coinciden");
+      return;
+    }
+
+    if (email !== confirmEmail) {
+      setLoading(false);
+      setError("Los correos no coinciden");
+      return;
+    }
+
     try {
-      await api.post("/auth/register", { email, password });
+      await api.post("/auth/register", {
+        nombres,
+        apellidos,
+        celular,
+        email,
+        password,
+        foto,
+      });
+
       setSuccess("Te registraste, ahora inicia sesión");
+
       setType("login");
     } catch (error) {
-      console.error("Error al registrarse:", error);
       setError("Error al registrarse");
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (success) {
+      setTimeout(() => {
+        setSuccess("");
+      }, 5000);
+    }
+
+    if (error) {
+      setTimeout(() => {
+        setError("");
+      }, 5000);
+    }
+  });
 
   return (
     <main>
