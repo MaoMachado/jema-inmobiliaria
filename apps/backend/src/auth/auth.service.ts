@@ -24,8 +24,8 @@ export class AuthService {
     password: string,
     foto?: string,
   ) {
-    if (!email || !password) {
-      throw new BadRequestException('Email y contraseña son obligatorios');
+    if (!email || !password || !nombres || !apellidos) {
+      throw new BadRequestException('Faltan campos obligatorios');
     }
 
     try {

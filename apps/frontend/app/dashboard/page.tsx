@@ -27,6 +27,10 @@ export default function Dashboard() {
   const [modalOpen, setModalOpen] = useState<boolean>(false);
   const [saving, setSaving] = useState<boolean>(false);
 
+  const [role, setRole] = useState<{ email: string; role: string } | null>(
+    null,
+  );
+
   const loadUser = async () => {
     setLoadingUser(true);
 
@@ -120,7 +124,13 @@ export default function Dashboard() {
           </h1>
 
           <section className="flex items-center gap-6">
-            {user ? <p>Bienvenido, {user.email}</p> : <p>Bienvenido</p>}
+            {user ? (
+              <p>
+                Bienvenido, {user.email} ({role?.role})
+              </p>
+            ) : (
+              <p>Bienvenido</p>
+            )}
 
             <button
               onClick={() => setModalOpen(true)}

@@ -186,7 +186,7 @@ export function Register({
               id="foto"
               name="foto"
               value={foto}
-              onChange={(e) => setFoto(e.target.files?.[0]?.name ?? "")}
+              onChange={(e) => setFoto(e.target.value)}
               className="w-full rounded-lg border border-gray-600 px-4 py-2 focus:border-none focus:outline-none focus:ring-1 focus:ring-cyan-800"
             />
           </div>
