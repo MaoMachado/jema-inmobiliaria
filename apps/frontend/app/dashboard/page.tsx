@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 
 import AdminView from "./views/AdminView";
 import UserView from "./views/UserView";
+import Button from "../components/Button";
 
 export default function Dashboard() {
   const [user, setUser] = useState<{ email: string; role: string } | null>(
@@ -43,16 +44,16 @@ export default function Dashboard() {
   return (
     <main className="min-h-screen">
       <header className="bg-blue-900/20 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto p-6 flex justify-between items-center border-b border-blue-900/50">
-          <h1 className="text-3xl font-bold text-blue-700">
+        <div className="max-w-7xl mx-auto p-6 flex flex-col md:flex-row justify-between items-center border-b border-blue-900/50">
+          <h1 className="text-3xl font-bold text-blue-700 text-center mb-3">
             JEMA Inmobiliaria
           </h1>
 
-          <section className="flex items-center gap-6">
+          <section className="flex flex-col md:flex-row items-center gap-x-10 gap-y-3">
             {user ? (
               <p className="flex items-center gap-2">
                 Bienvenido, {user.email}
-                <span className="bg-blue-800/50 text-blue-300 px-2 py-1 rounded-full text-xs ml-2">
+                <span className="bg-blue-800/50 text-blue-300 px-2 py-1 rounded-full text-xs">
                   {user.role}
                 </span>
               </p>
@@ -60,12 +61,11 @@ export default function Dashboard() {
               <p>Bienvenido</p>
             )}
 
-            <button
+            <Button
+              title="Cerrar Sesión"
               onClick={handleLogout}
-              className="text-white bg-orange-500/30 hover:bg-orange-600 box-border border border-transparent focus:ring-4 focus:ring-orange-600 shadow-xs font-medium leading-5 rounded-base text-sm px-4 py-2.5 focus:outline-none cursor-pointer rounded-md"
-            >
-              Cerrar sesión
-            </button>
+              variant="warning"
+            />
           </section>
         </div>
       </header>
