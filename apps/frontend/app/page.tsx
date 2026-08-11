@@ -51,7 +51,6 @@ export default function Home() {
     password: string,
     confirmPassword: string,
     confirmEmail: string,
-    foto?: string,
   ) => {
     e.preventDefault();
     setError("");
@@ -82,7 +81,6 @@ export default function Home() {
         celular,
         email,
         password,
-        foto,
       });
 
       setSuccess("Te registraste, ahora inicia sesión");

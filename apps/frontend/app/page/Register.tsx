@@ -35,7 +35,6 @@ export function Register({
   const [confirmEmail, setConfirmEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [confirmPassword, setConfirmPassword] = useState<string>("");
-  const [foto, setFoto] = useState<string>("");
 
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [showConfirmPassword, setShowConfirmPassword] =
@@ -53,7 +52,6 @@ export function Register({
           password,
           confirmPassword,
           confirmEmail,
-          foto,
         )
       }
       className="max-w-lg bg-cyan-800/20 backdrop-blur-lg p-8 mx-auto mt-20 rounded-xl relative"
@@ -175,18 +173,6 @@ export function Register({
               value={celular}
               onChange={(e) => setCelular(e.target.value)}
               placeholder="+57 000 000 00 00"
-              className="w-full rounded-lg border border-gray-600 px-4 py-2 focus:border-none focus:outline-none focus:ring-1 focus:ring-cyan-800"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="foto">Foto</label>
-            <input
-              type="file"
-              id="foto"
-              name="foto"
-              value={foto}
-              onChange={(e) => setFoto(e.target.value)}
               className="w-full rounded-lg border border-gray-600 px-4 py-2 focus:border-none focus:outline-none focus:ring-1 focus:ring-cyan-800"
             />
           </div>
