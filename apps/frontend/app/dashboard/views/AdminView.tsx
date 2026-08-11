@@ -1,69 +1,75 @@
 "use client";
 
-import api from "@/app/lib/api";
-import { useEffect, useState } from "react";
-import { Usuario } from "@/app/lib/types";
+import { useState } from "react";
+
+import Button from "@/app/components/Button";
+import ManagementUsers from "./viewAdmin/ManagementUsers";
+import ManagementPayment from "./viewAdmin/ManagementPayment";
+import ManagementFrauds from "./viewAdmin/ManagementFrauds";
+import ManagementReports from "./viewAdmin/ManagementReports";
+import PublicationRequest from "./viewAdmin/PublicationRequest";
 
 export default function AdminView() {
-  const [users, setUsers] = useState<Usuario[]>([]);
-
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string>("");
-
-  const loadUsers = async () => {
-    setLoading(true);
-    setError("");
-
-    try {
-      const res = await api.get("/usuarios");
-      setUsers(res.data);
-    } catch (error) {
-      setError("Error al cargar los usuarios");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadUsers();
-  }, []);
+  const [view, setView] = useState<"users" | "payments" | "frauds" | "reports">(
+    "users",
+  );
+  const [viewPublicationRequest, setViewPublicationRequest] = useState(false);
 
   return (
     <article>
-      <header>
-        <h2>Usuarios Registrados</h2>
+      <header className="flex items-center justify-between md:justify-start gap-16 mb-10">
+        <img
+          src="https://placehold.co/600x400?text=Foto"
+          alt="Foto"
+          width={100}
+          height={100}
+          className="rounded-full"
+        />
+
+        <nav className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <Button title="Gestionar Usuarios" onClick={() => setView("users")} />
+
+          <Button title="Gestionar Pagos" onClick={() => setView("payments")} />
+
+          <Button
+            title="Reportes de Fraude"
+            onClick={() => setView("frauds")}
+          />
+
+          <Button title="Generar Reportes" onClick={() => setView("reports")} />
+        </nav>
+
+        <Button
+          title="Solicitudes Publicaciones"
+          variant="secondary"
+          onClick={() => setViewPublicationRequest(true)}
+          className="ml-auto"
+        />
+
+        {viewPublicationRequest && (
+          <PublicationRequest
+            onClick={() => setViewPublicationRequest(false)}
+          />
+        )}
       </header>
 
-      <section className="flex gap-6 mt-6">
-        {loading ? (
-          <p>Cargando...</p>
-        ) : (
-          users.map((user) => (
-            <div
-              key={user.id}
-              className="border border-blue-900/30 p-3 rounded-md shadow-sm shadow-blue-500/30 text-center"
-            >
-              <p>{user.email}</p>
-              <p>{user.nombres}</p>
-              <p>{user.apellidos}</p>
-              <p>{user.celular}</p>
-              <p
-                className={
-                  user.role === "ADMIN" ? "bg-orange-500" : "bg-blue-500"
-                }
-              >
-                {user.role}
-              </p>
-            </div>
-          ))
-        )}
-      </section>
+      <section>
+        <div className={view === "users" ? "" : "hidden"}>
+          <ManagementUsers />
+        </div>
 
-      {error && (
-        <p className="text-red-500 border border-red-500 rounded-md p-2 text-center">
-          {error}
-        </p>
-      )}
+        <div className={view === "payments" ? "" : "hidden"}>
+          <ManagementPayment />
+        </div>
+
+        <div className={view === "frauds" ? "" : "hidden"}>
+          <ManagementFrauds />
+        </div>
+
+        <div className={view === "reports" ? "" : "hidden"}>
+          <ManagementReports />
+        </div>
+      </section>
     </article>
   );
 }
