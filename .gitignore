@@ -1,5 +1,5 @@
-nodo_modules,
-dist,
-.env,
-.next,
 node_modules
+dist
+.env
+.next
+apps/backend/dist
