@@ -1,3 +1,19 @@
 {
-  "cSpell.words": ["datasource", "Jema", "nestjs"]
+  "cSpell.words": ["datasource", "Jema", "nestjs", "puntaje", "Puntaje"],
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit",
+    "source.organizeImports": "explicit"
+  },
+  "eslint.validate": [
+    "javascript",
+    "javascriptreact",
+    "typescript",
+    "typescriptreact"
+  ],
+  "tailwindCSS.experimental.classRegex": [],
+  "files.eol": "\n",
+  "files.trimTrailingWhitespace": true,
+  "editor.tabSize": 2
 }

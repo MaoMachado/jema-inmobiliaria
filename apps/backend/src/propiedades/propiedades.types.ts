@@ -8,4 +8,13 @@ export interface CreatePropiedad {
   habitaciones: number;
   banos: number;
   area: number;
+  antiguedad: number;
+  direccion: string;
+  estrato: number;
+  fotografias: string[];
+  parqueaderos: number;
+  ubicacionLat: number;
+  ubicacionLng: number;
+  video: string;
+  puntaje?: number;
 }
