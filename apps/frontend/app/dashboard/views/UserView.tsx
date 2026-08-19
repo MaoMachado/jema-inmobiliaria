@@ -1,10 +1,10 @@
 "use client";
 
-import api from "@/app/lib/api";
 import { useEffect, useState } from "react";
 
-import { NewPropertyModal } from "../Modal/NewProperty";
+import api from "@/app/lib/api";
 import { Propiedad } from "@/app/lib/types";
+import { NewPropertyModal } from "../Modal/NewProperty";
 
 export default function UserView() {
   const [properties, setProperties] = useState<Propiedad[]>([]);
@@ -23,6 +23,7 @@ export default function UserView() {
       const res = await api.get("/propiedades");
       setProperties(res.data);
     } catch (error) {
+      console.error("Error al cargar las propiedades", error);
       setError("Error al cargar las propiedades");
     } finally {
       setLoadingProperties(false);
@@ -38,8 +39,25 @@ export default function UserView() {
       formData.entries(),
     );
 
-    for (const key of ["precio", "habitaciones", "banos", "area"]) {
+    for (const key of [
+      "precio",
+      "habitaciones",
+      "banos",
+      "area",
+      "antiguedad",
+      "estrato",
+      "parqueaderos",
+    ]) {
       payload[key] = Number(payload[key]);
+    }
+
+    if (typeof payload.fotografias === "string" && payload.fotografias.trim()) {
+      payload.fotografias = payload.fotografias
+        .split(",")
+        .map((url) => url.trim())
+        .filter(Boolean);
+    } else {
+      payload.fotografias = [];
     }
 
     const isEmpty = (v: unknown) =>
@@ -54,7 +72,10 @@ export default function UserView() {
       isEmpty(payload.tipo) ||
       isEmpty(payload.habitaciones) ||
       isEmpty(payload.banos) ||
-      isEmpty(payload.area)
+      isEmpty(payload.area) ||
+      isEmpty(payload.antiguedad) ||
+      isEmpty(payload.direccion) ||
+      isEmpty(payload.estrato)
     ) {
       setError("Todos los campos son obligatorios");
       setSaving(false);
@@ -66,6 +87,7 @@ export default function UserView() {
       setModalOpen(false);
       loadProperties();
     } catch (error) {
+      console.error("Error al crear la propiedad", error);
       setError("Error al crear la propiedad");
     } finally {
       setSaving(false);
@@ -78,8 +100,10 @@ export default function UserView() {
 
   return (
     <article>
-      <header>
-        <h2>Propiedades</h2>
+      <header className="flex justify-between items-center mb-3">
+        <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold">
+          Propiedades
+        </h2>
 
         <button
           onClick={() => setModalOpen(true)}
@@ -97,13 +121,16 @@ export default function UserView() {
             {properties.map((propiedad) => (
               <div
                 key={propiedad.id}
-                className="border border-blue-900/30 p-3 rounded-md shadow-sm shadow-blue-500/30"
+                className="relative border border-blue-900/30 p-6 rounded-md shadow-sm shadow-blue-500/30"
               >
                 <h3 className="text-center font-semibold mb-3 text-lg">
                   {propiedad.titulo}
                 </h3>
                 <p className="text-center mb-3">Ciudad: {propiedad.ciudad}</p>
                 <p className="text-center">Precio: {propiedad.precio}</p>
+                <span className="absolute -bottom-4 -right-4 bg-blue-700/80 rounded-full p-1.5 font-semibold">
+                  {propiedad.puntaje}
+                </span>
               </div>
             ))}
           </article>

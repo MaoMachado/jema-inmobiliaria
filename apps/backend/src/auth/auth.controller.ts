@@ -1,14 +1,14 @@
-import { Body, Controller, Get, Post, UseGuards, Req } from '@nestjs/common';
-import { AuthService } from './auth.service';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 import { Request } from 'express';
 import { Role } from '../generated/prisma';
+import { AuthService } from './auth.service';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 interface RequestWithUser extends Request {
   user: {
     id: string;
     email: string;
-    role: Role
+    role: Role;
   };
 }
 

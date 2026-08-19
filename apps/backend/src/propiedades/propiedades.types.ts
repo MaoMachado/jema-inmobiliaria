@@ -11,10 +11,10 @@ export interface CreatePropiedad {
   antiguedad: number;
   direccion: string;
   estrato: number;
-  fotografias: string[];
+  fotografias?: string[];
   parqueaderos: number;
-  ubicacionLat: number;
-  ubicacionLng: number;
-  video: string;
+  ubicacionLat?: number;
+  ubicacionLong?: number;
+  video?: string;
   puntaje?: number;
 }

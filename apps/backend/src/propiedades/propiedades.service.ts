@@ -51,7 +51,7 @@ export class PropiedadesService {
         fotografias: propiedad.fotografias,
         parqueaderos: propiedad.parqueaderos,
         ubicacionLat: propiedad.ubicacionLat,
-        ubicacionLng: propiedad.ubicacionLng,
+        ubicacionLong: propiedad.ubicacionLong,
         video: propiedad.video,
         puntaje,
       },
@@ -100,7 +100,7 @@ export class PropiedadesService {
       fotografias: data.fotografias ?? propiedad.fotografias ?? [],
       parqueaderos: data.parqueaderos ?? propiedad.parqueaderos ?? 0,
       ubicacionLat: data.ubicacionLat ?? propiedad.ubicacionLat ?? 0,
-      ubicacionLng: data.ubicacionLng ?? propiedad.ubicacionLng ?? 0,
+      ubicacionLong: data.ubicacionLong ?? propiedad.ubicacionLong ?? 0,
       video: data.video ?? propiedad.video ?? '',
     };
 
@@ -134,8 +134,8 @@ export class PropiedadesService {
         ...(data.ubicacionLat !== undefined && {
           ubicacionLat: data.ubicacionLat,
         }),
-        ...(data.ubicacionLng !== undefined && {
-          ubicacionLng: data.ubicacionLng,
+        ...(data.ubicacionLong !== undefined && {
+          ubicacionLong: data.ubicacionLong,
         }),
         ...(data.video !== undefined && { video: data.video }),
         puntaje,

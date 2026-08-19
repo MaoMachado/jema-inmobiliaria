@@ -18,43 +18,43 @@ enum Role {
 }
 
 model Usuario {
-  id         String   @id @default(uuid())
-  nombres    String
-  apellidos  String
-  email      String   @unique
-  password   String
-  foto       String?
-  celular    String?
-  role       Role     @default(USER)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id        String   @id @default(uuid())
+  nombres   String
+  apellidos String
+  email     String   @unique
+  password  String
+  foto      String?
+  celular   String?
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   propiedades Propiedad[]
 }
 
 model Propiedad {
-  id String @id @default(uuid())
-  titulo String
-  descripcion String
-  precio Float
-  ciudad String
-  barrio String
-  direccion String
-  estrato Int
-  tipo String
-  habitaciones Int
-  banos Int
-  parqueaderos Int @default(0)
-  area Float
-  antiguedad Int
-  fotografias String[]
-  video String?
-  ubicacionLat Float?
-  ubicacionLng Float?
-  puntaje Int?
+  id             String    @id @default(uuid())
+  titulo         String
+  descripcion    String
+  precio         Float
+  ciudad         String
+  barrio         String
+  direccion      String
+  estrato        Int
+  tipo           String
+  habitaciones   Int
+  banos          Int
+  parqueaderos   Int       @default(0)
+  area           Float
+  antiguedad     Int
+  fotografias    String[]
+  video          String?
+  ubicacionLat   Float?
+  ubicacionLong  Float?
+  puntaje        Int?
   publicadoPorId String //Relacion con Usuario
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   //Relación con Usuario
   publicadoPor Usuario @relation(fields: [publicadoPorId], references: [id])

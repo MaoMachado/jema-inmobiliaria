@@ -21,14 +21,14 @@ const reglas: ReglaPuntaje[] = [
   { peso: 5, evaluar: (p) => (p.habitaciones > 0 ? 5 : 0) },
   { peso: 5, evaluar: (p) => (p.banos > 0 ? 5 : 0) },
   { peso: 5, evaluar: (p) => escalar(p.area, 150, 5) },
-  { peso: 5, evaluar: (p) => (p.antiguedad >= 0 ? 5 : 0) },
+  { peso: 5, evaluar: (p) => escalar(p.antiguedad, 50, 5) },
   { peso: 5, evaluar: (p) => (p.direccion.trim() ? 5 : 0) },
-  { peso: 5, evaluar: (p) => (p.estrato > 0 ? 5 : 0) },
-  { peso: 15, evaluar: (p) => Math.min(p.fotografias.length * 3, 15) },
+  { peso: 5, evaluar: (p) => (p.estrato > 0 ? 2 : 0) },
+  { peso: 15, evaluar: (p) => Math.min((p.fotografias?.length ?? 0) * 3, 15) },
   { peso: 2, evaluar: (p) => (p.parqueaderos > 0 ? 2 : 0) },
   { peso: 3, evaluar: (p) => ((p.ubicacionLat ?? 0) > 0 ? 3 : 0) },
-  { peso: 3, evaluar: (p) => ((p.ubicacionLng ?? 0) > 0 ? 3 : 0) },
-  { peso: 2, evaluar: (p) => (p.video.trim() ? 2 : 0) },
+  { peso: 3, evaluar: (p) => ((p.ubicacionLong ?? 0) > 0 ? 3 : 0) },
+  { peso: 2, evaluar: (p) => ((p.video ?? '').trim() ? 2 : 0) },
 ];
 
 export const calcularPuntaje = (propiedad: CreatePropiedad): number => {

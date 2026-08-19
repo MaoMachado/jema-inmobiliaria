@@ -16,7 +16,6 @@ interface FormLoginProps {
 }
 
 export function Login({
-  type,
   setType,
   loading,
   error,

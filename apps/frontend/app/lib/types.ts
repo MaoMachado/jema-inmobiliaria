@@ -20,4 +20,9 @@ export interface Propiedad {
   habitaciones: number;
   banos: number;
   area: number;
+  fotografias: string[];
+  video: string | null;
+  ubicacionLat: number | null;
+  ubicacionLong: number | null;
+  puntaje: number | null;
 }
