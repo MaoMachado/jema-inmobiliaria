@@ -1,11 +1,14 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import api from "./lib/api";
 import { Login } from "./page/Login";
 import { Register } from "./page/Register";
-import { useEffect, useState } from "react";
 
 export default function Home() {
+  const router = useRouter();
+
   const [type, setType] = useState<"register" | "login">("login");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -33,7 +36,7 @@ export default function Home() {
       }
 
       localStorage.setItem("access_token", response.data.token);
-      window.location.href = "/dashboard";
+      router.push("/dashboard");
     } catch (error) {
       console.error("Error al iniciar sesión:", error);
       setError("Credenciales incorrectas");
@@ -87,6 +90,7 @@ export default function Home() {
 
       setType("login");
     } catch (error) {
+      console.error("Error al registrarse:", error);
       setError("Error al registrarse");
     } finally {
       setLoading(false);

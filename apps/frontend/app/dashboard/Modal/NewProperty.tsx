@@ -1,139 +1,212 @@
 "use client";
 
-interface PropsModa {
+import Button from "@/app/components/Button";
+import { useRef, useState } from "react";
+
+interface PropsModalNewProperty {
   onClose: () => void;
   handleSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
-  error: string;
   saving: boolean;
+  error: string;
 }
-
-const formData = [
-  {
-    name: "titulo",
-    label: "Título",
-    type: "text",
-  },
-  {
-    name: "descripcion",
-    label: "Descripción",
-    type: "text",
-  },
-  {
-    name: "precio",
-    label: "Precio",
-    type: "number",
-  },
-  {
-    name: "ciudad",
-    label: "Ciudad",
-    type: "text",
-  },
-  {
-    name: "barrio",
-    label: "Barrio",
-    type: "text",
-  },
-  {
-    name: "tipo",
-    label: "Tipo",
-    type: "text",
-  },
-  {
-    name: "habitaciones",
-    label: "Habitaciones",
-    type: "number",
-  },
-  {
-    name: "banos",
-    label: "Baños",
-    type: "number",
-  },
-  {
-    name: "area",
-    label: "Área",
-    type: "number",
-  },
-];
 
 interface FormFieldProps {
   name: string;
   label: string;
   type: string;
+  required: boolean;
 }
 
-const FormField = ({ name, label, type }: FormFieldProps) => {
-  return (
-    <div className="flex flex-col">
-      <label htmlFor={name}>{label}</label>
-      <input
-        type={type}
-        id={name}
-        name={name}
-        className="bg-white/20 border border-gray-300 rounded-md px-2 py-1"
-      />
-    </div>
-  );
-};
+const pasos: { titulo: string; campos: FormFieldProps[] }[] = [
+  {
+    titulo: "Información General",
+    campos: [
+      { name: "titulo", label: "Título", type: "text", required: true },
+      {
+        name: "descripcion",
+        label: "Descripción",
+        type: "text",
+        required: true,
+      },
+      { name: "precio", label: "Precio", type: "number", required: true },
+      { name: "tipo", label: "Tipo", type: "text", required: true },
+    ],
+  },
+  {
+    titulo: "Ubicación",
+    campos: [
+      { name: "ciudad", label: "Ciudad", type: "text", required: true },
+      { name: "barrio", label: "Barrio", type: "text", required: true },
+      { name: "direccion", label: "Dirección", type: "text", required: true },
+      { name: "estrato", label: "Estrato", type: "number", required: true },
+    ],
+  },
+  {
+    titulo: "Características",
+    campos: [
+      {
+        name: "habitaciones",
+        label: "Habitaciones",
+        type: "number",
+        required: true,
+      },
+      { name: "banos", label: "Baños", type: "number", required: true },
+      { name: "area", label: "Área", type: "number", required: true },
+      {
+        name: "antiguedad",
+        label: "Antigüedad",
+        type: "number",
+        required: true,
+      },
+      {
+        name: "parqueaderos",
+        label: "Parqueaderos",
+        type: "number",
+        required: false,
+      },
+    ],
+  },
+  {
+    titulo: "Multimedia",
+    campos: [
+      {
+        name: "fotografias",
+        label: "Fotografías (URLs separadas por coma)",
+        type: "text",
+        required: false,
+      },
+      { name: "video", label: "Video (URL)", type: "text", required: false },
+    ],
+  },
+];
+
+const FormField = ({ name, label, type, required }: FormFieldProps) => (
+  <div className="flex flex-col">
+    <label htmlFor={name}>{required ? `${label} *` : label}</label>
+    <input
+      type={type}
+      id={name}
+      name={name}
+      required={required}
+      className="bg-white/20 border border-gray-300 rounded-md px-2 py-1"
+    />
+  </div>
+);
 
 export function NewPropertyModal({
   onClose,
   handleSubmit,
-  error,
   saving,
-}: PropsModa) {
+  error,
+}: PropsModalNewProperty) {
+  const [step, setStep] = useState<number>(0);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  const [errorLocal, setErrorLocal] = useState<string>("");
+
+  const validarPaso = (paso: number): boolean => {
+    const form = formRef.current;
+    const faltantes = pasos[paso].campos
+      .filter((c) => c.required)
+      .map((c) => c.name)
+      .filter((name) => {
+        const el = form?.elements.namedItem(name) as HTMLInputElement | null;
+        return !el || !el.value.trim();
+      });
+
+    if (faltantes.length > 0) {
+      setErrorLocal(
+        `Paso ${paso + 1}: campos obligatorios: ${faltantes.join(", ")}`,
+      );
+      return false;
+    }
+
+    setErrorLocal("");
+    return true;
+  };
+
+  const siguiente = () => validarPaso(step) && setStep((s) => s + 1);
+  const atras = () => {
+    setErrorLocal("");
+    setStep((s) => s - 1);
+  };
+
   return (
-    <section className="fixed inset-0 bg-black/50 backdrop-blur-xs">
-      <div className="max-w-3xl mx-auto mt-10 rounded-md">
-        <header className="flex justify-between items-center">
-          <h2 className="text-center mb-6 text-3xl">Nueva Propiedad</h2>
-          <button
+    <>
+      <div
+        onClick={onClose}
+        className="fixed inset-0 bg-black/20 backdrop-blur-xs"
+      />
+      <article className="slide-in-right bg-blue-800/40 backdrop-blur-xs fixed z-10 top-0 right-0 w-full md:w-md h-full">
+        <header className="flex items-center justify-between p-6">
+          <h2 className="text-2xl font-semibold tracking-wider">
+            Nueva Propiedad
+          </h2>
+          <Button
+            title="X"
             onClick={onClose}
-            className="bg-orange-500/20 hover:bg-orange-500/50 border-orange-500 rounded-md cursor-pointer"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={1.5}
-              stroke="currentColor"
-              className="w-6 h-6"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
+            type="button"
+            variant="secondary"
+          />
         </header>
 
-        <form
-          onSubmit={handleSubmit}
-          className="bg-blue-900/20 rounded-md p-6 grid grid-cols-2 gap-4"
-        >
-          {formData.map((field) => (
-            <FormField
-              key={field.name}
-              name={field.name}
-              label={field.label}
-              type={field.type}
-            />
-          ))}
+        <section className="p-4">
+          <form ref={formRef} onSubmit={handleSubmit}>
+            <h2 className="text-center mb-6 font-semibold tracking-wider capitalize text-xl">
+              {pasos[step].titulo}{" "}
+              <span className="text-blue-500 ml-2">
+                Paso {step + 1} de {pasos.length}
+              </span>
+            </h2>
 
-          <button
-            type="submit"
-            className="bg-blue-700 col-span-2 py-2 rounded-md font-semibold cursor-pointer tracking-wider"
-            disabled={saving}
-          >
-            {saving ? "Guardando..." : "Agregar propiedad"}
-          </button>
-        </form>
-        {error && (
-          <p className="text-red-500 text-center mt-6 bg-red-900/30 py-2">
-            {error}
-          </p>
-        )}
-      </div>
-    </section>
+            {pasos.map((paso, index) => (
+              <div
+                key={paso.titulo}
+                className={
+                  step === index ? "flex flex-col gap-3 mb-6" : "hidden"
+                }
+              >
+                {paso.campos.map((campo) => (
+                  <FormField key={campo.name} {...campo} />
+                ))}
+              </div>
+            ))}
+
+            {(errorLocal || error) && (
+              <p className="text-red-500">{errorLocal || error}</p>
+            )}
+
+            <div>
+              {step > 0 && (
+                <Button
+                  title="Atrás"
+                  onClick={atras}
+                  type="button"
+                  variant="secondary"
+                />
+              )}
+
+              {step < pasos.length - 1 && (
+                <Button
+                  title="Siguiente"
+                  onClick={siguiente}
+                  type="button"
+                  variant="primary"
+                />
+              )}
+
+              {step === pasos.length - 1 && (
+                <Button
+                  title={saving ? "Guardando..." : "Agregar Propiedad"}
+                  type="submit"
+                  disabled={saving}
+                  variant="primary"
+                />
+              )}
+            </div>
+          </form>
+        </section>
+      </article>
+    </>
   );
 }

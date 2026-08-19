@@ -1,13 +1,15 @@
 "use client";
 
-import api from "../lib/api";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import api from "../lib/api";
 
+import Button from "../components/Button";
 import AdminView from "./views/AdminView";
 import UserView from "./views/UserView";
-import Button from "../components/Button";
 
 export default function Dashboard() {
+  const router = useRouter();
   const [user, setUser] = useState<{ email: string; role: string } | null>(
     null,
   );
@@ -26,7 +28,7 @@ export default function Dashboard() {
     } catch (error) {
       console.error("Error al cargar el usuario", error);
       setError("Error al cargar el usuario");
-      window.location.href = "/";
+      router.push("/");
     } finally {
       setLoading(false);
     }
@@ -38,7 +40,7 @@ export default function Dashboard() {
 
   const handleLogout = () => {
     localStorage.removeItem("access_token");
-    window.location.href = "/";
+    router.push("/");
   };
 
   return (

@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { calcularPuntaje } from './calcular-puntaje.js';
 import { CreatePropiedad } from './propiedades.types';
 
 @Injectable()
@@ -30,6 +31,8 @@ export class PropiedadesService {
   async create(propiedad: CreatePropiedad, userId: string) {
     this.validate(propiedad);
 
+    const puntaje = calcularPuntaje(propiedad);
+
     const prop = await this.prisma.propiedad.create({
       data: {
         titulo: propiedad.titulo,
@@ -42,6 +45,15 @@ export class PropiedadesService {
         banos: propiedad.banos,
         area: propiedad.area,
         publicadoPorId: userId,
+        antiguedad: propiedad.antiguedad,
+        direccion: propiedad.direccion,
+        estrato: propiedad.estrato,
+        fotografias: propiedad.fotografias,
+        parqueaderos: propiedad.parqueaderos,
+        ubicacionLat: propiedad.ubicacionLat,
+        ubicacionLong: propiedad.ubicacionLong,
+        video: propiedad.video,
+        puntaje,
       },
     });
 
@@ -72,6 +84,28 @@ export class PropiedadesService {
       );
     }
 
+    const cambios: CreatePropiedad = {
+      titulo: data.titulo ?? propiedad.titulo ?? '',
+      descripcion: data.descripcion ?? propiedad.descripcion ?? '',
+      precio: data.precio ?? propiedad.precio ?? 0,
+      ciudad: data.ciudad ?? propiedad.ciudad ?? '',
+      barrio: data.barrio ?? propiedad.barrio ?? '',
+      tipo: data.tipo ?? propiedad.tipo ?? '',
+      habitaciones: data.habitaciones ?? propiedad.habitaciones ?? 0,
+      banos: data.banos ?? propiedad.banos ?? 0,
+      area: data.area ?? propiedad.area ?? 0,
+      antiguedad: data.antiguedad ?? propiedad.antiguedad ?? 0,
+      direccion: data.direccion ?? propiedad.direccion ?? '',
+      estrato: data.estrato ?? propiedad.estrato ?? 0,
+      fotografias: data.fotografias ?? propiedad.fotografias ?? [],
+      parqueaderos: data.parqueaderos ?? propiedad.parqueaderos ?? 0,
+      ubicacionLat: data.ubicacionLat ?? propiedad.ubicacionLat ?? 0,
+      ubicacionLong: data.ubicacionLong ?? propiedad.ubicacionLong ?? 0,
+      video: data.video ?? propiedad.video ?? '',
+    };
+
+    const puntaje = calcularPuntaje(cambios);
+
     return this.prisma.propiedad.update({
       where: { id },
       data: {
@@ -88,6 +122,23 @@ export class PropiedadesService {
         }),
         ...(data.banos !== undefined && { banos: data.banos }),
         ...(data.area !== undefined && { area: data.area }),
+        ...(data.antiguedad !== undefined && { antiguedad: data.antiguedad }),
+        ...(data.direccion !== undefined && { direccion: data.direccion }),
+        ...(data.estrato !== undefined && { estrato: data.estrato }),
+        ...(data.fotografias !== undefined && {
+          fotografias: data.fotografias,
+        }),
+        ...(data.parqueaderos !== undefined && {
+          parqueaderos: data.parqueaderos,
+        }),
+        ...(data.ubicacionLat !== undefined && {
+          ubicacionLat: data.ubicacionLat,
+        }),
+        ...(data.ubicacionLong !== undefined && {
+          ubicacionLong: data.ubicacionLong,
+        }),
+        ...(data.video !== undefined && { video: data.video }),
+        puntaje,
       },
     });
   }
