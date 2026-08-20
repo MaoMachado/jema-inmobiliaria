@@ -14,6 +14,8 @@ interface FormFieldProps {
   name: string;
   label: string;
   type: string;
+  accept?: string;
+  multiple?: boolean;
   required: boolean;
 }
 
@@ -71,16 +73,25 @@ const pasos: { titulo: string; campos: FormFieldProps[] }[] = [
     campos: [
       {
         name: "fotografias",
-        label: "Fotografías (URLs separadas por coma)",
-        type: "text",
-        required: false,
+        label: "Fotografías",
+        type: "file",
+        multiple: true,
+        accept: "image/*",
+        required: false, 
       },
       { name: "video", label: "Video (URL)", type: "text", required: false },
     ],
   },
 ];
 
-const FormField = ({ name, label, type, required }: FormFieldProps) => (
+const FormField = ({
+  name,
+  label,
+  type,
+  required,
+  multiple,
+  accept,
+}: FormFieldProps) => (
   <div className="flex flex-col">
     <label htmlFor={name}>{required ? `${label} *` : label}</label>
     <input
@@ -88,6 +99,8 @@ const FormField = ({ name, label, type, required }: FormFieldProps) => (
       id={name}
       name={name}
       required={required}
+      multiple={multiple}
+      accept={accept}
       className="bg-white/20 border border-gray-300 rounded-md px-2 py-1"
     />
   </div>
