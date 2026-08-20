@@ -38,6 +38,8 @@ export class StorageService {
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-') || 'foto';
 
-    return `public/${Date.now()}-${base}.${ext}`;
+    const uuid = crypto.randomUUID();
+
+    return `public/${Date.now()}-${base}-${uuid}.${ext}`;
   }
 }
