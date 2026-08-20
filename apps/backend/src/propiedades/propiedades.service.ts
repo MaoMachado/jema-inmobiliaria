@@ -5,12 +5,16 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { StorageService } from '../storage/storage.service.js';
 import { calcularPuntaje } from './calcular-puntaje.js';
 import { CreatePropiedad } from './propiedades.types';
 
 @Injectable()
 export class PropiedadesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storage: StorageService,
+  ) {}
 
   private validate(propiedad: CreatePropiedad) {
     if (
@@ -28,31 +32,49 @@ export class PropiedadesService {
     }
   }
 
-  async create(propiedad: CreatePropiedad, userId: string) {
-    this.validate(propiedad);
+  async create(
+    propiedad: CreatePropiedad,
+    files: Express.Multer.File[],
+    userId: string,
+  ) {
+    const data: CreatePropiedad = {
+      ...propiedad,
+      precio: Number(propiedad.precio),
+      habitaciones: Number(propiedad.habitaciones),
+      banos: Number(propiedad.banos),
+      area: Number(propiedad.area),
+      antiguedad: Number(propiedad.antiguedad),
+      estrato: Number(propiedad.estrato),
+      parqueaderos: Number(propiedad.parqueaderos ?? 0),
+    };
 
-    const puntaje = calcularPuntaje(propiedad);
+    this.validate(data);
+
+    data.fotografias =
+      files.length > 0 ? await this.storage.subirFotos(files) : [];
+
+    const puntaje = calcularPuntaje(data);
 
     const prop = await this.prisma.propiedad.create({
       data: {
-        titulo: propiedad.titulo,
-        descripcion: propiedad.descripcion,
-        precio: propiedad.precio,
-        ciudad: propiedad.ciudad,
-        barrio: propiedad.barrio,
-        tipo: propiedad.tipo,
-        habitaciones: propiedad.habitaciones,
-        banos: propiedad.banos,
-        area: propiedad.area,
+        titulo: data.titulo,
+        descripcion: data.descripcion,
+        precio: data.precio,
+        ciudad: data.ciudad,
+        barrio: data.barrio,
+        tipo: data.tipo,
+        habitaciones: data.habitaciones,
+        banos: data.banos,
+        area: data.area,
         publicadoPorId: userId,
-        antiguedad: propiedad.antiguedad,
-        direccion: propiedad.direccion,
-        estrato: propiedad.estrato,
-        fotografias: propiedad.fotografias,
-        parqueaderos: propiedad.parqueaderos,
-        ubicacionLat: propiedad.ubicacionLat,
-        ubicacionLong: propiedad.ubicacionLong,
-        video: propiedad.video,
+        antiguedad: data.antiguedad,
+        direccion: data.direccion,
+        estrato: data.estrato,
+        fotografias: data.fotografias,
+        parqueaderos: data.parqueaderos,
+        ubicacionLat: data.ubicacionLat ? Number(data.ubicacionLat) : null,
+        ubicacionLong: data.ubicacionLong ? Number(data.ubicacionLong) : null,
+        video: data.video ?? null,
         puntaje,
       },
     });

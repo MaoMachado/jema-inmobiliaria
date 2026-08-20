@@ -30,7 +30,15 @@ export default function Home() {
     }
 
     try {
-      const response = await api.post("/auth/login", { email, password });
+      const response = await api.post(
+        "/auth/login",
+        { email, password },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      );
       if (!response.data.token) {
         throw new Error("Token no proporcionado en la respuesta");
       }
@@ -39,7 +47,8 @@ export default function Home() {
       router.push("/dashboard");
     } catch (error) {
       console.error("Error al iniciar sesión:", error);
-      setError("Credenciales incorrectas");
+      const msg = (error as any)?.response?.data?.message;
+      setError(msg ?? "Credenciales incorrectas");
     } finally {
       setLoading(false);
     }
@@ -91,7 +100,8 @@ export default function Home() {
       setType("login");
     } catch (error) {
       console.error("Error al registrarse:", error);
-      setError("Error al registrarse");
+      const msg = (error as any)?.response?.data?.message;
+      setError(msg ?? "Error al registrarse");
     } finally {
       setLoading(false);
     }

@@ -7,10 +7,13 @@ import {
   Patch,
   Post,
   Req,
+  UploadedFiles,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
-import { PropiedadesService } from './propiedades.service';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { PropiedadesService } from './propiedades.service';
 import { type CreatePropiedad } from './propiedades.types';
 
 interface RequestWithUser {
@@ -23,8 +26,13 @@ export class PropiedadesController {
 
   @UseGuards(JwtAuthGuard)
   @Post()
-  create(@Body() body: CreatePropiedad, @Req() req: RequestWithUser) {
-    return this.propiedadesService.create(body, req.user.id);
+  @UseInterceptors(FilesInterceptor('fotografias', 10))
+  create(
+    @Body() body: CreatePropiedad,
+    @UploadedFiles() files: Express.Multer.File[],
+    @Req() req: RequestWithUser,
+  ) {
+    return this.propiedadesService.create(body, files ?? [], req.user.id);
   }
 
   @Get()

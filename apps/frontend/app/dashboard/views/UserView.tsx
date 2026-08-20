@@ -33,49 +33,26 @@ export default function UserView() {
   const handleSubmitPropiedad = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSaving(true);
+    setError("");
 
     const formData = new FormData(e.currentTarget);
-    const payload: Record<string, unknown> = Object.fromEntries(
-      formData.entries(),
-    );
 
-    for (const key of [
-      "precio",
-      "habitaciones",
-      "banos",
-      "area",
-      "antiguedad",
-      "estrato",
-      "parqueaderos",
-    ]) {
-      payload[key] = Number(payload[key]);
-    }
-
-    if (typeof payload.fotografias === "string" && payload.fotografias.trim()) {
-      payload.fotografias = payload.fotografias
-        .split(",")
-        .map((url) => url.trim())
-        .filter(Boolean);
-    } else {
-      payload.fotografias = [];
-    }
-
-    const isEmpty = (v: unknown) =>
-      v === "" || v === null || v === undefined || Number.isNaN(v);
+    const isEmpty = (v: FormDataEntryValue | null) =>
+      v === "" || v === null || v === undefined;
 
     if (
-      isEmpty(payload.titulo) ||
-      isEmpty(payload.descripcion) ||
-      isEmpty(payload.precio) ||
-      isEmpty(payload.ciudad) ||
-      isEmpty(payload.barrio) ||
-      isEmpty(payload.tipo) ||
-      isEmpty(payload.habitaciones) ||
-      isEmpty(payload.banos) ||
-      isEmpty(payload.area) ||
-      isEmpty(payload.antiguedad) ||
-      isEmpty(payload.direccion) ||
-      isEmpty(payload.estrato)
+      isEmpty(formData.get("titulo")) ||
+      isEmpty(formData.get("descripcion")) ||
+      isEmpty(formData.get("precio")) ||
+      isEmpty(formData.get("ciudad")) ||
+      isEmpty(formData.get("barrio")) ||
+      isEmpty(formData.get("tipo")) ||
+      isEmpty(formData.get("habitaciones")) ||
+      isEmpty(formData.get("banos")) ||
+      isEmpty(formData.get("area")) ||
+      isEmpty(formData.get("antiguedad")) ||
+      isEmpty(formData.get("direccion")) ||
+      isEmpty(formData.get("estrato"))
     ) {
       setError("Todos los campos son obligatorios");
       setSaving(false);
@@ -83,7 +60,7 @@ export default function UserView() {
     }
 
     try {
-      await api.post("/propiedades", payload);
+      await api.post("/propiedades", formData);
       setModalOpen(false);
       loadProperties();
     } catch (error) {
@@ -131,6 +108,11 @@ export default function UserView() {
                 <span className="absolute -bottom-4 -right-4 bg-blue-700/80 rounded-full p-1.5 font-semibold">
                   {propiedad.puntaje}
                 </span>
+                <img
+                  src={propiedad.fotografias[1]}
+                  alt={propiedad.titulo}
+                  className=""
+                />
               </div>
             ))}
           </article>
