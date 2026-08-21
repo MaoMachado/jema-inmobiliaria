@@ -119,7 +119,7 @@ export default function Home() {
         setError("");
       }, 5000);
     }
-  });
+  }, [error, success]);
 
   return (
     <main>

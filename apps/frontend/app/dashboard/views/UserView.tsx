@@ -2,33 +2,19 @@
 
 import { useEffect, useState } from "react";
 
+import SearchProperty from "@/app/dashboard/views/viewUser/SearchProperty";
 import api from "@/app/lib/api";
 import { Propiedad } from "@/app/lib/types";
 import { NewPropertyModal } from "../Modal/NewProperty";
 
 export default function UserView() {
-  const [properties, setProperties] = useState<Propiedad[]>([]);
-  const [loadingProperties, setLoadingProperties] = useState<boolean>(false);
+  const [resultados, setResultados] = useState<any[]>([]);
 
   const [modalOpen, setModalOpen] = useState<boolean>(false);
   const [saving, setSaving] = useState<boolean>(false);
 
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
-
-  const loadProperties = async () => {
-    setLoadingProperties(true);
-    setError("");
-
-    try {
-      const res = await api.get("/propiedades");
-      setProperties(res.data);
-    } catch (error) {
-      console.error("Error al cargar las propiedades", error);
-      setError("Error al cargar las propiedades");
-    } finally {
-      setLoadingProperties(false);
-    }
-  };
 
   const handleSubmitPropiedad = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -62,7 +48,6 @@ export default function UserView() {
     try {
       await api.post("/propiedades", formData);
       setModalOpen(false);
-      loadProperties();
     } catch (error) {
       console.error("Error al crear la propiedad", error);
       setError("Error al crear la propiedad");
@@ -72,7 +57,23 @@ export default function UserView() {
   };
 
   useEffect(() => {
-    loadProperties();
+    const loadInitial = async () => {
+      setLoading(true);
+
+      try {
+        const res = await api.get<{ data: Propiedad[]; pagination: any }>(
+          "/propiedades",
+        );
+        setResultados(res.data.data);
+      } catch (err) {
+        console.error("Error al cargar propiedades", err);
+        setError("Error al cargar las propiedades");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadInitial();
   }, []);
 
   return (
@@ -90,12 +91,12 @@ export default function UserView() {
         </button>
       </header>
 
+      <SearchProperty onResults={(data) => setResultados(data)} />
+
       <section>
-        {loadingProperties ? (
-          <p>Cargando propiedades</p>
-        ) : properties.length > 0 ? (
+        {resultados.length > 0 ? (
           <article className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            {properties.map((propiedad) => (
+            {resultados.map((propiedad) => (
               <div
                 key={propiedad.id}
                 className="relative border border-blue-900/30 p-6 rounded-md shadow-sm shadow-blue-500/30"
@@ -104,15 +105,17 @@ export default function UserView() {
                   {propiedad.titulo}
                 </h3>
                 <p className="text-center mb-3">Ciudad: {propiedad.ciudad}</p>
-                <p className="text-center">Precio: {propiedad.precio}</p>
+                <p className="text-center">Precio: ${propiedad.precio}</p>
                 <span className="absolute -bottom-4 -right-4 bg-blue-700/80 rounded-full p-1.5 font-semibold">
                   {propiedad.puntaje}
                 </span>
-                <img
-                  src={propiedad.fotografias[1]}
-                  alt={propiedad.titulo}
-                  className=""
-                />
+                {propiedad.fotografias?.[0] && (
+                  <img
+                    src={propiedad.fotografias[0]}
+                    alt={propiedad.titulo}
+                    className=""
+                  />
+                )}
               </div>
             ))}
           </article>

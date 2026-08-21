@@ -12,7 +12,6 @@ export interface Usuario {
 export interface Propiedad {
   id: string;
   titulo: string;
-  descripcion: string;
   precio: number;
   ciudad: string;
   barrio: string;
@@ -21,8 +20,12 @@ export interface Propiedad {
   banos: number;
   area: number;
   fotografias: string[];
-  video: string | null;
-  ubicacionLat: number | null;
-  ubicacionLong: number | null;
-  puntaje: number | null;
+  puntaje: number;
+  createdAt: string;
+  publicadoPor: {
+    nombres: string;
+    apellidos: string;
+    email: string;
+    celular: string;
+  };
 }

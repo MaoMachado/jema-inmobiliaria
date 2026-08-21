@@ -4,6 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma } from '../generated/prisma/index.js';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service.js';
 import { calcularPuntaje } from './calcular-puntaje.js';
@@ -83,10 +84,69 @@ export class PropiedadesService {
     return result;
   }
 
-  async findAll() {
-    return this.prisma.propiedad.findMany({
-      orderBy: { createdAt: 'desc' },
-    });
+  async findAll(filtros: {
+    ciudad?: string;
+    tipo?: string;
+    precioMin?: number;
+    precioMax?: number;
+    habitaciones?: number;
+    page?: number;
+    limit?: number;
+    orderBy?: 'precio' | 'createdAt' | 'puntaje';
+    order?: 'asc' | 'desc';
+  }) {
+    const page = Math.max(1, filtros.page ?? 1);
+    const limit = Math.min(100, Math.max(1, filtros.limit ?? 10));
+
+    const where: Prisma.PropiedadWhereInput = {
+      ...(filtros.ciudad && {
+        ciudad: { equals: filtros.ciudad, mode: 'insensitive' },
+      }),
+      ...(filtros.tipo && { tipo: filtros.tipo }),
+      ...((filtros.precioMin !== undefined ||
+        filtros.precioMax !== undefined) && {
+        precio: {
+          ...(filtros.precioMin !== undefined && { gte: filtros.precioMin }),
+          ...(filtros.precioMax !== undefined && { lte: filtros.precioMax }),
+        },
+      }),
+      ...(filtros.habitaciones !== undefined && {
+        habitaciones: filtros.habitaciones,
+      }),
+    };
+
+    const orderByField = filtros.orderBy ?? 'createdAt';
+    const orderDirection = filtros.order ?? 'desc';
+
+    const [total, data] = await Promise.all([
+      this.prisma.propiedad.count({ where }),
+      this.prisma.propiedad.findMany({
+        where,
+        orderBy: { [orderByField]: orderDirection },
+        skip: (page - 1) * limit,
+        take: limit,
+        include: {
+          publicadoPor: {
+            select: {
+              nombres: true,
+              apellidos: true,
+              email: true,
+              celular: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    return {
+      data,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   async findOne(id: string) {
@@ -121,8 +181,8 @@ export class PropiedadesService {
       estrato: data.estrato ?? propiedad.estrato ?? 0,
       fotografias: data.fotografias ?? propiedad.fotografias ?? [],
       parqueaderos: data.parqueaderos ?? propiedad.parqueaderos ?? 0,
-      ubicacionLat: data.ubicacionLat ?? propiedad.ubicacionLat ?? 0,
-      ubicacionLong: data.ubicacionLong ?? propiedad.ubicacionLong ?? 0,
+      ubicacionLat: data.ubicacionLat ?? propiedad.ubicacionLat ?? null,
+      ubicacionLong: data.ubicacionLong ?? propiedad.ubicacionLong ?? null,
       video: data.video ?? propiedad.video ?? '',
     };
 
