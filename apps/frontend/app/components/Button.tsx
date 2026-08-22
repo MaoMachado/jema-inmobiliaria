@@ -9,7 +9,8 @@ interface Props {
   variant?: VarianButton;
   className?: string;
   disabled?: boolean;
-  onClick: () => void;
+  loading?: boolean;
+  onClick?: () => void;
 }
 
 export default function Button({
@@ -18,7 +19,8 @@ export default function Button({
   variant = "primary",
   className,
   disabled = false,
-  onClick,
+  loading = false,
+  onClick = () => {},
 }: Props) {
   const variantStyle = {
     primary: "bg-blue-800/50 text-blue-200 hover:bg-blue-800/70 hover:shadow",
@@ -31,8 +33,10 @@ export default function Button({
     <button
       type={type}
       disabled={disabled}
-      className={`px-3 py-1 rounded-md cursor-pointer hover:scale-105 transition-all disabled:cursor-not-allowed disabled:bg-gray-800/30 disabled:opacity-50 ${variantStyle[variant]} ${className}`}
       onClick={onClick}
+      aria-busy={loading}
+      aria-disabled={disabled}
+      className={`px-3 py-1 rounded-md cursor-pointer hover:scale-105 transition-all disabled:cursor-not-allowed disabled:bg-gray-800/30 disabled:opacity-50 ${variantStyle[variant]} ${className}`}
     >
       {title}
     </button>

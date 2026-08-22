@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -6,6 +7,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Req,
   UploadedFiles,
   UseGuards,
@@ -36,8 +38,60 @@ export class PropiedadesController {
   }
 
   @Get()
-  findAll() {
-    return this.propiedadesService.findAll();
+  findAll(
+    @Query('ciudad') ciudad?: string,
+    @Query('tipo') tipo?: string,
+    @Query('precioMin') precioMin?: string,
+    @Query('precioMax') precioMax?: string,
+    @Query('habitaciones') habitaciones?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('orderBy') orderBy?: 'precio' | 'createdAt' | 'puntaje',
+    @Query('order') order?: 'asc' | 'desc',
+  ) {
+    const toNumber = (v?: string) => {
+      if (v === undefined || v === '') return undefined;
+      const n = Number(v);
+      return Number.isFinite(n) ? n : undefined;
+    };
+
+    const min = toNumber(precioMin);
+    const max = toNumber(precioMax);
+    const habs = toNumber(habitaciones);
+
+    if (
+      (min !== undefined && min < 0) ||
+      (max !== undefined && max < 0) ||
+      (habs !== undefined && habs < 1)
+    ) {
+      throw new BadRequestException('Filtros numéricos inválidos');
+    }
+
+    if (min !== undefined && max !== undefined && min > max) {
+      throw new BadRequestException(
+        'El precio mínimo no puede ser mayor al precio máximo',
+      );
+    }
+
+    const allowedOrderBy = ['precio', 'createdAt', 'puntaje'];
+    const allowedOrder = ['asc', 'desc'];
+
+    const safeOrderBy =
+      orderBy && allowedOrderBy.includes(orderBy) ? orderBy : 'createdAt';
+
+    const safeOrder = order && allowedOrder.includes(order) ? order : 'desc';
+
+    return this.propiedadesService.findAll({
+      ciudad,
+      tipo,
+      precioMin: min,
+      precioMax: max,
+      habitaciones: habs,
+      page: toNumber(page),
+      limit: toNumber(limit),
+      orderBy: safeOrderBy,
+      order: safeOrder,
+    });
   }
 
   @Get(':id')

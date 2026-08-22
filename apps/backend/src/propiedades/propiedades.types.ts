@@ -13,8 +13,8 @@ export interface CreatePropiedad {
   estrato: number;
   fotografias?: string[];
   parqueaderos: number;
-  ubicacionLat?: number;
-  ubicacionLong?: number;
+  ubicacionLat?: number | null;
+  ubicacionLong?: number | null;
   video?: string;
   puntaje?: number;
 }
