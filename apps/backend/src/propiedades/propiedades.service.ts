@@ -115,7 +115,7 @@ export class PropiedadesService {
       }),
     };
 
-    const orderByField = filtros.orderBy ?? 'createdAt';
+    const orderByField = filtros.orderBy ?? 'puntaje';
     const orderDirection = filtros.order ?? 'desc';
 
     const [total, data] = await Promise.all([
@@ -130,8 +130,6 @@ export class PropiedadesService {
             select: {
               nombres: true,
               apellidos: true,
-              email: true,
-              celular: true,
             },
           },
         },

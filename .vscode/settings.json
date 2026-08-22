@@ -8,5 +8,14 @@
     "supabase",
     "Supabase",
     "SUPABASE"
+  ],
+
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+
+  "eslint.validate": [
+    "javascript",
+    "typescript"
   ]
 }
