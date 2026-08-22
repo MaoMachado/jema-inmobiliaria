@@ -3,7 +3,7 @@
 import Button from "@/app/components/Button";
 import api from "@/app/lib/api";
 import { Propiedad } from "@/app/lib/types";
-import { useState } from "react";
+import { forwardRef, useImperativeHandle, useState } from "react";
 
 type Ciudad = "" | "Medellin" | "Ibague" | "Bogota";
 type Tipo = "" | "Casa" | "Apartamento" | "Local" | "Oficina" | "Lote";
@@ -17,17 +17,21 @@ type Pagination = {
 
 type ErrorBody = { message?: string | string[] };
 
-interface SearchPropertyProps {
-  onResults?: (data: Propiedad[], pagination: Pagination) => void;
-}
-
 const formatError = (body: ErrorBody | undefined): string => {
   const msg = body?.message;
   if (!msg) return "Error al buscar propiedades";
   return Array.isArray(msg) ? msg.join(", ") : msg;
 };
 
-export default function SearchProperty({ onResults }: SearchPropertyProps) {
+interface SearchPropertyProps {
+  onResult: (data: Propiedad[]) => void;
+  onClear: () => void;
+}
+
+export default function SearchProperty({
+  onResult,
+  onClear,
+}: SearchPropertyProps) {
   const [ciudad, setCiudad] = useState<Ciudad>("");
   const [tipo, setTipo] = useState<Tipo>("");
   const [habitaciones, setHabitaciones] = useState<number | "">("");
@@ -44,6 +48,7 @@ export default function SearchProperty({ onResults }: SearchPropertyProps) {
 
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
+  const [hasSearched, setHasSearched] = useState<boolean>(true);
 
   const buscar = async (overrides?: { page?: number }) => {
     setLoading(true);
@@ -53,36 +58,36 @@ export default function SearchProperty({ onResults }: SearchPropertyProps) {
     const precioMaxNum = precioMax === "" ? undefined : Number(precioMax);
 
     try {
-      const res = await api.get<{ data: Propiedad[]; pagination: Pagination }>(
-        "/propiedades",
-        {
-          params: {
-            ciudad: ciudad || undefined,
-            tipo: tipo || undefined,
-            precioMin:
-              precioMinNum !== undefined && precioMinNum > 0
-                ? precioMinNum
-                : undefined,
-            precioMax:
-              precioMaxNum !== undefined && precioMaxNum > 0
-                ? precioMaxNum
-                : undefined,
-            habitaciones:
-              habitaciones === "" || habitaciones === 0
-                ? undefined
-                : Number(habitaciones),
-            page: overrides?.page ?? page,
-            limit: 10,
-            orderBy,
-            order,
-          },
+      const res = await api.get<{
+        data: Propiedad[];
+        pagination: Pagination;
+      }>("/propiedades", {
+        params: {
+          ciudad: ciudad || undefined,
+          tipo: tipo || undefined,
+          precioMin:
+            precioMinNum !== undefined && precioMinNum > 0
+              ? precioMinNum
+              : undefined,
+          precioMax:
+            precioMaxNum !== undefined && precioMaxNum > 0
+              ? precioMaxNum
+              : undefined,
+          habitaciones:
+            habitaciones === "" || habitaciones === 0
+              ? undefined
+              : Number(habitaciones),
+          page: overrides?.page ?? page,
+          limit: 10,
+          orderBy,
+          order,
         },
-      );
+      });
 
       setResultados(res.data.data);
       setPagination(res.data.pagination);
-
-      onResults?.(res.data.data, res.data.pagination);
+      setHasSearched(true);
+      onResult?.(res.data.data);
     } catch (error: any) {
       console.error("Error al buscar propiedades", error);
       setError(formatError(error.response?.data));
@@ -101,6 +106,29 @@ export default function SearchProperty({ onResults }: SearchPropertyProps) {
     setPage(nueva);
     buscar({ page: nueva });
   };
+
+  const handleClear = () => {
+    setCiudad("");
+    setTipo("");
+    setHabitaciones("");
+    setPrecioMin("");
+    setPrecioMax("");
+    setOrderBy("puntaje");
+    setOrder("desc");
+    setResultados([]);
+    setPagination(null);
+    setPage(1);
+    setError("");
+    setHasSearch(false);
+    onClear?.();
+  };
+
+  const hasActiveFiltros =
+    ciudad !== "" ||
+    tipo !== "" ||
+    habitaciones !== "" ||
+    precioMin !== "" ||
+    precioMax !== "";
 
   return (
     <article className="space-y-4">
@@ -239,30 +267,34 @@ export default function SearchProperty({ onResults }: SearchPropertyProps) {
           </option>
         </select>
 
-        <Button title={loading ? "Buscando..." : "Buscar"} type="submit" />
+        {hasSearched && (
+          <Button title={loading ? "Buscando..." : "Buscar"} type="submit" />
+        )}
       </form>
 
       {error && <p className="text-red-500">{error}</p>}
 
-      <ul className="space-y-2">
-        {resultados?.map((p) => (
-          <li key={p.id} className="border p-3 rounded">
-            <h3 className="font-semibold">{p.titulo}</h3>
-            <p>
-              {p.ciudad} - {p.barrio} - {p.tipo}
-            </p>
-            <p>
-              ${p.precio.toLocaleString()} - {p.habitaciones} habitaciones -{" "}
-              {p.banos} baños - {p.area} m²
-            </p>
-          </li>
-        ))}
-        {!loading && resultados?.length === 0 && !error && (
-          <p className="text-gray-500">Sin Resultados.</p>
-        )}
-      </ul>
+      {hasSearched && (
+        <ul className="space-y-2">
+          {resultados?.map((p) => (
+            <li key={p.id} className="border p-3 rounded">
+              <h3 className="font-semibold">{p.titulo}</h3>
+              <p>
+                {p.ciudad} - {p.barrio} - {p.tipo}
+              </p>
+              <p>
+                ${p.precio.toLocaleString()} - {p.habitaciones} habitaciones -{" "}
+                {p.banos} baños - {p.area} m²
+              </p>
+            </li>
+          ))}
+          {!loading && resultados?.length === 0 && !error && (
+            <p className="text-gray-500">Sin Resultados.</p>
+          )}
+        </ul>
+      )}
 
-      {pagination && pagination.totalPages > 1 && (
+      {hasSearched && pagination && pagination.totalPages > 1 && (
         <div>
           <Button
             title="Anterior"

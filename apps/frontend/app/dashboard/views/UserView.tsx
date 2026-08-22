@@ -1,20 +1,42 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-import SearchProperty from "@/app/dashboard/views/viewUser/SearchProperty";
+import SearchProperty, {
+  type SearchPropertyRef,
+} from "@/app/dashboard/views/viewUser/SearchProperty";
 import api from "@/app/lib/api";
 import { Propiedad } from "@/app/lib/types";
 import { NewPropertyModal } from "../Modal/NewProperty";
 
 export default function UserView() {
-  const [resultados, setResultados] = useState<any[]>([]);
+  const [initialData, setInitialData] = useState<Propiedad[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string>("");
 
   const [modalOpen, setModalOpen] = useState<boolean>(false);
   const [saving, setSaving] = useState<boolean>(false);
 
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string>("");
+  const loadInitial = async () => {
+    setLoading(true);
+    setError("");
+
+    try {
+      const res = await api.get<{ data: Propiedad[] }>("/propiedades");
+      setInitialData(res.data.data);
+      setIsSearching(false);
+    } catch (error) {
+      console.error("Error al cargar propiedades", error);
+      setError("Error al cargar las propiedades");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadInitial();
+  }, []);
 
   const handleSubmitPropiedad = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -48,6 +70,7 @@ export default function UserView() {
     try {
       await api.post("/propiedades", formData);
       setModalOpen(false);
+      loadInitial();
     } catch (error) {
       console.error("Error al crear la propiedad", error);
       setError("Error al crear la propiedad");
@@ -55,26 +78,6 @@ export default function UserView() {
       setSaving(false);
     }
   };
-
-  useEffect(() => {
-    const loadInitial = async () => {
-      setLoading(true);
-
-      try {
-        const res = await api.get<{ data: Propiedad[]; pagination: any }>(
-          "/propiedades",
-        );
-        setResultados(res.data.data);
-      } catch (err) {
-        console.error("Error al cargar propiedades", err);
-        setError("Error al cargar las propiedades");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadInitial();
-  }, []);
 
   return (
     <article>
@@ -91,12 +94,22 @@ export default function UserView() {
         </button>
       </header>
 
-      <SearchProperty onResults={(data) => setResultados(data)} />
+      <SearchProperty
+        onResult={(data) => {
+          setInitialData(data);
+          setIsSearching(true);
+        }}
+        onClear={() => {
+          setIsSearching(false);
+        }}
+      />
 
       <section>
-        {resultados.length > 0 ? (
+        {loading ? (
+          <p>Cargando Propiedades...</p>
+        ) : (
           <article className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            {resultados.map((propiedad) => (
+            {initialData.map((propiedad) => (
               <div
                 key={propiedad.id}
                 className="relative border border-blue-900/30 p-6 rounded-md shadow-sm shadow-blue-500/30"
@@ -105,22 +118,25 @@ export default function UserView() {
                   {propiedad.titulo}
                 </h3>
                 <p className="text-center mb-3">Ciudad: {propiedad.ciudad}</p>
-                <p className="text-center">Precio: ${propiedad.precio}</p>
+                <p className="text-center mb-3">Precio: {propiedad.precio}</p>
+
                 <span className="absolute -bottom-4 -right-4 bg-blue-700/80 rounded-full p-1.5 font-semibold">
                   {propiedad.puntaje}
                 </span>
+
                 {propiedad.fotografias?.[0] && (
                   <img
                     src={propiedad.fotografias[0]}
                     alt={propiedad.titulo}
-                    className=""
+                    className="mt-2 w-full h-32 object-cover rounded"
                   />
                 )}
               </div>
             ))}
+            {initialData.length === 0 && (
+              <p className="text-center col-span-full">No hay propiedades</p>
+            )}
           </article>
-        ) : (
-          <p>Sin propiedades</p>
         )}
       </section>
 
