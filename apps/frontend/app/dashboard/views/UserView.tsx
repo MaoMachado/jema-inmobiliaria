@@ -8,7 +8,7 @@ import { NewPropertyModal } from "../Modal/NewProperty";
 
 export default function UserView() {
   const [initialData, setInitialData] = useState<Propiedad[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
+  const [isSearching, setIsSearching] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
   const [editingPropiedad, setEditingPropiedad] = useState<Propiedad | null>(
@@ -172,12 +172,13 @@ export default function UserView() {
         }}
         onClear={() => {
           setIsSearching(false);
+          loadInitial();
         }}
       />
 
       <section>
-        {loading ? (
-          <p>Cargando Propiedades...</p>
+        {!isSearching && loading ? (
+          <p>Cargando...</p>
         ) : (
           <article className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {initialData.map((propiedad) => (
