@@ -10,6 +10,7 @@ interface Props {
   className?: string;
   disabled?: boolean;
   loading?: boolean;
+  ariaLabel?: string;
   onClick?: () => void;
 }
 
@@ -20,6 +21,7 @@ export default function Button({
   className,
   disabled = false,
   loading = false,
+  ariaLabel,
   onClick = () => {},
 }: Props) {
   const variantStyle = {
@@ -36,6 +38,7 @@ export default function Button({
       onClick={onClick}
       aria-busy={loading}
       aria-disabled={disabled}
+      aria-label={ariaLabel}
       className={`px-3 py-1 rounded-md cursor-pointer hover:scale-105 transition-all disabled:cursor-not-allowed disabled:bg-gray-800/30 disabled:opacity-50 ${variantStyle[variant]} ${className}`}
     >
       {title}
