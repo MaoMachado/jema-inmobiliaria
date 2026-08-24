@@ -25,13 +25,16 @@ export interface Propiedad {
   estrato: number;
   fotografias: string[];
   parqueaderos: number;
-  puntaje: number;
+  ubicacionLat?: number | null;
+  ubicacionLong?: number | null;
+  video?: string;
+  puntaje?: number;
   createdAt: string;
   publicadoPorId: string;
   publicadoPor: {
-    nombres: string;
-    apellidos: string;
-    email: string;
-    celular: string;
+    nombres?: string;
+    apellidos?: string;
+    email?: string;
+    celular?: string;
   };
 }

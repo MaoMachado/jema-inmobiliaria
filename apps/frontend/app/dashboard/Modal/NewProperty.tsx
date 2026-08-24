@@ -150,7 +150,7 @@ export function NewPropertyModal({
       setVal("antiguedad", propiedad.antiguedad);
       setVal("parqueaderos", propiedad.parqueaderos);
 
-      setVal("video", propiedad.video);
+      setVal("video", propiedad?.video ?? "");
     }
   }, [mode, propiedad]);
 

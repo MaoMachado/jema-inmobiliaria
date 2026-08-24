@@ -130,14 +130,13 @@ export default function UserView() {
   };
 
   const handleDeleteProperty = async (id: string) => {
-    setLoading(true);
-    setError("");
-
     const confirmar = window.confirm(
       "¿Seguro que quieres eliminar esta propiedad?",
     );
-
     if (!confirmar) return;
+
+    setLoading(true);
+    setError("");
 
     try {
       await api.delete(`/propiedades/${id}`);

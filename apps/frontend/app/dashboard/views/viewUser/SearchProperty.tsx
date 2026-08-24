@@ -3,7 +3,7 @@
 import Button from "@/app/components/Button";
 import api from "@/app/lib/api";
 import { Propiedad } from "@/app/lib/types";
-import { forwardRef, useImperativeHandle, useState } from "react";
+import { useState } from "react";
 
 type Ciudad = "" | "Medellin" | "Ibague" | "Bogota";
 type Tipo = "" | "Casa" | "Apartamento" | "Local" | "Oficina" | "Lote";
@@ -38,17 +38,17 @@ export default function SearchProperty({
   const [precioMin, setPrecioMin] = useState<number | "">("");
   const [precioMax, setPrecioMax] = useState<number | "">("");
   const [orderBy, setOrderBy] = useState<"precio" | "createdAt" | "puntaje">(
-    "createdAt",
+    "puntaje",
   );
   const [order, setOrder] = useState<"asc" | "desc">("desc");
 
-  const [resultados, setResultados] = useState<Propiedad[]>();
+  const [resultados, setResultados] = useState<Propiedad[]>([]);
   const [pagination, setPagination] = useState<Pagination | null>(null);
   const [page, setPage] = useState(1);
 
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
-  const [hasSearched, setHasSearched] = useState<boolean>(true);
+  const [hasSearched, setHasSearched] = useState<boolean>(false);
 
   const buscar = async (overrides?: { page?: number }) => {
     setLoading(true);
@@ -264,11 +264,14 @@ export default function SearchProperty({
           </option>
         </select> */}
 
-        {hasSearched && (
+        <Button title={loading ? "Buscando..." : "Buscar"} type="submit" />
+
+        {hasActiveFiltros && (
           <Button
-            loading={loading}
-            title={loading ? "Buscando..." : "Buscar"}
-            type="submit"
+            title="Limpiar"
+            type="button"
+            onClick={handleClear}
+            variant="secondary"
           />
         )}
       </form>

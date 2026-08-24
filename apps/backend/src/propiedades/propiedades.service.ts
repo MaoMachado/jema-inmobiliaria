@@ -172,7 +172,10 @@ export class PropiedadesService {
     if (!propiedad) {
       throw new NotFoundException('Propiedad no encontrada');
     }
-    return propiedad;
+    return {
+      email: propiedad.publicadoPor?.email,
+      celular: propiedad.publicadoPor?.celular,
+    };
   }
 
   async update(id: string, data: Partial<CreatePropiedad>, userId: string) {
