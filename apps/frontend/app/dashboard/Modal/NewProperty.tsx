@@ -1,13 +1,16 @@
 "use client";
 
 import Button from "@/app/components/Button";
-import { useRef, useState } from "react";
+import { Propiedad } from "@/app/lib/types";
+import { useEffect, useRef, useState } from "react";
 
 interface PropsModalNewProperty {
-  onClose: () => void;
   handleSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
+  onClose: () => void;
   saving: boolean;
   error: string;
+  mode?: "create" | "edit";
+  propiedad?: Propiedad;
 }
 
 interface FormFieldProps {
@@ -77,7 +80,7 @@ const pasos: { titulo: string; campos: FormFieldProps[] }[] = [
         type: "file",
         multiple: true,
         accept: "image/*",
-        required: false, 
+        required: false,
       },
       { name: "video", label: "Video (URL)", type: "text", required: false },
     ],
@@ -111,11 +114,45 @@ export function NewPropertyModal({
   handleSubmit,
   saving,
   error,
+  mode = "create",
+  propiedad,
 }: PropsModalNewProperty) {
   const [step, setStep] = useState<number>(0);
   const formRef = useRef<HTMLFormElement>(null);
 
   const [errorLocal, setErrorLocal] = useState<string>("");
+
+  useEffect(() => {
+    if (mode === "edit" && propiedad && formRef.current) {
+      const setVal = (name: string, value: string | number | null) => {
+        const el = formRef.current?.elements.namedItem(
+          name,
+        ) as HTMLInputElement | null;
+
+        if (el && value != null) {
+          el.value = String(value);
+        }
+      };
+
+      setVal("titulo", propiedad.titulo);
+      setVal("descripcion", propiedad.descripcion);
+      setVal("precio", propiedad.precio);
+      setVal("tipo", propiedad.tipo);
+
+      setVal("ciudad", propiedad.ciudad);
+      setVal("barrio", propiedad.barrio);
+      setVal("direccion", propiedad.direccion);
+      setVal("estrato", propiedad.estrato);
+
+      setVal("habitaciones", propiedad.habitaciones);
+      setVal("banos", propiedad.banos);
+      setVal("area", propiedad.area);
+      setVal("antiguedad", propiedad.antiguedad);
+      setVal("parqueaderos", propiedad.parqueaderos);
+
+      setVal("video", propiedad?.video ?? "");
+    }
+  }, [mode, propiedad]);
 
   const validarPaso = (paso: number): boolean => {
     const form = formRef.current;
@@ -153,7 +190,7 @@ export function NewPropertyModal({
       <article className="slide-in-right bg-blue-800/40 backdrop-blur-xs fixed z-10 top-0 right-0 w-full md:w-md h-full">
         <header className="flex items-center justify-between p-6">
           <h2 className="text-2xl font-semibold tracking-wider">
-            Nueva Propiedad
+            {mode === "create" ? "Nueva Propiedad" : "Editar Propiedad"}
           </h2>
           <Button
             title="X"
@@ -210,7 +247,9 @@ export function NewPropertyModal({
 
               {step === pasos.length - 1 && (
                 <Button
-                  title={saving ? "Guardando..." : "Agregar Propiedad"}
+                  title={
+                    mode === "create" ? "Agregar Propiedad" : "Guardar Cambios"
+                  }
                   type="submit"
                   disabled={saving}
                   variant="primary"

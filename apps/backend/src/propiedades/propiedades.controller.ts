@@ -100,6 +100,12 @@ export class PropiedadesController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get(':id/contacto')
+  obtenerContacto(@Param('id') id: string) {
+    return this.propiedadesService.obtenerContacto(id);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Patch(':id')
   update(
     @Param('id') id: string,

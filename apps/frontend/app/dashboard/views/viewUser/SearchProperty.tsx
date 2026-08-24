@@ -3,7 +3,7 @@
 import Button from "@/app/components/Button";
 import api from "@/app/lib/api";
 import { Propiedad } from "@/app/lib/types";
-import { forwardRef, useImperativeHandle, useState } from "react";
+import { useState } from "react";
 
 type Ciudad = "" | "Medellin" | "Ibague" | "Bogota";
 type Tipo = "" | "Casa" | "Apartamento" | "Local" | "Oficina" | "Lote";
@@ -38,17 +38,17 @@ export default function SearchProperty({
   const [precioMin, setPrecioMin] = useState<number | "">("");
   const [precioMax, setPrecioMax] = useState<number | "">("");
   const [orderBy, setOrderBy] = useState<"precio" | "createdAt" | "puntaje">(
-    "createdAt",
+    "puntaje",
   );
   const [order, setOrder] = useState<"asc" | "desc">("desc");
 
-  const [resultados, setResultados] = useState<Propiedad[]>();
+  const [resultados, setResultados] = useState<Propiedad[]>([]);
   const [pagination, setPagination] = useState<Pagination | null>(null);
   const [page, setPage] = useState(1);
 
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
-  const [hasSearched, setHasSearched] = useState<boolean>(true);
+  const [hasSearched, setHasSearched] = useState<boolean>(false);
 
   const buscar = async (overrides?: { page?: number }) => {
     setLoading(true);
@@ -119,7 +119,7 @@ export default function SearchProperty({
     setPagination(null);
     setPage(1);
     setError("");
-    setHasSearch(false);
+    setHasSearched(false);
     onClear?.();
   };
 
@@ -131,11 +131,8 @@ export default function SearchProperty({
     precioMax !== "";
 
   return (
-    <article className="space-y-4">
-      <form
-        onSubmit={handleSearch}
-        className="border-b border-blue-700/30 flex items-center gap-3"
-      >
+    <article>
+      <form onSubmit={handleSearch} className="flex items-center gap-3">
         <section className="flex items-center gap-3">
           <label htmlFor="ciudad">Ciudad</label>
           <select
@@ -188,7 +185,7 @@ export default function SearchProperty({
           </select>
         </section>
 
-        <section className="flex items-center gap-3">
+        {/* <section className="flex items-center gap-3">
           <label htmlFor="habitaciones">Habitaciones</label>
           <input
             type="number"
@@ -265,10 +262,17 @@ export default function SearchProperty({
           <option value="asc" className="bg-cyan-800/50 text-black">
             Ascendente
           </option>
-        </select>
+        </select> */}
 
-        {hasSearched && (
-          <Button title={loading ? "Buscando..." : "Buscar"} type="submit" />
+        <Button title={loading ? "Buscando..." : "Buscar"} type="submit" />
+
+        {hasActiveFiltros && (
+          <Button
+            title="Limpiar"
+            type="button"
+            onClick={handleClear}
+            variant="secondary"
+          />
         )}
       </form>
 
