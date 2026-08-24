@@ -12,6 +12,7 @@ export interface Usuario {
 export interface Propiedad {
   id: string;
   titulo: string;
+  descripcion: string;
   precio: number;
   ciudad: string;
   barrio: string;
@@ -19,9 +20,14 @@ export interface Propiedad {
   habitaciones: number;
   banos: number;
   area: number;
+  antiguedad: number;
+  direccion: string;
+  estrato: number;
   fotografias: string[];
+  parqueaderos: number;
   puntaje: number;
   createdAt: string;
+  publicadoPorId: string;
   publicadoPor: {
     nombres: string;
     apellidos: string;

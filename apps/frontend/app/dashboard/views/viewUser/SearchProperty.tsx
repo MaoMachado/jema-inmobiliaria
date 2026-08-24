@@ -119,7 +119,7 @@ export default function SearchProperty({
     setPagination(null);
     setPage(1);
     setError("");
-    setHasSearch(false);
+    setHasSearched(false);
     onClear?.();
   };
 
@@ -131,11 +131,8 @@ export default function SearchProperty({
     precioMax !== "";
 
   return (
-    <article className="space-y-4">
-      <form
-        onSubmit={handleSearch}
-        className="border-b border-blue-700/30 flex items-center gap-3"
-      >
+    <article>
+      <form onSubmit={handleSearch} className="flex items-center gap-3">
         <section className="flex items-center gap-3">
           <label htmlFor="ciudad">Ciudad</label>
           <select
@@ -188,7 +185,7 @@ export default function SearchProperty({
           </select>
         </section>
 
-        <section className="flex items-center gap-3">
+        {/* <section className="flex items-center gap-3">
           <label htmlFor="habitaciones">Habitaciones</label>
           <input
             type="number"
@@ -265,10 +262,14 @@ export default function SearchProperty({
           <option value="asc" className="bg-cyan-800/50 text-black">
             Ascendente
           </option>
-        </select>
+        </select> */}
 
         {hasSearched && (
-          <Button title={loading ? "Buscando..." : "Buscar"} type="submit" />
+          <Button
+            loading={loading}
+            title={loading ? "Buscando..." : "Buscar"}
+            type="submit"
+          />
         )}
       </form>
 

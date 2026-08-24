@@ -156,6 +156,25 @@ export class PropiedadesService {
     return propiedad;
   }
 
+  async obtenerContacto(id: string) {
+    const propiedad = await this.prisma.propiedad.findUnique({
+      where: { id },
+      include: {
+        publicadoPor: {
+          select: {
+            email: true,
+            celular: true,
+          },
+        },
+      },
+    });
+
+    if (!propiedad) {
+      throw new NotFoundException('Propiedad no encontrada');
+    }
+    return propiedad;
+  }
+
   async update(id: string, data: Partial<CreatePropiedad>, userId: string) {
     const propiedad = await this.findOne(id);
     if (propiedad.publicadoPorId !== userId) {
