@@ -2,17 +2,25 @@
   "cSpell.words": [
     "antiguedad",
     "banos",
+    "caracteristicas",
+    "COMISION",
     "datasource",
     "descripcion",
+    "dias",
     "direccion",
     "fotografias",
+    "habs",
     "Jema",
     "nestjs",
+    "Ocupacion",
+    "OCUPACION",
+    "parqueaderos",
     "puntaje",
     "Puntaje",
     "supabase",
     "Supabase",
-    "SUPABASE"
+    "SUPABASE",
+    "ubicacion"
   ],
 
   "editor.codeActionsOnSave": {

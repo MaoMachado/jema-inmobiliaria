@@ -1,12 +1,15 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { NewPropertyModal } from "../Modal/NewProperty";
 import { usePropiedades } from "./hooks/usePropiedades";
 import { CardPropiedad } from "@/app/components/CardPropiedad";
+import { ProbabilidadPropiedad } from "../Modal/ProbabilidadPropiedad";
 import SearchProperty from "@/app/dashboard/views/viewUser/SearchProperty";
 
 export default function UserView() {
+  const [probabilidadId, setProbabilidadId] = useState<string | null>(null);
+
   const {
     initialData,
     isSearching,
@@ -61,6 +64,7 @@ export default function UserView() {
                 propiedad={propiedad}
                 onEdit={openEdit}
                 onDelete={handleDeleteProperty}
+                onProbabilidad={setProbabilidadId}
               />
             ))}
 
@@ -85,6 +89,13 @@ export default function UserView() {
           saving={saving}
           mode={editingPropiedad ? "edit" : "create"}
           propiedad={editingPropiedad ?? undefined}
+        />
+      )}
+
+      {probabilidadId && (
+        <ProbabilidadPropiedad
+          id={probabilidadId}
+          onClose={() => setProbabilidadId(null)}
         />
       )}
     </article>

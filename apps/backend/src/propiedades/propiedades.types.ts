@@ -15,6 +15,6 @@ export interface CreatePropiedad {
   parqueaderos: number;
   ubicacionLat?: number | null;
   ubicacionLong?: number | null;
-  video?: string;
-  puntaje?: number;
+  video?: string | null;
+  puntaje?: number | null;
 }
