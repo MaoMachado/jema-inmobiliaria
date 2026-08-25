@@ -99,6 +99,11 @@ export class PropiedadesController {
     return this.propiedadesService.findOne(id);
   }
 
+  @Get(':id/probabilidades')
+  calcularProbabilidad(@Param('id') id: string) {
+    return this.propiedadesService.calcularProbabilidad(id);
+  }
+
   @UseGuards(JwtAuthGuard)
   @Get(':id/contacto')
   obtenerContacto(@Param('id') id: string) {

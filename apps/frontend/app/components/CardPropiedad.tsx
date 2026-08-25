@@ -7,12 +7,14 @@ interface CardPropiedadProps {
   propiedad: Propiedad;
   onEdit?: (propiedad: Propiedad) => void;
   onDelete?: (id: string) => void;
+  onProbabilidad?: (id: string) => void;
 }
 
 export function CardPropiedad({
   propiedad,
   onEdit,
   onDelete,
+  onProbabilidad,
 }: CardPropiedadProps) {
   const precioFormateado = new Intl.NumberFormat("es-CO", {
     style: "currency",
@@ -61,12 +63,22 @@ export function CardPropiedad({
             ariaLabel="Editar Propiedad"
           />
         )}
+
         {onDelete && (
           <Button
             title="🗑️"
             onClick={() => onDelete(propiedad.id)}
             variant="danger"
             ariaLabel="Eliminar Propiedad"
+          />
+        )}
+
+        {onProbabilidad && (
+          <Button
+            title="📊"
+            onClick={() => onProbabilidad(propiedad.id)}
+            variant="secondary"
+            ariaLabel="Ver Probabilidad"
           />
         )}
       </div>

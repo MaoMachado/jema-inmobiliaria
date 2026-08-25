@@ -9,7 +9,6 @@ import AdminView from "./views/AdminView";
 import UserView from "./views/UserView";
 
 export default function Dashboard() {
-  const router = useRouter();
   const [user, setUser] = useState<{ email: string; role: string } | null>(
     null,
   );
@@ -17,6 +16,7 @@ export default function Dashboard() {
   const [error, setError] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
 
+  const router = useRouter();
   const role = user?.role;
 
   const loadUser = async () => {

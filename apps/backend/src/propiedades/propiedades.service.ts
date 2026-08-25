@@ -4,11 +4,19 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '../generated/prisma/index.js';
+import { Prisma } from '../generated/prisma/index';
 import { PrismaService } from '../prisma/prisma.service';
-import { StorageService } from '../storage/storage.service.js';
-import { calcularPuntaje } from './calcular-puntaje.js';
+import { StorageService } from '../storage/storage.service';
+import { calcularPuntaje } from './calcular-puntaje';
 import { CreatePropiedad } from './propiedades.types';
+import {
+  canonEsperado,
+  probabilidadOcupacional,
+  probabilidadVenta,
+  rentabilidadAnual,
+  tiempoEstimadoDias,
+  tiempoEstimadoOcupacion,
+} from './calcular-probabilidad';
 
 @Injectable()
 export class PropiedadesService {
@@ -256,5 +264,27 @@ export class PropiedadesService {
     await this.prisma.propiedad.delete({ where: { id } });
 
     return { message: 'Propiedad eliminada' };
+  }
+
+  async calcularProbabilidad(id: string) {
+    const propiedad = await this.findOne(id);
+
+    const similares = await this.prisma.propiedad.findMany({
+      where: {
+        id: { not: id },
+        tipo: propiedad.tipo,
+        ciudad: propiedad.ciudad,
+      },
+      take: 10,
+    });
+
+    return {
+      probabilidadVenta: probabilidadVenta(propiedad, similares),
+      probabilidadOcupacional: probabilidadOcupacional(propiedad, similares),
+      tiempoEstimadoDias: tiempoEstimadoDias(propiedad, similares),
+      canonEsperado: canonEsperado(propiedad),
+      rentabilidadAnual: rentabilidadAnual(propiedad),
+      tiempoEstimadoOcupacion: tiempoEstimadoOcupacion(propiedad, similares),
+    };
   }
 }
