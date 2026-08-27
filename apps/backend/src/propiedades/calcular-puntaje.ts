@@ -1,4 +1,4 @@
-import { CreatePropiedad } from './propiedades.types.js';
+import { CreatePropiedad } from './propiedades.types';
 
 interface ReglaPuntaje {
   peso: number;

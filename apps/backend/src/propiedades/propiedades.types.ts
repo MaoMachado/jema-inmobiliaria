@@ -4,17 +4,17 @@ export interface CreatePropiedad {
   precio: number;
   ciudad: string;
   barrio: string;
+  direccion: string;
+  estrato: number;
   tipo: string;
   habitaciones: number;
   banos: number;
+  parqueaderos: number;
   area: number;
   antiguedad: number;
-  direccion: string;
-  estrato: number;
   fotografias?: string[];
-  parqueaderos: number;
+  video?: string | null;
   ubicacionLat?: number | null;
   ubicacionLong?: number | null;
-  video?: string | null;
   puntaje?: number | null;
 }

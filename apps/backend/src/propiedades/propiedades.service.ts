@@ -138,6 +138,8 @@ export class PropiedadesService {
             select: {
               nombres: true,
               apellidos: true,
+              celularVerificado: true,
+              documentoVerificado: true,
             },
           },
         },

@@ -8,6 +8,7 @@ import ManagementPayment from "./viewAdmin/ManagementPayment";
 import ManagementFrauds from "./viewAdmin/ManagementFrauds";
 import ManagementReports from "./viewAdmin/ManagementReports";
 import PublicationRequest from "./viewAdmin/PublicationRequest";
+import api from "@/app/lib/api";
 
 export default function AdminView() {
   const [view, setView] = useState<"users" | "payments" | "frauds" | "reports">(

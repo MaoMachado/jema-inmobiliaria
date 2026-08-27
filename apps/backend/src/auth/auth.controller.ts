@@ -3,6 +3,8 @@ import { Request } from 'express';
 import { Role } from '../generated/prisma';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { RegisterDto } from './dto/register.dto';
+import { LoginDto } from './dto/login.dto';
 
 interface RequestWithUser extends Request {
   user: {
@@ -17,17 +19,7 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('register')
-  register(
-    @Body()
-    body: {
-      nombres: string;
-      apellidos: string;
-      celular: string;
-      email: string;
-      password: string;
-      foto?: string;
-    },
-  ) {
+  register(@Body() body: RegisterDto) {
     return this.authService.register(
       body.nombres,
       body.apellidos,
@@ -39,7 +31,7 @@ export class AuthController {
   }
 
   @Post('login')
-  login(@Body() body: { email: string; password: string }) {
+  login(@Body() body: LoginDto) {
     return this.authService.login(body.email, body.password);
   }
 

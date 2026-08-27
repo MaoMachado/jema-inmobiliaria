@@ -4,8 +4,8 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
 import bcrypt from 'bcryptjs';
+import { JwtService } from '@nestjs/jwt';
 import { Prisma } from '../generated/prisma';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -24,7 +24,7 @@ export class AuthService {
     password: string,
     foto?: string,
   ) {
-    if (!email || !password || !nombres || !apellidos) {
+    if (!email || !password || !nombres || !apellidos || !celular) {
       throw new BadRequestException('Faltan campos obligatorios');
     }
 
@@ -42,8 +42,18 @@ export class AuthService {
         },
       });
 
-      const { password: _, ...result } = user;
-      return result;
+      const token = this.jwtService.sign({
+        id: user.id,
+        email: user.email,
+        role: user.role,
+      });
+
+      const { password: _, ...userPublic } = user;
+
+      return {
+        token,
+        user: userPublic,
+      };
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
