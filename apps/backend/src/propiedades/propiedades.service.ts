@@ -327,7 +327,28 @@ export class PropiedadesService {
     return documentos;
   }
 
-  async getDocumentos(propiedadId: string) {
+  async getDocumentos(
+    propiedadId: string,
+    usuario: { id: string; role: string },
+  ) {
+    const propiedad = await this.prisma.propiedad.findUnique({
+      where: { id: propiedadId },
+      select: { publicadoPorId: true },
+    });
+
+    if (!propiedad) {
+      throw new NotFoundException('Propiedad no encontrada');
+    }
+
+    const esDueno = propiedad.publicadoPorId === usuario.id;
+    const esAdmin = usuario.role === 'ADMIN';
+
+    if (!(esDueno || esAdmin)) {
+      throw new ForbiddenException(
+        'No tenes permiso para ver los documentos de esta propiedad',
+      );
+    }
+
     return this.prisma.documentoPropiedad.findMany({
       where: { propiedadId },
       orderBy: { createdAt: 'desc' },

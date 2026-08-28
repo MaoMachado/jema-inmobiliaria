@@ -20,6 +20,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CreatePropiedadDto } from './dto/propiedades.dto';
 import type { RequestWithUser } from '../common/types/request-with-user';
+import { VerificarDto } from '../usuarios/dto/verificar.dto';
 
 @Controller('propiedades')
 export class PropiedadesController {
@@ -143,9 +144,10 @@ export class PropiedadesController {
     );
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get(':id/documentos')
-  getDocumentos(@Param('id') id: string) {
-    return this.propiedadesService.getDocumentos(id);
+  getDocumentos(@Param('id') id: string, @Req() req: RequestWithUser) {
+    return this.propiedadesService.getDocumentos(id, req.user);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -159,7 +161,7 @@ export class PropiedadesController {
   @Patch('documentos/:docId/verificar')
   verificarDocumento(
     @Param('docId') docId: string,
-    @Body() body: { verificado: boolean },
+    @Body() body: VerificarDto,
   ) {
     return this.propiedadesService.verificarDocumentoPropiedad(
       docId,
