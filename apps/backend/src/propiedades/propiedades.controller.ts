@@ -19,10 +19,7 @@ import { PropiedadesService } from './propiedades.service';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CreatePropiedadDto } from './dto/propiedades.dto';
-
-interface RequestWithUser {
-  user: { id: string; email: string };
-}
+import type { RequestWithUser } from '../common/types/request-with-user';
 
 @Controller('propiedades')
 export class PropiedadesController {
