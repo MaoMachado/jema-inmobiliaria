@@ -184,7 +184,7 @@ export function CardPropiedad({
         <DocumentoImgModal
           isOpen={showModalDocumentoImg}
           onClose={() => setShowModalDocumentoImg(false)}
-          documentos={propiedad.documentos}
+          documentos={propiedad.documentos ?? []}
         />
       )}
     </article>

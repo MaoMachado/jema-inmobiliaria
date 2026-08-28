@@ -138,13 +138,14 @@ export class PropiedadesService {
             select: {
               nombres: true,
               apellidos: true,
-              documentoUrl: true,
               celularVerificado: true,
               documentoVerificado: true,
             },
           },
 
-          documentos: true,
+          documentos: {
+            select: { id: true, url: true, tipo: true, verificado: true },
+          },
         },
       }),
     ]);
