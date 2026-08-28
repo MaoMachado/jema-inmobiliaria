@@ -23,7 +23,7 @@ export default function ManagementUsers() {
     }
   };
 
-  const handleVerifyDocumentUser = async (id: string, current: boolean) => {
+  const handleVerifyDocumentoUser = async (id: string, current: boolean) => {
     try {
       await api.patch(`/usuarios/${id}/verificar-documento`, {
         verificado: !current,
@@ -59,6 +59,8 @@ export default function ManagementUsers() {
     loadUsers();
   }, []);
 
+  console.log(users);
+
   return (
     <article>
       <h1 className="text-4xl font-bold text-center">Gestión De Usuarios</h1>
@@ -89,14 +91,19 @@ export default function ManagementUsers() {
               <p
                 className={`text-sm font-semibold ${user.celularVerificado ? "text-green-400" : "text-yellow-400"}`}
               >
-                {user.celularVerificado ? "Verificado" : "No verificado"}
+                {user.celularVerificado
+                  ? "Celular Verificado"
+                  : "No verificado"}
               </p>
+
               <p
                 className={`text-sm font-semibold ${
-                  user.documentoUrl ? "text-green-400" : "text-yellow-400"
+                  user.documentoVerificado
+                    ? "text-green-400"
+                    : "text-yellow-400"
                 }`}
               >
-                {user.documentoUrl
+                {user.documentoVerificado
                   ? "Documento verificado"
                   : "Documento no verificado"}
               </p>
@@ -114,6 +121,21 @@ export default function ManagementUsers() {
                 {user.celularVerificado
                   ? "Celular Verificado ✓"
                   : "Verificar Celular"}
+              </button>
+
+              <button
+                onClick={() =>
+                  handleVerifyDocumentoUser(user.id, user.documentoVerificado)
+                }
+                className={`px-2 py-1 text-sm font-semibold rounded-md cursor-pointer ${
+                  user.documentoVerificado
+                    ? "text-green-400 bg-green-400/10"
+                    : "text-yellow-400 bg-yellow-400/10"
+                }`}
+              >
+                {user.documentoVerificado
+                  ? "Documento Verificado ✓"
+                  : "Verificar Documento"}
               </button>
             </div>
           ))

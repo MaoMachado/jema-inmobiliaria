@@ -2,15 +2,16 @@
 
 import { useState } from "react";
 import { Propiedad } from "../lib/types";
-import Button from "./Button";
 import { SubirDocumentoModal } from "../dashboard/Modal/SubirDocumentoModal";
+import { DocumentoImgModal } from "../dashboard/Modal/DocumentoImgModal";
+import Button from "./Button";
 
 interface CardPropiedadProps {
   propiedad: Propiedad;
   onEdit?: (propiedad: Propiedad) => void;
   onDelete?: (id: string) => void;
   onProbabilidad?: (id: string) => void;
-  onDocumento?: (id: string, file: File) => void;
+  onDocumento?: (id: string, file: File, tipo: string) => void;
 }
 
 export function CardPropiedad({
@@ -27,10 +28,20 @@ export function CardPropiedad({
   }).format(propiedad.precio);
 
   const [showModalDocumento, setShowModalDocumento] = useState<boolean>(false);
+  const [showModalDocumentoImg, setShowModalDocumentoImg] =
+    useState<boolean>(false);
+
+  const handleShowDocumentoModal = () => {
+    if (propiedad.documentos && propiedad.documentos.length > 0) {
+      setShowModalDocumentoImg(true);
+    } else {
+      setShowModalDocumento(true);
+    }
+  };
 
   return (
     <article className="relative bg-gray-800/30 p-3 border border-gray-600 rounded-lg shadow-xs">
-      <div className="relative">
+      <section className="relative">
         {propiedad.fotografias?.[0] && (
           <img
             src={propiedad.fotografias[0]}
@@ -45,13 +56,13 @@ export function CardPropiedad({
             {propiedad.puntaje}
           </span>
         </p>
-      </div>
+      </section>
 
       <h3 className="text-xl font-semibold tracking-wider text-center">
         {propiedad.titulo}
       </h3>
 
-      <div className="flex flex-col justify-between md:p-4 leading-normal">
+      <section className="flex flex-col justify-between md:p-4 leading-normal">
         <p className="text-lg">
           Precio:{" "}
           <span className="font-semibold text-green-400 tracking-wider">
@@ -71,30 +82,51 @@ export function CardPropiedad({
             {propiedad.publicadoPor?.apellidos}
           </span>
         </p>
-      </div>
+      </section>
 
-      <div className="flex flex-col justify-between md:p-4 leading-normal">
-        <p>
+      <section className="flex flex-col gap-1 md:p-4">
+        <p className="text-sm font-semibold">Documentos de la propiedad</p>
+        {propiedad.documentos && propiedad.documentos.length > 0 ? (
+          <div className="flex flex-wrap gap-3">
+            {propiedad.documentos.map((doc) => (
+              <button
+                key={doc.id}
+                onClick={() => setShowModalDocumentoImg(true)}
+                className={`px-2 py-1 text-sm rounded-md cursor-pointer ${doc.verificado ? "bg-green-500/20 text-green-400" : "bg-yellow-500/20 text-yellow-500"}`}
+              >
+                {doc.tipo} {doc.verificado ? "✓" : "⏳"}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <p className="text-xs text-gray-500">Sin Documentos</p>
+        )}
+      </section>
+
+      <section className="flex flex-col justify-between md:p-4 leading-normal">
+        <p className="flex items-center justify-between">
           Celular Verificado:{" "}
-          <span className="font-semibold text-green-400 tracking-wider">
-            {propiedad.publicadoPor?.celularVerificado ? "🆗" : "No"}
+          <span className="font-semibold text-yellow-400 tracking-wider text-xl">
+            {propiedad.publicadoPor?.celularVerificado ? "🆗" : "😒"}
           </span>
         </p>
 
-        <p>
+        <p className="flex items-center justify-between">
           Documento Verificado:{" "}
-          <span className="font-semibold text-green-400 tracking-wider">
-            {propiedad.publicadoPor?.documentoVerificado
-              ? "🆗"
-              : "Subir Documento"}
+          <span className="font-semibold text-green-400 tracking-wider text-xl">
+            {propiedad.documentos && propiedad.documentos.length > 0
+              ? propiedad.documentos.every((doc) => doc.verificado)
+                ? "🆗"
+                : "⏳"
+              : "😒"}
           </span>
         </p>
-      </div>
+      </section>
 
-      <div className="flex justify-between items-center">
+      <section className="flex justify-between items-center md:p-4 leading-normal">
         <Button
           title="📄"
-          onClick={() => setShowModalDocumento(true)}
+          onClick={handleShowDocumentoModal}
           variant="secondary"
           ariaLabel="Subir Documento"
         />
@@ -126,17 +158,16 @@ export function CardPropiedad({
             />
           )}
         </div>
-      </div>
+      </section>
 
       <span className="absolute -bottom-5 left-15 px-3 bg-gray-500 rounded-md">
-        {propiedad.publicadoPor?.documentoVerificado &&
-        propiedad.publicadoPor?.celularVerificado ? (
-          <p className="text-green-400 text-center text-sm">
-            &#10003; Publicación Verificada
+        {!propiedad.documentos || propiedad.documentos.length === 0 ? (
+          <p className="text-red-400 text-center text-sm">
+            &#9734; Publicación No Verificada
           </p>
         ) : (
-          <p className="text-yellow-400 text-center text-sm">
-            &#9734; Publicación No Verificada
+          <p className="text-green-400 text-center text-sm">
+            &#10003; Publicación Verificada
           </p>
         )}
       </span>
@@ -145,7 +176,15 @@ export function CardPropiedad({
         <SubirDocumentoModal
           isOpen={showModalDocumento}
           onClose={() => setShowModalDocumento(false)}
-          onSubmit={(file) => onDocumento?.(propiedad.id, file)}
+          onSubmit={(file, tipo) => onDocumento?.(propiedad.id, file, tipo)}
+        />
+      )}
+
+      {showModalDocumentoImg && (
+        <DocumentoImgModal
+          isOpen={showModalDocumentoImg}
+          onClose={() => setShowModalDocumentoImg(false)}
+          documentos={propiedad.documentos}
         />
       )}
     </article>

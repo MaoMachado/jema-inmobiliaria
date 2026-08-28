@@ -35,12 +35,22 @@ export interface Propiedad {
   createdAt: string;
   publicadoPorId: string;
   publicadoPor: {
-    nombres?: string;
-    apellidos?: string;
-    email?: string;
-    celular?: string;
-    documentoUrl?: string;
-    celularVerificado?: boolean;
+    nombres: string;
+    apellidos: string;
+    email: string;
+    celular: string;
+    documentoUrl: string;
+    celularVerificado: boolean;
     documentoVerificado?: boolean;
   };
+  documentos?: DocumentoPropiedad[];
+}
+
+export interface DocumentoPropiedad {
+  id: string;
+  url: string;
+  tipo: string;
+  verificado: boolean;
+  createdAt: string;
+  propiedadId: string;
 }

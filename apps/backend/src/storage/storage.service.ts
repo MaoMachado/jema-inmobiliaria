@@ -5,6 +5,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 export class StorageService {
   private readonly bucketPropiedades = 'propiedades-fotos';
   private readonly bucketUsuarios = 'usuario-documento';
+  private readonly bucketPropiedadesDocumentos = 'propiedades-documentos';
 
   constructor(private readonly supabase: SupabaseClient) {}
 
@@ -48,6 +49,26 @@ export class StorageService {
 
     const { data } = this.supabase.storage
       .from(this.bucketUsuarios)
+      .getPublicUrl(ruta);
+
+    return data.publicUrl;
+  }
+
+  async subirPropiedadDocumento(file: Express.Multer.File): Promise<string> {
+    const ruta = this.generarRuta(file.originalname);
+
+    const { error } = await this.supabase.storage
+      .from(this.bucketPropiedadesDocumentos)
+      .upload(ruta, file.buffer, {
+        contentType: file.mimetype,
+      });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    const { data } = this.supabase.storage
+      .from(this.bucketPropiedadesDocumentos)
       .getPublicUrl(ruta);
 
     return data.publicUrl;

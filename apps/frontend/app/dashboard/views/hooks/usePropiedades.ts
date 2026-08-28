@@ -157,16 +157,18 @@ export function usePropiedades() {
     loadInitial();
   };
 
-  const handleDocumento = async (id: string, file: File) => {
+  const handleDocumento = async (id: string, file: File, tipo: string) => {
     setLoading(true);
     setError("");
 
     const formData = new FormData();
-    formData.append("documento", file);
+    formData.append("documentos", file);
+    formData.append("tipo", tipo);
 
     try {
-      await api.post(`/usuarios/documento`, formData);
+      await api.post(`/propiedades/${id}/documentos`, formData);
       setMessage("Documento cargado correctamente");
+      loadInitial();
       setTimeout(() => setMessage(""), 5000);
     } catch (error) {
       console.error("Error al cargar el documento", error);

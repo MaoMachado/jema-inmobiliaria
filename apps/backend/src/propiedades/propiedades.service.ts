@@ -138,10 +138,13 @@ export class PropiedadesService {
             select: {
               nombres: true,
               apellidos: true,
+              documentoUrl: true,
               celularVerificado: true,
               documentoVerificado: true,
             },
           },
+
+          documentos: true,
         },
       }),
     ]);
@@ -288,5 +291,77 @@ export class PropiedadesService {
       rentabilidadAnual: rentabilidadAnual(propiedad),
       tiempoEstimadoOcupacion: tiempoEstimadoOcupacion(propiedad, similares),
     };
+  }
+
+  // Servicios para documentos propiedad
+  async subirDocumentos(
+    propiedadId: string,
+    userId: string,
+    files: Express.Multer.File[],
+    tipo: string,
+  ) {
+    const propiedad = await this.findOne(propiedadId);
+    if (propiedad.publicadoPorId !== userId) {
+      throw new ForbiddenException(
+        'No tenes permiso para subir documentos a esta propiedad',
+      );
+    }
+
+    const urls = await Promise.all(
+      files.map((file) => this.storage.subirPropiedadDocumento(file)),
+    );
+
+    const documentos = await Promise.all(
+      urls.map((url) =>
+        this.prisma.documentoPropiedad.create({
+          data: {
+            url,
+            tipo,
+            propiedadId,
+          },
+        }),
+      ),
+    );
+
+    return documentos;
+  }
+
+  async getDocumentos(propiedadId: string) {
+    return this.prisma.documentoPropiedad.findMany({
+      where: { propiedadId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async eliminarDocumento(docId: string, userId: string) {
+    const doc = await this.prisma.documentoPropiedad.findUnique({
+      where: { id: docId },
+      include: { propiedad: { select: { publicadoPorId: true } } },
+    });
+
+    if (!doc) throw new NotFoundException('Documento no encontrado');
+    if (doc.propiedad.publicadoPorId !== userId) {
+      throw new ForbiddenException(
+        'No tienes permiso para eliminar este documento',
+      );
+    }
+
+    await this.prisma.documentoPropiedad.delete({ where: { id: docId } });
+    return { message: 'Documento eliminado' };
+  }
+
+  async verificarDocumentoPropiedad(docId: string, verificado: boolean) {
+    const doc = await this.prisma.documentoPropiedad.findUnique({
+      where: { id: docId },
+    });
+
+    if (!doc) throw new NotFoundException('Documento no encontrado');
+
+    await this.prisma.documentoPropiedad.update({
+      where: { id: docId },
+      data: { verificado },
+    });
+
+    return { verificado };
   }
 }
