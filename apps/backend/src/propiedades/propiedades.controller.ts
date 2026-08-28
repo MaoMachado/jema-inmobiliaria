@@ -16,9 +16,9 @@ import {
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PropiedadesService } from './propiedades.service';
-import { type CreatePropiedad } from './propiedades.types';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { CreatePropiedadDto } from './dto/propiedades.dto';
 
 interface RequestWithUser {
   user: { id: string; email: string };
@@ -32,7 +32,7 @@ export class PropiedadesController {
   @Post()
   @UseInterceptors(FilesInterceptor('fotografias', 10))
   create(
-    @Body() body: CreatePropiedad,
+    @Body() body: CreatePropiedadDto,
     @UploadedFiles() files: Express.Multer.File[],
     @Req() req: RequestWithUser,
   ) {
@@ -116,7 +116,7 @@ export class PropiedadesController {
   @Patch(':id')
   update(
     @Param('id') id: string,
-    @Body() body: Partial<CreatePropiedad>,
+    @Body() body: Partial<CreatePropiedadDto>,
     @Req() req: RequestWithUser,
   ) {
     return this.propiedadesService.update(id, body, req.user.id);

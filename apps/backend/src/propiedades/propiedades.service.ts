@@ -8,7 +8,6 @@ import { Prisma } from '../generated/prisma/index';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
 import { calcularPuntaje } from './calcular-puntaje';
-import { CreatePropiedad } from './propiedades.types';
 import {
   canonEsperado,
   probabilidadOcupacional,
@@ -17,6 +16,7 @@ import {
   tiempoEstimadoDias,
   tiempoEstimadoOcupacion,
 } from './calcular-probabilidad';
+import { CreatePropiedadDto } from './dto/propiedades.dto';
 
 @Injectable()
 export class PropiedadesService {
@@ -25,7 +25,7 @@ export class PropiedadesService {
     private readonly storage: StorageService,
   ) {}
 
-  private validate(propiedad: CreatePropiedad) {
+  private validate(propiedad: CreatePropiedadDto) {
     if (
       !propiedad.titulo?.trim() ||
       !propiedad.descripcion?.trim() ||
@@ -42,11 +42,11 @@ export class PropiedadesService {
   }
 
   async create(
-    propiedad: CreatePropiedad,
+    propiedad: CreatePropiedadDto,
     files: Express.Multer.File[],
     userId: string,
   ) {
-    const data: CreatePropiedad = {
+    const data: CreatePropiedadDto = {
       ...propiedad,
       precio: Number(propiedad.precio),
       habitaciones: Number(propiedad.habitaciones),
@@ -191,7 +191,7 @@ export class PropiedadesService {
     };
   }
 
-  async update(id: string, data: Partial<CreatePropiedad>, userId: string) {
+  async update(id: string, data: Partial<CreatePropiedadDto>, userId: string) {
     const propiedad = await this.findOne(id);
     if (propiedad.publicadoPorId !== userId) {
       throw new ForbiddenException(
@@ -199,7 +199,7 @@ export class PropiedadesService {
       );
     }
 
-    const cambios: CreatePropiedad = {
+    const cambios: CreatePropiedadDto = {
       titulo: data.titulo ?? propiedad.titulo ?? '',
       descripcion: data.descripcion ?? propiedad.descripcion ?? '',
       precio: data.precio ?? propiedad.precio ?? 0,

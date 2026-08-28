@@ -16,6 +16,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import type { RequestWithUser } from '../common/types/request-with-user';
+import { VerificarDto } from './dto/verificar.dto';
 
 type MulterFile = Express.Multer.File;
 
@@ -43,20 +44,14 @@ export class UsuariosController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Patch(':id/verificar-documento')
-  verificarDocumento(
-    @Param('id') id: string,
-    @Body() body: { verificado: boolean },
-  ) {
+  verificarDocumento(@Param('id') id: string, @Body() body: VerificarDto) {
     return this.usuariosService.verificarDocumento(id, body.verificado);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Patch(':id/verificar-telefono')
-  verificarTelefono(
-    @Param('id') id: string,
-    @Body() body: { verificado: boolean },
-  ) {
+  verificarTelefono(@Param('id') id: string, @Body() body: VerificarDto) {
     return this.usuariosService.verificarTelefono(id, body.verificado);
   }
 }

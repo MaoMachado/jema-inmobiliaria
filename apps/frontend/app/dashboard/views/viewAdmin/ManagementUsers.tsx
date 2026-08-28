@@ -59,8 +59,6 @@ export default function ManagementUsers() {
     loadUsers();
   }, []);
 
-  console.log(users);
-
   return (
     <article>
       <h1 className="text-4xl font-bold text-center">Gestión De Usuarios</h1>
