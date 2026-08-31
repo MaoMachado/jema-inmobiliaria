@@ -43,7 +43,7 @@ export interface Propiedad {
     celularVerificado: boolean;
     documentoVerificado?: boolean;
   };
-  documentos?: DocumentoPropiedad[];
+  documentos?: { tipo: string; verificado: boolean }[];
 }
 
 export interface DocumentoPropiedad {

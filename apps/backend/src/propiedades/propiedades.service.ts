@@ -144,7 +144,7 @@ export class PropiedadesService {
           },
 
           documentos: {
-            select: { id: true, url: true, tipo: true, verificado: true },
+            select: { tipo: true, verificado: true },
           },
         },
       }),

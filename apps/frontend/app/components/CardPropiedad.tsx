@@ -90,7 +90,7 @@ export function CardPropiedad({
           <div className="flex flex-wrap gap-3">
             {propiedad.documentos.map((doc) => (
               <button
-                key={doc.id}
+                key={doc.tipo}
                 onClick={() => setShowModalDocumentoImg(true)}
                 className={`px-2 py-1 text-sm rounded-md cursor-pointer ${doc.verificado ? "bg-green-500/20 text-green-400" : "bg-yellow-500/20 text-yellow-500"}`}
               >
@@ -182,9 +182,9 @@ export function CardPropiedad({
 
       {showModalDocumentoImg && (
         <DocumentoImgModal
+          propiedadId={propiedad.id}
           isOpen={showModalDocumentoImg}
           onClose={() => setShowModalDocumentoImg(false)}
-          documentos={propiedad.documentos ?? []}
         />
       )}
     </article>
