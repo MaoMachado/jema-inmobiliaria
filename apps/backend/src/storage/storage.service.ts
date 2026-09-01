@@ -47,10 +47,6 @@ export class StorageService {
       throw new Error(error.message);
     }
 
-    const { data } = this.supabase.storage
-      .from(this.bucketUsuarios)
-      .getPublicUrl(ruta);
-
     return ruta;
   }
 
@@ -66,10 +62,6 @@ export class StorageService {
     if (error) {
       throw new Error(error.message);
     }
-
-    const { data } = this.supabase.storage
-      .from(this.bucketPropiedadesDocumentos)
-      .getPublicUrl(ruta);
 
     return ruta;
   }
@@ -109,21 +101,5 @@ export class StorageService {
 
   async getUrlDocumentoUsuario(path: string): Promise<string> {
     return this.crearUrlFirmada(this.bucketUsuarios, path);
-  }
-
-  private extraerPath(valor: string): string {
-    if (valor.startsWith('http')) {
-      const url = new URL(valor);
-      const parts = url.pathname.split('/');
-      const bucketIndex = parts.findIndex(
-        (p) => p === 'propiedad-documentos' || p === 'usuario-documento',
-      );
-
-      if (bucketIndex !== -1) {
-        return parts.slice(bucketIndex + 1).join('/');
-      }
-    }
-
-    return valor;
   }
 }
