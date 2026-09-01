@@ -331,10 +331,7 @@ export class PropiedadesService {
     propiedadId: string,
     usuario: { id: string; role: string },
   ) {
-    const propiedad = await this.prisma.propiedad.findUnique({
-      where: { id: propiedadId },
-      select: { publicadoPorId: true },
-    });
+    const propiedad = await this.findOne(propiedadId);
 
     if (!propiedad) {
       throw new NotFoundException('Propiedad no encontrada');
@@ -349,10 +346,19 @@ export class PropiedadesService {
       );
     }
 
-    return this.prisma.documentoPropiedad.findMany({
+    const documentos = await this.prisma.documentoPropiedad.findMany({
       where: { propiedadId },
       orderBy: { createdAt: 'desc' },
     });
+
+    const documentosConUrl = await Promise.all(
+      documentos.map(async (doc) => ({
+        ...doc,
+        url: await this.storage.getUrlDocumentoPropiedad(doc.url),
+      })),
+    );
+
+    return documentosConUrl;
   }
 
   async eliminarDocumento(docId: string, userId: string) {

@@ -37,17 +37,17 @@ export class UsuariosService {
       throw new NotFoundException('Usuario no encontrado');
     }
 
-    const documentoUrl = await this.storage.subirDocumento(file);
+    const documentoPath = await this.storage.subirDocumento(file);
 
     await this.prisma.usuario.update({
       where: { id: userId },
       data: {
-        documentoUrl,
+        documentoUrl: documentoPath,
         documentoVerificado: false,
       },
     });
 
-    return { documentoUrl };
+    return { documentoUrl: documentoPath };
   }
 
   async verificarDocumento(userId: string, verificado: boolean) {
@@ -86,5 +86,15 @@ export class UsuariosService {
     });
 
     return { celularVerificado: verificado };
+  }
+
+  async getUrlDocumentoUsuario(userId: string) {
+    const usuario = await this.prisma.usuario.findUnique({
+      where: { id: userId },
+    });
+
+    if (!usuario?.documentoUrl) return null;
+
+    return this.storage.getUrlDocumentoUsuario(usuario.documentoUrl);
   }
 }

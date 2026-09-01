@@ -31,6 +31,14 @@ export class UsuariosController {
     return this.usuariosService.getAll();
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @Get(':id/documento')
+  async getDocumentoUrl(@Param('id') id: string) {
+    const url = await this.usuariosService.getUrlDocumentoUsuario(id);
+    return { url };
+  }
+
   @UseGuards(JwtAuthGuard)
   @Post('documento')
   @UseInterceptors(FileInterceptor('documento'))

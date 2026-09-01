@@ -51,7 +51,7 @@ export class StorageService {
       .from(this.bucketUsuarios)
       .getPublicUrl(ruta);
 
-    return data.publicUrl;
+    return ruta;
   }
 
   async subirPropiedadDocumento(file: Express.Multer.File): Promise<string> {
@@ -71,7 +71,7 @@ export class StorageService {
       .from(this.bucketPropiedadesDocumentos)
       .getPublicUrl(ruta);
 
-    return data.publicUrl;
+    return ruta;
   }
 
   private generarRuta(original: string): string {
@@ -85,5 +85,45 @@ export class StorageService {
     const uuid = crypto.randomUUID();
 
     return `public/${Date.now()}-${base}-${uuid}.${ext}`;
+  }
+
+  async crearUrlFirmada(
+    bucket: string,
+    path: string,
+    expiraEn = 900,
+  ): Promise<string> {
+    const { data, error } = await this.supabase.storage
+      .from(bucket)
+      .createSignedUrl(path, expiraEn);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data.signedUrl;
+  }
+
+  async getUrlDocumentoPropiedad(path: string): Promise<string> {
+    return this.crearUrlFirmada(this.bucketPropiedadesDocumentos, path);
+  }
+
+  async getUrlDocumentoUsuario(path: string): Promise<string> {
+    return this.crearUrlFirmada(this.bucketUsuarios, path);
+  }
+
+  private extraerPath(valor: string): string {
+    if (valor.startsWith('http')) {
+      const url = new URL(valor);
+      const parts = url.pathname.split('/');
+      const bucketIndex = parts.findIndex(
+        (p) => p === 'propiedad-documentos' || p === 'usuario-documento',
+      );
+
+      if (bucketIndex !== -1) {
+        return parts.slice(bucketIndex + 1).join('/');
+      }
+    }
+
+    return valor;
   }
 }
