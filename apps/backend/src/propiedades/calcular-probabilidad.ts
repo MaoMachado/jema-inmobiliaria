@@ -1,4 +1,4 @@
-import { CreatePropiedad } from './propiedades.types';
+import { CreatePropiedadDto } from './dto/propiedades.dto';
 
 const PESO_PRECIO_OCUPACION = 0.6;
 const PESO_COMPLETITUD_OCUPACION = 0.2;
@@ -7,8 +7,8 @@ const COMISION_MENSUAL = 0.006;
 const MESES_POR_YEAR = 12;
 
 export const probabilidadOcupacional = (
-  propiedad: CreatePropiedad,
-  propiedadesSimilares: CreatePropiedad[],
+  propiedad: CreatePropiedadDto,
+  propiedadesSimilares: CreatePropiedadDto[],
 ): number => {
   if (propiedadesSimilares.length === 0) {
     return propiedad.puntaje ?? 50;
@@ -57,8 +57,8 @@ export const probabilidadOcupacional = (
 };
 
 export const probabilidadVenta = (
-  propiedad: CreatePropiedad,
-  propiedadesSimilares: CreatePropiedad[],
+  propiedad: CreatePropiedadDto,
+  propiedadesSimilares: CreatePropiedadDto[],
 ): number => {
   if (propiedadesSimilares.length === 0) {
     return propiedad.puntaje ?? 50;
@@ -84,27 +84,27 @@ export const probabilidadVenta = (
 };
 
 export const tiempoEstimadoDias = (
-  propiedad: CreatePropiedad,
-  propiedadesSimilares: CreatePropiedad[],
+  propiedad: CreatePropiedadDto,
+  propiedadesSimilares: CreatePropiedadDto[],
 ): number => {
   const probabilidad = probabilidadVenta(propiedad, propiedadesSimilares);
   const dias = 90 - probabilidad * 0.6;
   return Math.round(Math.max(1, dias));
 };
 
-export const canonEsperado = (propiedad: CreatePropiedad): number => {
+export const canonEsperado = (propiedad: CreatePropiedadDto): number => {
   return Math.round(propiedad.precio * COMISION_MENSUAL);
 };
 
-export const rentabilidadAnual = (propiedad: CreatePropiedad): number => {
+export const rentabilidadAnual = (propiedad: CreatePropiedadDto): number => {
   const canon = canonEsperado(propiedad);
   const rentabilidad = ((canon * MESES_POR_YEAR) / propiedad.precio) * 100;
   return Math.round(rentabilidad * 100) / 100;
 };
 
 export const tiempoEstimadoOcupacion = (
-  propiedad: CreatePropiedad,
-  propiedadesSimilares: CreatePropiedad[],
+  propiedad: CreatePropiedadDto,
+  propiedadesSimilares: CreatePropiedadDto[],
 ) => {
   const probabilidad = probabilidadOcupacional(propiedad, propiedadesSimilares);
   const dias = 60 - probabilidad * 0.57;

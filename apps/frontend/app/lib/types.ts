@@ -5,8 +5,11 @@ export interface Usuario {
   celular: string;
   email: string;
   foto: string | null;
+  documentoUrl: string | null;
   role: string;
   createdAt: string;
+  documentoVerificado: boolean;
+  celularVerificado: boolean;
 }
 
 export interface Propiedad {
@@ -32,9 +35,22 @@ export interface Propiedad {
   createdAt: string;
   publicadoPorId: string;
   publicadoPor: {
-    nombres?: string;
-    apellidos?: string;
-    email?: string;
-    celular?: string;
+    nombres: string;
+    apellidos: string;
+    email: string;
+    celular: string;
+    documentoUrl: string;
+    celularVerificado: boolean;
+    documentoVerificado?: boolean;
   };
+  documentos?: { tipo: string; verificado: boolean }[];
+}
+
+export interface DocumentoPropiedad {
+  id: string;
+  url: string;
+  tipo: string;
+  verificado: boolean;
+  createdAt: string;
+  propiedadId: string;
 }

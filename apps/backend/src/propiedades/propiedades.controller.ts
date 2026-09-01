@@ -16,11 +16,11 @@ import {
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PropiedadesService } from './propiedades.service';
-import { type CreatePropiedad } from './propiedades.types';
-
-interface RequestWithUser {
-  user: { id: string; email: string };
-}
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { CreatePropiedadDto } from './dto/propiedades.dto';
+import type { RequestWithUser } from '../common/types/request-with-user';
+import { VerificarDto } from '../usuarios/dto/verificar.dto';
 
 @Controller('propiedades')
 export class PropiedadesController {
@@ -30,7 +30,7 @@ export class PropiedadesController {
   @Post()
   @UseInterceptors(FilesInterceptor('fotografias', 10))
   create(
-    @Body() body: CreatePropiedad,
+    @Body() body: CreatePropiedadDto,
     @UploadedFiles() files: Express.Multer.File[],
     @Req() req: RequestWithUser,
   ) {
@@ -114,7 +114,7 @@ export class PropiedadesController {
   @Patch(':id')
   update(
     @Param('id') id: string,
-    @Body() body: Partial<CreatePropiedad>,
+    @Body() body: Partial<CreatePropiedadDto>,
     @Req() req: RequestWithUser,
   ) {
     return this.propiedadesService.update(id, body, req.user.id);
@@ -124,5 +124,48 @@ export class PropiedadesController {
   @Delete(':id')
   remove(@Param('id') id: string, @Req() req: RequestWithUser) {
     return this.propiedadesService.remove(id, req.user.id);
+  }
+
+  // Documentos
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/documentos')
+  @UseInterceptors(FilesInterceptor('documentos', 10))
+  subirDocumentos(
+    @Param('id') id: string,
+    @UploadedFiles() files: Express.Multer.File[],
+    @Body('tipo') tipo: string,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.propiedadesService.subirDocumentos(
+      id,
+      req.user.id,
+      files,
+      tipo,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get(':id/documentos')
+  getDocumentos(@Param('id') id: string, @Req() req: RequestWithUser) {
+    return this.propiedadesService.getDocumentos(id, req.user);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete(':id/documentos/:docId')
+  eliminarDocumento(@Param('id') docId: string, @Req() req: RequestWithUser) {
+    return this.propiedadesService.eliminarDocumento(docId, req.user.id);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @Patch('documentos/:docId/verificar')
+  verificarDocumento(
+    @Param('docId') docId: string,
+    @Body() body: VerificarDto,
+  ) {
+    return this.propiedadesService.verificarDocumentoPropiedad(
+      docId,
+      body.verificado,
+    );
   }
 }

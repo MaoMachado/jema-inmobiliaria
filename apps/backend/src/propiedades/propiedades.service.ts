@@ -8,7 +8,6 @@ import { Prisma } from '../generated/prisma/index';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
 import { calcularPuntaje } from './calcular-puntaje';
-import { CreatePropiedad } from './propiedades.types';
 import {
   canonEsperado,
   probabilidadOcupacional,
@@ -17,6 +16,7 @@ import {
   tiempoEstimadoDias,
   tiempoEstimadoOcupacion,
 } from './calcular-probabilidad';
+import { CreatePropiedadDto } from './dto/propiedades.dto';
 
 @Injectable()
 export class PropiedadesService {
@@ -25,7 +25,7 @@ export class PropiedadesService {
     private readonly storage: StorageService,
   ) {}
 
-  private validate(propiedad: CreatePropiedad) {
+  private validate(propiedad: CreatePropiedadDto) {
     if (
       !propiedad.titulo?.trim() ||
       !propiedad.descripcion?.trim() ||
@@ -42,11 +42,11 @@ export class PropiedadesService {
   }
 
   async create(
-    propiedad: CreatePropiedad,
+    propiedad: CreatePropiedadDto,
     files: Express.Multer.File[],
     userId: string,
   ) {
-    const data: CreatePropiedad = {
+    const data: CreatePropiedadDto = {
       ...propiedad,
       precio: Number(propiedad.precio),
       habitaciones: Number(propiedad.habitaciones),
@@ -138,7 +138,13 @@ export class PropiedadesService {
             select: {
               nombres: true,
               apellidos: true,
+              celularVerificado: true,
+              documentoVerificado: true,
             },
+          },
+
+          documentos: {
+            select: { tipo: true, verificado: true },
           },
         },
       }),
@@ -186,7 +192,7 @@ export class PropiedadesService {
     };
   }
 
-  async update(id: string, data: Partial<CreatePropiedad>, userId: string) {
+  async update(id: string, data: Partial<CreatePropiedadDto>, userId: string) {
     const propiedad = await this.findOne(id);
     if (propiedad.publicadoPorId !== userId) {
       throw new ForbiddenException(
@@ -194,7 +200,7 @@ export class PropiedadesService {
       );
     }
 
-    const cambios: CreatePropiedad = {
+    const cambios: CreatePropiedadDto = {
       titulo: data.titulo ?? propiedad.titulo ?? '',
       descripcion: data.descripcion ?? propiedad.descripcion ?? '',
       precio: data.precio ?? propiedad.precio ?? 0,
@@ -286,5 +292,104 @@ export class PropiedadesService {
       rentabilidadAnual: rentabilidadAnual(propiedad),
       tiempoEstimadoOcupacion: tiempoEstimadoOcupacion(propiedad, similares),
     };
+  }
+
+  // Servicios para documentos propiedad
+  async subirDocumentos(
+    propiedadId: string,
+    userId: string,
+    files: Express.Multer.File[],
+    tipo: string,
+  ) {
+    const propiedad = await this.findOne(propiedadId);
+    if (propiedad.publicadoPorId !== userId) {
+      throw new ForbiddenException(
+        'No tenes permiso para subir documentos a esta propiedad',
+      );
+    }
+
+    const urls = await Promise.all(
+      files.map((file) => this.storage.subirPropiedadDocumento(file)),
+    );
+
+    const documentos = await Promise.all(
+      urls.map((url) =>
+        this.prisma.documentoPropiedad.create({
+          data: {
+            url,
+            tipo,
+            propiedadId,
+          },
+        }),
+      ),
+    );
+
+    return documentos;
+  }
+
+  async getDocumentos(
+    propiedadId: string,
+    usuario: { id: string; role: string },
+  ) {
+    const propiedad = await this.findOne(propiedadId);
+
+    if (!propiedad) {
+      throw new NotFoundException('Propiedad no encontrada');
+    }
+
+    const esDueno = propiedad.publicadoPorId === usuario.id;
+    const esAdmin = usuario.role === 'ADMIN';
+
+    if (!(esDueno || esAdmin)) {
+      throw new ForbiddenException(
+        'No tenes permiso para ver los documentos de esta propiedad',
+      );
+    }
+
+    const documentos = await this.prisma.documentoPropiedad.findMany({
+      where: { propiedadId },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const documentosConUrl = await Promise.all(
+      documentos.map(async (doc) => ({
+        ...doc,
+        url: await this.storage.getUrlDocumentoPropiedad(doc.url),
+      })),
+    );
+
+    return documentosConUrl;
+  }
+
+  async eliminarDocumento(docId: string, userId: string) {
+    const doc = await this.prisma.documentoPropiedad.findUnique({
+      where: { id: docId },
+      include: { propiedad: { select: { publicadoPorId: true } } },
+    });
+
+    if (!doc) throw new NotFoundException('Documento no encontrado');
+    if (doc.propiedad.publicadoPorId !== userId) {
+      throw new ForbiddenException(
+        'No tienes permiso para eliminar este documento',
+      );
+    }
+
+    await this.prisma.documentoPropiedad.delete({ where: { id: docId } });
+    return { message: 'Documento eliminado' };
+  }
+
+  async verificarDocumentoPropiedad(docId: string, verificado: boolean) {
+    const doc = await this.prisma.documentoPropiedad.findUnique({
+      where: { id: docId },
+    });
+
+    if (!doc) throw new NotFoundException('Documento no encontrado');
+
+    await this.prisma.documentoPropiedad.update({
+      where: { id: docId },
+      data: { verificado },
+    });
+
+    return { verificado };
   }
 }

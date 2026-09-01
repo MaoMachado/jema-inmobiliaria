@@ -27,6 +27,7 @@ export default function UserView() {
     handleDeleteProperty,
     handleSearchResult,
     handleSearchClear,
+    handleDocumento,
   } = usePropiedades();
 
   useEffect(() => {
@@ -62,6 +63,7 @@ export default function UserView() {
               <CardPropiedad
                 key={propiedad.id}
                 propiedad={propiedad}
+                onDocumento={handleDocumento}
                 onEdit={openEdit}
                 onDelete={handleDeleteProperty}
                 onProbabilidad={setProbabilidadId}

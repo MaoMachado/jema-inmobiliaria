@@ -18,22 +18,25 @@ enum Role {
 }
 
 model Usuario {
-  id        String   @id @default(uuid())
-  nombres   String
-  apellidos String
-  email     String   @unique
-  password  String
-  foto      String?
-  celular   String?
-  role      Role     @default(USER)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                  String   @id @default(uuid())
+  nombres             String
+  apellidos           String
+  email               String   @unique
+  password            String
+  foto                String?
+  celular             String?
+  celularVerificado   Boolean  @default(false)
+  documentoUrl        String?
+  documentoVerificado Boolean  @default(false)
+  role                Role     @default(USER)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   propiedades Propiedad[]
 }
 
 model Propiedad {
-  id             String    @id @default(uuid())
+  id             String               @id @default(uuid())
   titulo         String
   descripcion    String
   precio         Float
@@ -44,7 +47,7 @@ model Propiedad {
   tipo           String
   habitaciones   Int
   banos          Int
-  parqueaderos   Int       @default(0)
+  parqueaderos   Int                  @default(0)
   area           Float
   antiguedad     Int
   fotografias    String[]
@@ -53,9 +56,23 @@ model Propiedad {
   ubicacionLong  Float?
   puntaje        Int?
   publicadoPorId String //Relacion con Usuario
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  documentos     DocumentoPropiedad[]
 
   //Relación con Usuario
   publicadoPor Usuario @relation(fields: [publicadoPorId], references: [id])
+}
+
+model DocumentoPropiedad {
+  id          String   @id @default(uuid())
+  url         String
+  tipo        String
+  verificado  Boolean  @default(false)
+  propiedadId String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  //Relacion con propiedad
+  propiedad Propiedad @relation(fields: [propiedadId], references: [id], onDelete: Cascade)
 }

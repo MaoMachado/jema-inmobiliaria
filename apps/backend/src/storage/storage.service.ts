@@ -3,7 +3,9 @@ import { SupabaseClient } from '@supabase/supabase-js';
 
 @Injectable()
 export class StorageService {
-  private readonly bucket = 'propiedades-fotos';
+  private readonly bucketPropiedades = 'propiedades-fotos';
+  private readonly bucketUsuarios = 'usuario-documento';
+  private readonly bucketPropiedadesDocumentos = 'propiedades-documentos';
 
   constructor(private readonly supabase: SupabaseClient) {}
 
@@ -11,7 +13,7 @@ export class StorageService {
     const ruta = this.generarRuta(file.originalname);
 
     const { error } = await this.supabase.storage
-      .from(this.bucket)
+      .from(this.bucketPropiedades)
       .upload(ruta, file.buffer, {
         contentType: file.mimetype,
         upsert: true,
@@ -21,13 +23,47 @@ export class StorageService {
       throw new Error(error.message);
     }
 
-    const { data } = this.supabase.storage.from(this.bucket).getPublicUrl(ruta);
+    const { data } = this.supabase.storage
+      .from(this.bucketPropiedades)
+      .getPublicUrl(ruta);
 
     return data.publicUrl;
   }
 
   async subirFotos(files: Express.Multer.File[]): Promise<string[]> {
     return Promise.all(files.map((file) => this.subirFoto(file)));
+  }
+
+  async subirDocumento(file: Express.Multer.File): Promise<string> {
+    const ruta = this.generarRuta(file.originalname);
+
+    const { error } = await this.supabase.storage
+      .from(this.bucketUsuarios)
+      .upload(ruta, file.buffer, {
+        contentType: file.mimetype,
+      });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return ruta;
+  }
+
+  async subirPropiedadDocumento(file: Express.Multer.File): Promise<string> {
+    const ruta = this.generarRuta(file.originalname);
+
+    const { error } = await this.supabase.storage
+      .from(this.bucketPropiedadesDocumentos)
+      .upload(ruta, file.buffer, {
+        contentType: file.mimetype,
+      });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return ruta;
   }
 
   private generarRuta(original: string): string {
@@ -41,5 +77,29 @@ export class StorageService {
     const uuid = crypto.randomUUID();
 
     return `public/${Date.now()}-${base}-${uuid}.${ext}`;
+  }
+
+  async crearUrlFirmada(
+    bucket: string,
+    path: string,
+    expiraEn = 900,
+  ): Promise<string> {
+    const { data, error } = await this.supabase.storage
+      .from(bucket)
+      .createSignedUrl(path, expiraEn);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data.signedUrl;
+  }
+
+  async getUrlDocumentoPropiedad(path: string): Promise<string> {
+    return this.crearUrlFirmada(this.bucketPropiedadesDocumentos, path);
+  }
+
+  async getUrlDocumentoUsuario(path: string): Promise<string> {
+    return this.crearUrlFirmada(this.bucketUsuarios, path);
   }
 }

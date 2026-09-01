@@ -1,8 +1,8 @@
-import { CreatePropiedad } from './propiedades.types.js';
+import { CreatePropiedadDto } from './dto/propiedades.dto';
 
 interface ReglaPuntaje {
   peso: number;
-  evaluar: (propiedad: CreatePropiedad) => number;
+  evaluar: (propiedad: CreatePropiedadDto) => number;
 }
 
 const escalar = (valor: number, esperado: number, peso: number) =>
@@ -31,7 +31,7 @@ const reglas: ReglaPuntaje[] = [
   { peso: 2, evaluar: (p) => ((p.video ?? '').trim() ? 2 : 0) },
 ];
 
-export const calcularPuntaje = (propiedad: CreatePropiedad): number => {
+export const calcularPuntaje = (propiedad: CreatePropiedadDto): number => {
   const total = reglas.reduce(
     (acc, regla) => acc + regla.evaluar(propiedad),
     0,
