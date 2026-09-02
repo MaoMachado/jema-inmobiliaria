@@ -69,6 +69,28 @@ export class UsuariosService {
     return { documentoVerificado: verificado };
   }
 
+  async getDocumentosPropiedadUsuario(userId: string) {
+    const propiedades = await this.prisma.propiedad.findMany({
+      where: { publicadoPorId: userId },
+      include: {
+        documentos: true,
+      },
+    });
+
+    const todosLosDocumentos = propiedades.flatMap((p) =>
+      p.documentos.map((d) => ({ ...d, propiedadTitulo: p.titulo })),
+    );
+
+    const documentosConUrl = await Promise.all(
+      todosLosDocumentos.map(async (doc) => ({
+        ...doc,
+        url: await this.storage.getUrlDocumentoPropiedad(doc.url),
+      })),
+    );
+
+    return documentosConUrl;
+  }
+
   async verificarTelefono(userId: string, verificado: boolean) {
     const usuario = await this.prisma.usuario.findUnique({
       where: { id: userId },

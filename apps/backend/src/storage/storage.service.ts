@@ -84,15 +84,40 @@ export class StorageService {
     path: string,
     expiraEn = 900,
   ): Promise<string> {
+    const cleanPath = this.extraerPath(path);
+
     const { data, error } = await this.supabase.storage
       .from(bucket)
-      .createSignedUrl(path, expiraEn);
+      .createSignedUrl(cleanPath, expiraEn);
 
     if (error) {
       throw new Error(error.message);
     }
 
     return data.signedUrl;
+  }
+
+  private extraerPath(valor: string): string {
+    if (!valor.startsWith('http')) return valor;
+
+    const url = new URL(valor);
+    const parts = url.pathname.split('/');
+
+    const allBuckets = [
+      this.bucketPropiedades,
+      this.bucketUsuarios,
+      this.bucketPropiedadesDocumentos,
+    ];
+
+    for (const bucketName of allBuckets) {
+      const idx = parts.indexOf(bucketName);
+
+      if (idx !== -1) {
+        return parts.slice(idx + 1).join('/');
+      }
+    }
+
+    return valor;
   }
 
   async getUrlDocumentoPropiedad(path: string): Promise<string> {

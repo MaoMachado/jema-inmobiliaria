@@ -39,6 +39,13 @@ export class UsuariosController {
     return { url };
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @Get(':id/documentos-propiedad')
+  async getDocumentosPropiedad(@Param('id') id: string) {
+    return this.usuariosService.getDocumentosPropiedadUsuario(id);
+  }
+
   @UseGuards(JwtAuthGuard)
   @Post('documento')
   @UseInterceptors(FileInterceptor('documento'))
