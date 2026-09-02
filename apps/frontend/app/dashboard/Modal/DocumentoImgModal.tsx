@@ -5,17 +5,32 @@ import { DocumentoPropiedad } from "@/app/lib/types";
 import api from "@/app/lib/api";
 
 interface Props {
-  propiedadId: string;
+  propiedadId?: string;
+  documentos?: DocumentoPropiedad[];
+  onVerificar?: (docId: string, current: boolean) => void;
   isOpen: boolean;
   onClose: () => void;
 }
 
-export function DocumentoImgModal({ propiedadId, isOpen, onClose }: Props) {
+export function DocumentoImgModal({
+  propiedadId,
+  documentos: documentosProp,
+  onVerificar,
+  isOpen,
+  onClose,
+}: Props) {
   const [documentos, setDocumentos] = useState<DocumentoPropiedad[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
+    if (documentosProp) {
+      setDocumentos(documentosProp);
+      return;
+    }
+
+    if (!propiedadId) return;
+
     setLoading(true);
 
     api
@@ -29,14 +44,12 @@ export function DocumentoImgModal({ propiedadId, isOpen, onClose }: Props) {
       .finally(() => {
         setLoading(false);
       });
-  }, [isOpen, propiedadId]);
+  }, [isOpen, propiedadId, documentosProp]);
 
   if (!isOpen) return null;
 
-  const isImage = (url: string) => /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(url);
-  const isPDF = (url: string) => /\.pdf$/i.test(url);
-
-  
+  const isImage = (url: string) => /\.(jpg|jpeg|png|gif|webp|svg)/i.test(url);
+  const isPDF = (url: string) => /\.pdf/i.test(url);
 
   return (
     <article className="fixed inset-0 flex items-center justify-center z-50">
@@ -72,6 +85,21 @@ export function DocumentoImgModal({ propiedadId, isOpen, onClose }: Props) {
                       Abrir documento
                     </a>
                   )}
+
+                  <div>
+                    <p
+                      className={`text-sm ${doc.verificado ? "text-green-400" : "text-yellow-400"}`}
+                    >
+                      {doc.verificado ? "Verificado" : "No Verificado"}
+                    </p>
+
+                    <button
+                      onClick={() => onVerificar?.(doc.id, doc.verificado)}
+                      className={`px-2 py-1 text-sm font-semibold rounded-md cursor-pointer ${doc.verificado ? "text-green-400 bg-green-400/10 hover:bg-green-400/20" : "text-yellow-400 bg-yellow-400/10 hover:bg-yellow-400/20"}`}
+                    >
+                      {doc.verificado ? "No Verificado" : "Verificado"}
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
