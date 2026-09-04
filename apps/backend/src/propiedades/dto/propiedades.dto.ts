@@ -90,3 +90,9 @@ export class CreatePropiedadDto {
   @IsOptional()
   puntaje?: number | null;
 }
+
+export class RechazarPropiedadDto {
+  @IsString()
+  @IsNotEmpty()
+  motivoRechazo: string;
+}

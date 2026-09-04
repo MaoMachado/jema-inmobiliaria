@@ -16,7 +16,10 @@ import {
   tiempoEstimadoDias,
   tiempoEstimadoOcupacion,
 } from './calcular-probabilidad';
-import { CreatePropiedadDto } from './dto/propiedades.dto';
+import {
+  CreatePropiedadDto,
+  RechazarPropiedadDto,
+} from './dto/propiedades.dto';
 
 @Injectable()
 export class PropiedadesService {
@@ -85,9 +88,11 @@ export class PropiedadesService {
         ubicacionLong: data.ubicacionLong ? Number(data.ubicacionLong) : null,
         video: data.video ?? null,
         puntaje,
+        estado: 'PENDIENTE',
       },
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { createdAt, updatedAt, ...result } = prop;
     return result;
   }
@@ -107,6 +112,7 @@ export class PropiedadesService {
     const limit = Math.min(100, Math.max(1, filtros.limit ?? 10));
 
     const where: Prisma.PropiedadWhereInput = {
+      estado: 'APROBADA',
       ...(filtros.ciudad && {
         ciudad: { equals: filtros.ciudad, mode: 'insensitive' },
       }),
@@ -161,16 +167,26 @@ export class PropiedadesService {
     };
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, usuario?: { id?: string; role?: string }) {
     const propiedad = await this.prisma.propiedad.findUnique({ where: { id } });
 
     if (!propiedad) {
       throw new NotFoundException('Propiedad no encontrada');
     }
+
+    const esDueno = usuario?.id === propiedad.publicadoPorId;
+    const esAdmin = usuario?.role === 'ADMIN';
+
+    if (propiedad.estado !== 'APROBADA' && !esDueno && !esAdmin) {
+      throw new NotFoundException('Propiedad no encontrada');
+    }
+
     return propiedad;
   }
 
-  async obtenerContacto(id: string) {
+  async obtenerContacto(id: string, usuario: { id: string; role: string }) {
+    await this.findOne(id, usuario);
+
     const propiedad = await this.prisma.propiedad.findUnique({
       where: { id },
       include: {
@@ -193,7 +209,7 @@ export class PropiedadesService {
   }
 
   async update(id: string, data: Partial<CreatePropiedadDto>, userId: string) {
-    const propiedad = await this.findOne(id);
+    const propiedad = await this.findOne(id, { id: userId });
     if (propiedad.publicadoPorId !== userId) {
       throw new ForbiddenException(
         'No tenes permiso para editar esta propiedad',
@@ -255,12 +271,13 @@ export class PropiedadesService {
         }),
         ...(data.video !== undefined && { video: data.video }),
         puntaje,
+        estado: 'PENDIENTE',
       },
     });
   }
 
   async remove(id: string, userId: string) {
-    const propiedad = await this.findOne(id);
+    const propiedad = await this.findOne(id, { id: userId });
     if (propiedad.publicadoPorId !== userId) {
       throw new ForbiddenException(
         'No tenes permiso para eliminar esta propiedad',
@@ -301,7 +318,7 @@ export class PropiedadesService {
     files: Express.Multer.File[],
     tipo: string,
   ) {
-    const propiedad = await this.findOne(propiedadId);
+    const propiedad = await this.findOne(propiedadId, { id: userId });
     if (propiedad.publicadoPorId !== userId) {
       throw new ForbiddenException(
         'No tenes permiso para subir documentos a esta propiedad',
@@ -331,7 +348,7 @@ export class PropiedadesService {
     propiedadId: string,
     usuario: { id: string; role: string },
   ) {
-    const propiedad = await this.findOne(propiedadId);
+    const propiedad = await this.findOne(propiedadId, usuario);
 
     if (!propiedad) {
       throw new NotFoundException('Propiedad no encontrada');
@@ -391,5 +408,42 @@ export class PropiedadesService {
     });
 
     return { verificado };
+  }
+
+  //! Estados de las propiedades
+  async findMisPropiedades(usuarioId: string) {
+    const propiedad = await this.prisma.propiedad.findMany({
+      where: { publicadoPorId: usuarioId },
+    });
+
+    return propiedad;
+  }
+
+  async findPendientes() {
+    return this.prisma.propiedad.findMany({ where: { estado: 'PENDIENTE' } });
+  }
+
+  async aprobar(id: string) {
+    const propiedad = await this.findOne(id, { role: 'ADMIN' });
+    if (!propiedad) throw new NotFoundException('Propiedad no encontrada');
+
+    await this.prisma.propiedad.update({
+      where: { id },
+      data: { estado: 'APROBADA' },
+    });
+
+    return { message: 'Propiedad aprobada' };
+  }
+
+  async rechazar(id: string, motivo: RechazarPropiedadDto) {
+    const propiedad = await this.findOne(id, { role: 'ADMIN' });
+    if (!propiedad) throw new NotFoundException('Propiedad no encontrada');
+
+    await this.prisma.propiedad.update({
+      where: { id },
+      data: { estado: 'RECHAZADA', motivoRechazo: motivo.motivoRechazo },
+    });
+
+    return { message: 'Propiedad rechazada' };
   }
 }

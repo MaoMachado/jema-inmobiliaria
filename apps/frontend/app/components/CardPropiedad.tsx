@@ -41,7 +41,25 @@ export function CardPropiedad({
 
   return (
     <article className="relative bg-gray-800/30 p-3 border border-gray-600 rounded-lg shadow-xs">
-      <section className="relative">
+      <span>
+        <p
+          className={
+            propiedad.estado === "RECHAZADA"
+              ? "text-red-400 text-center text-sm"
+              : propiedad.estado === "PENDIENTE"
+                ? "text-yellow-400 text-center text-sm"
+                : "text-green-400 text-center text-sm"
+          }
+        >
+          {propiedad.estado === "RECHAZADA"
+            ? "Publicación Rechazada"
+            : propiedad.estado === "PENDIENTE"
+              ? "Publicación Pendiente"
+              : "Publicación Aprobada"}
+        </p>
+      </span>
+
+      <header className="relative mt-3">
         {propiedad.fotografias?.[0] && (
           <img
             src={propiedad.fotografias[0]}
@@ -56,11 +74,11 @@ export function CardPropiedad({
             {propiedad.puntaje}
           </span>
         </p>
-      </section>
 
-      <h3 className="text-xl font-semibold tracking-wider text-center">
-        {propiedad.titulo}
-      </h3>
+        <h3 className="text-xl font-semibold tracking-wider text-center">
+          {propiedad.titulo}
+        </h3>
+      </header>
 
       <section className="flex flex-col justify-between md:p-4 leading-normal">
         <p className="text-lg">
@@ -73,13 +91,6 @@ export function CardPropiedad({
           Ciudad:{" "}
           <span className="font-semibold text-blue-400 tracking-wider">
             {propiedad.ciudad}
-          </span>
-        </p>
-        <p className="text-lg">
-          Dueño:{" "}
-          <span className="font-semibold text-blue-400 tracking-wider">
-            {propiedad.publicadoPor?.nombres}{" "}
-            {propiedad.publicadoPor?.apellidos}
           </span>
         </p>
       </section>
@@ -160,7 +171,7 @@ export function CardPropiedad({
         </div>
       </section>
 
-      <span className="absolute -bottom-5 left-15 px-3 bg-gray-500 rounded-md">
+      <span className="absolute -bottom-2.5 left-12 px-3 bg-gray-500 rounded-md opacity-80">
         {!propiedad.documentos || propiedad.documentos.length === 0 ? (
           <p className="text-red-400 text-center text-sm">
             &#9734; Publicación No Verificada
