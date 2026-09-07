@@ -26,8 +26,6 @@ export default function AdminView() {
       ? "Sin solicitudes"
       : `Tiene ${pendientes.length} solicitud(es) de publicación`;
 
-  console.log(pendientes);
-
   return (
     <article>
       <header className="flex items-center justify-between md:justify-start gap-16 mb-10">
