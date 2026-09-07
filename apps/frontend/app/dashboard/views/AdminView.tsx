@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { usePublicationReq } from "./hooks/usePublicationRequests";
 import Button from "@/app/components/Button";
 import ManagementUsers from "./viewAdmin/ManagementUsers";
@@ -15,11 +15,30 @@ export default function AdminView() {
   );
   const [viewPublicationRequest, setViewPublicationRequest] = useState(false);
 
-  const { pendientes } = usePublicationReq();
+  const {
+    pendientes,
+    loading,
+    message,
+    refresh,
+    handleAprobar,
+    confirmarRechazo,
+    motivoError,
+    pendingId,
+    motivoModal,
+    setMotivoModal,
+    setMotivo,
+    setMotivoError,
+    motivo,
+  } = usePublicationReq();
+
+  const mountedRef = useRef(false);
 
   useEffect(() => {
-    pendientes;
-  }, []);
+    if (!mountedRef.current) {
+      mountedRef.current = true;
+      refresh();
+    }
+  }, [refresh]);
 
   const tituloBtn =
     pendientes.length === 0
@@ -60,6 +79,19 @@ export default function AdminView() {
         {viewPublicationRequest && (
           <PublicationRequest
             onClick={() => setViewPublicationRequest(false)}
+            initialData={pendientes}
+            onRefresh={refresh}
+            handleAprobar={handleAprobar}
+            confirmarRechazo={confirmarRechazo}
+            loading={loading}
+            pendingId={pendingId}
+            motivoModal={motivoModal}
+            setMotivoModal={setMotivoModal}
+            motivo={motivo}
+            setMotivo={setMotivo}
+            motivoError={motivoError}
+            setMotivoError={setMotivoError}
+            message={message}
           />
         )}
       </header>

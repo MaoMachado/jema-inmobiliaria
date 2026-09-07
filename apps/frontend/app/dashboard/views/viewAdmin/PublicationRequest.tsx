@@ -1,36 +1,41 @@
 "use client";
 
-import { useEffect } from "react";
-import { usePublicationReq } from "../hooks/usePublicationRequests";
+import { Propiedad } from "@/app/lib/types";
 import Button from "@/app/components/Button";
+
+interface Props {
+  onClick: () => void;
+  initialData: Propiedad[];
+  onRefresh: () => void;
+  handleAprobar: (id: string) => Promise<void>;
+  confirmarRechazo: () => Promise<void>;
+  loading: boolean;
+  pendingId: string | null;
+  motivoModal: string | null;
+  setMotivoModal: (id: string | null) => void;
+  motivo: string;
+  setMotivo: (v: string) => void;
+  motivoError: boolean;
+  setMotivoError: (v: boolean) => void;
+  message: { tipo: "ok" | "error"; texto: string } | null;
+}
 
 export default function PublicationRequest({
   onClick,
-}: {
-  onClick: () => void;
-}) {
-  const {
-    pendientes,
-    loading,
-    message,
-    refresh,
-    handleAprobar,
-    confirmarRechazo,
-    motivoError,
-    pendingId,
-    motivoModal,
-    setMotivoModal,
-    setMotivo,
-    setMotivoError,
-    motivo,
-  } = usePublicationReq();
-
-  useEffect(() => {
-    if (!pendientes || pendientes.length === 0) {
-      refresh();
-    }
-  }, []);
-
+  initialData,
+  onRefresh,
+  handleAprobar,
+  confirmarRechazo,
+  loading,
+  pendingId,
+  motivoModal,
+  setMotivoModal,
+  motivo,
+  setMotivo,
+  motivoError,
+  setMotivoError,
+  message,
+}: Props) {
   return (
     <>
       <div className="fixed inset-0 bg-black/20" onClick={onClick} />
@@ -57,12 +62,12 @@ export default function PublicationRequest({
         <main className="p-1">
           {loading ? (
             <p>Cargando...</p>
-          ) : pendientes?.length === 0 ? (
+          ) : initialData.length === 0 ? (
             <p className="text-center font-semibold">
               No hay solicitudes de publicación
             </p>
           ) : (
-            pendientes?.map((propiedad) => (
+            initialData.map((propiedad) => (
               <article
                 key={propiedad.id}
                 className="flex gap-6 bg-gray-500/70 backdrop-blur-xs p-2 rounded-md hover:bg-gray-500/90 hover:shadow"
