@@ -21,8 +21,8 @@ export function usePropiedades() {
     setError("");
 
     try {
-      const res = await api.get<{ data: Propiedad[] }>("/propiedades");
-      setInitialData(res.data.data);
+      const res = await api.get<Propiedad[]>("/propiedades/mis-propiedades");
+      setInitialData(res.data);
       setIsSearching(false);
     } catch (error) {
       console.error("Error al cargar propiedades", error);

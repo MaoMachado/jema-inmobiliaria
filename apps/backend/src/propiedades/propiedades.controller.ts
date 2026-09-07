@@ -18,7 +18,10 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PropiedadesService } from './propiedades.service';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { CreatePropiedadDto } from './dto/propiedades.dto';
+import {
+  CreatePropiedadDto,
+  RechazarPropiedadDto,
+} from './dto/propiedades.dto';
 import type { RequestWithUser } from '../common/types/request-with-user';
 import { VerificarDto } from '../usuarios/dto/verificar.dto';
 
@@ -94,6 +97,19 @@ export class PropiedadesController {
     });
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Get('mis-propiedades')
+  findMisPropiedades(@Req() req: RequestWithUser) {
+    return this.propiedadesService.findMisPropiedades(req.user.id);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @Get('pendientes')
+  findPendientes() {
+    return this.propiedadesService.findPendientes();
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.propiedadesService.findOne(id);
@@ -106,8 +122,22 @@ export class PropiedadesController {
 
   @UseGuards(JwtAuthGuard)
   @Get(':id/contacto')
-  obtenerContacto(@Param('id') id: string) {
-    return this.propiedadesService.obtenerContacto(id);
+  obtenerContacto(@Param('id') id: string, @Req() req: RequestWithUser) {
+    return this.propiedadesService.obtenerContacto(id, req.user);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @Patch(':id/aprobar')
+  aprobar(@Param('id') id: string) {
+    return this.propiedadesService.aprobar(id);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @Patch(':id/rechazar')
+  rechazar(@Param('id') id: string, @Body() body: RechazarPropiedadDto) {
+    return this.propiedadesService.rechazar(id, body);
   }
 
   @UseGuards(JwtAuthGuard)

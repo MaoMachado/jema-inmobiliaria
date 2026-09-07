@@ -44,6 +44,8 @@ export interface Propiedad {
     documentoVerificado?: boolean;
   };
   documentos?: { tipo: string; verificado: boolean }[];
+  estado: "PENDIENTE" | "APROBADA" | "RECHAZADA";
+  motivoRechazo?: string;
 }
 
 export interface DocumentoPropiedad {

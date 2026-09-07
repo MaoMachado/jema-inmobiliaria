@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-
+import { useState, useEffect, useRef } from "react";
+import { usePublicationReq } from "./hooks/usePublicationRequests";
 import Button from "@/app/components/Button";
 import ManagementUsers from "./viewAdmin/ManagementUsers";
 import ManagementPayment from "./viewAdmin/ManagementPayment";
@@ -14,6 +14,36 @@ export default function AdminView() {
     "users",
   );
   const [viewPublicationRequest, setViewPublicationRequest] = useState(false);
+
+  const {
+    pendientes,
+    loading,
+    message,
+    refresh,
+    handleAprobar,
+    confirmarRechazo,
+    motivoError,
+    pendingId,
+    motivoModal,
+    setMotivoModal,
+    setMotivo,
+    setMotivoError,
+    motivo,
+  } = usePublicationReq();
+
+  const mountedRef = useRef(false);
+
+  useEffect(() => {
+    if (!mountedRef.current) {
+      mountedRef.current = true;
+      refresh();
+    }
+  }, [refresh]);
+
+  const tituloBtn =
+    pendientes.length === 0
+      ? "Sin solicitudes"
+      : `Tiene ${pendientes.length} solicitud(es) de publicación`;
 
   return (
     <article>
@@ -40,7 +70,7 @@ export default function AdminView() {
         </nav>
 
         <Button
-          title="Solicitudes Publicaciones"
+          title={tituloBtn}
           variant="secondary"
           onClick={() => setViewPublicationRequest(true)}
           className="ml-auto"
@@ -49,6 +79,19 @@ export default function AdminView() {
         {viewPublicationRequest && (
           <PublicationRequest
             onClick={() => setViewPublicationRequest(false)}
+            initialData={pendientes}
+            onRefresh={refresh}
+            handleAprobar={handleAprobar}
+            confirmarRechazo={confirmarRechazo}
+            loading={loading}
+            pendingId={pendingId}
+            motivoModal={motivoModal}
+            setMotivoModal={setMotivoModal}
+            motivo={motivo}
+            setMotivo={setMotivo}
+            motivoError={motivoError}
+            setMotivoError={setMotivoError}
+            message={message}
           />
         )}
       </header>

@@ -57,10 +57,7 @@ export function useSearchProperty({
     const precioMaxNum = precioMax === "" ? undefined : Number(precioMax);
 
     try {
-      const res = await api.get<{
-        data: Propiedad[];
-        pagination: Pagination;
-      }>("/propiedades", {
+      const res = await api.get<Propiedad[]>("/propiedades/mis-propiedades", {
         params: {
           ciudad: ciudad || undefined,
           tipo: tipo || undefined,
@@ -83,10 +80,10 @@ export function useSearchProperty({
         },
       });
 
-      setResultados(res.data.data);
-      setPagination(res.data.pagination);
+      setResultados(res.data);
+      setPagination(null);
       setHasSearched(true);
-      onResult?.(res.data.data);
+      onResult?.(res.data);
     } catch (error: any) {
       console.error("Error al buscar propiedades", error);
       setError(formatError(error.response?.data));

@@ -71,7 +71,7 @@ export default function UserView() {
             ))}
 
             {initialData.length === 0 && (
-              <p className="text-center col-span-full">No hay propiedades</p>
+              <p className="text-center col-span-full text-2xl mt-10 ">No hay propiedades 🧹</p>
             )}
           </article>
         ) : null}
