@@ -1,7 +1,7 @@
 "use client";
 
 import api from "@/app/lib/api";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Propiedad } from "@/app/lib/types";
 
 const getErrorMessage = (error: any, fallback: string) =>
@@ -19,8 +19,8 @@ export function usePublicationReq() {
     texto: string;
   } | null>(null);
 
-  const fetchPendientes = async () => {
-    setLoading(true);
+  const fetchPendientes = async (isInitial = false) => {
+    if (!isInitial) setLoading(true);
 
     try {
       const res = await api.get<Propiedad[]>("/propiedades/pendientes");
@@ -31,9 +31,13 @@ export function usePublicationReq() {
         texto: getErrorMessage(error, "Error al cargar las solicitudes"),
       });
     } finally {
-      setLoading(false);
+      if (!isInitial) setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchPendientes(true);
+  }, []);
 
   const handleAprobar = async (id: string) => {
     setLoading(true);
