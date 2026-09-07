@@ -1,111 +1,35 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Propiedad } from "@/app/lib/types";
+import { useEffect } from "react";
+import { usePublicationReq } from "../hooks/usePublicationRequests";
 import Button from "@/app/components/Button";
-import api from "@/app/lib/api";
-
-const getErrorMessage = (error: any, fallback: string) =>
-  error?.response?.data?.message ?? fallback;
 
 export default function PublicationRequest({
   onClick,
 }: {
   onClick: () => void;
 }) {
-  const [propiedadesPendientes, setPropiedadesPendientes] = useState<
-    Propiedad[]
-  >([]);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [pendingId, setPendingId] = useState<string | null>(null);
-  const [motivoModal, setMotivoModal] = useState<string | null>(null);
-  const [motivo, setMotivo] = useState("");
-  const [motivoError, setMotivoError] = useState(false);
-  const [message, setMessage] = useState<{
-    tipo: "ok" | "error";
-    texto: string;
-  } | null>(null);
-
-  const buscarPropiedadesPendientes = async () => {
-    setLoading(true);
-    setMessage(null);
-
-    try {
-      const res = await api.get<Propiedad[]>("/propiedades/pendientes");
-      setPropiedadesPendientes(res.data);
-    } catch (error: any) {
-      setMessage({
-        tipo: "error",
-        texto: getErrorMessage(error, "Error al cargar las solicitudes"),
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  const {
+    pendientes,
+    loading,
+    message,
+    refresh,
+    handleAprobar,
+    confirmarRechazo,
+    motivoError,
+    pendingId,
+    motivoModal,
+    setMotivoModal,
+    setMotivo,
+    setMotivoError,
+    motivo,
+  } = usePublicationReq();
 
   useEffect(() => {
-    buscarPropiedadesPendientes();
-
-    setTimeout(() => {
-      setMessage(null);
-    }, 5000);
+    if (!pendientes || pendientes.length === 0) {
+      refresh();
+    }
   }, []);
-
-  const handleAprobar = async (id: string) => {
-    setLoading(true);
-    setMessage(null);
-
-    try {
-      await api.patch(`/propiedades/${id}/aprobar`);
-      setPropiedadesPendientes((prev) => prev.filter((p) => p.id !== id));
-      setMessage({
-        tipo: "ok",
-        texto: "Propiedad aprobada",
-      });
-    } catch (error: any) {
-      setMessage({
-        tipo: "error",
-        texto: getErrorMessage(error, "Error al aprobar la propiedad"),
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const confirmarRechazo = async () => {
-    if (!motivoModal) return;
-    if (!motivo.trim()) {
-      setMotivoError(true);
-      return;
-    }
-
-    setPendingId(motivoModal);
-    setMessage(null);
-
-    try {
-      await api.patch(`/propiedades/${motivoModal}/rechazar`, {
-        motivoRechazo: motivo.trim(),
-      });
-      setPropiedadesPendientes((prev) =>
-        prev.filter((p) => p.id !== motivoModal),
-      );
-
-      setMotivoModal(null);
-      setMotivo("");
-      setMotivoError(false);
-      setMessage({
-        tipo: "ok",
-        texto: "Propiedad rechazada",
-      });
-    } catch (error: any) {
-      setMessage({
-        tipo: "error",
-        texto: getErrorMessage(error, "Error al rechazar la propiedad"),
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <>
@@ -133,15 +57,15 @@ export default function PublicationRequest({
         <main className="p-1">
           {loading ? (
             <p>Cargando...</p>
-          ) : propiedadesPendientes.length === 0 ? (
+          ) : pendientes?.length === 0 ? (
             <p className="text-center font-semibold">
               No hay solicitudes de publicación
             </p>
           ) : (
-            propiedadesPendientes.map((propiedad) => (
+            pendientes?.map((propiedad) => (
               <article
                 key={propiedad.id}
-                className="flex gap-6 items-end bg-gray-500/70 backdrop-blur-xs p-2 rounded-md hover:bg-gray-500/90 hover:shadow"
+                className="flex gap-6 bg-gray-500/70 backdrop-blur-xs p-2 rounded-md hover:bg-gray-500/90 hover:shadow"
               >
                 <div>
                   <h2 className="text-md mb-2">{propiedad.titulo}</h2>
@@ -149,23 +73,35 @@ export default function PublicationRequest({
                     {propiedad.descripcion}
                   </p>
                 </div>
-                <div className="flex gap-2">
-                  <Button
-                    title="👍"
-                    onClick={() => handleAprobar(propiedad.id)}
-                    disabled={pendingId === propiedad.id}
-                    loading={pendingId === propiedad.id}
-                  />
-                  <Button
-                    title="👎"
-                    onClick={() => {
-                      setMotivo("");
-                      setMotivoError(false);
-                      setMotivoModal(propiedad.id);
-                    }}
-                    variant="danger"
-                    disabled={pendingId === propiedad.id}
-                  />
+
+                <div className="flex flex-col justify-between">
+                  {propiedad.publicadoPor && (
+                    <p className="text-sm">
+                      Propietario:{" "}
+                      <span>
+                        {propiedad.publicadoPor?.nombres}
+                        {propiedad.publicadoPor?.apellidos}
+                      </span>
+                    </p>
+                  )}
+                  <div className="flex gap-2">
+                    <Button
+                      title="👍"
+                      onClick={() => handleAprobar(propiedad.id)}
+                      disabled={pendingId === propiedad.id}
+                      loading={pendingId === propiedad.id}
+                    />
+                    <Button
+                      title="👎"
+                      onClick={() => {
+                        setMotivo("");
+                        setMotivoError(false);
+                        setMotivoModal(propiedad.id);
+                      }}
+                      variant="danger"
+                      disabled={pendingId === propiedad.id}
+                    />
+                  </div>
                 </div>
               </article>
             ))

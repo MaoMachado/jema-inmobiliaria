@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-
+import { useState, useEffect } from "react";
+import { usePublicationReq } from "./hooks/usePublicationRequests";
 import Button from "@/app/components/Button";
 import ManagementUsers from "./viewAdmin/ManagementUsers";
 import ManagementPayment from "./viewAdmin/ManagementPayment";
@@ -14,6 +14,19 @@ export default function AdminView() {
     "users",
   );
   const [viewPublicationRequest, setViewPublicationRequest] = useState(false);
+
+  const { pendientes } = usePublicationReq();
+
+  useEffect(() => {
+    pendientes;
+  }, []);
+
+  const tituloBtn =
+    pendientes.length === 0
+      ? "Sin solicitudes"
+      : `Tiene ${pendientes.length} solicitud(es) de publicación`;
+
+  console.log(pendientes);
 
   return (
     <article>
@@ -40,7 +53,7 @@ export default function AdminView() {
         </nav>
 
         <Button
-          title="Solicitudes Publicaciones"
+          title={tituloBtn}
           variant="secondary"
           onClick={() => setViewPublicationRequest(true)}
           className="ml-auto"

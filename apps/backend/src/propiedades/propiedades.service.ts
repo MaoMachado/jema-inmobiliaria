@@ -311,7 +311,7 @@ export class PropiedadesService {
     };
   }
 
-  // Servicios para documentos propiedad
+  //! Servicios para documentos propiedad
   async subirDocumentos(
     propiedadId: string,
     userId: string,
@@ -420,7 +420,17 @@ export class PropiedadesService {
   }
 
   async findPendientes() {
-    return this.prisma.propiedad.findMany({ where: { estado: 'PENDIENTE' } });
+    return this.prisma.propiedad.findMany({
+      where: { estado: 'PENDIENTE' },
+      include: {
+        publicadoPor: {
+          select: {
+            nombres: true,
+            apellidos: true,
+          },
+        },
+      },
+    });
   }
 
   async aprobar(id: string) {
