@@ -456,4 +456,36 @@ export class PropiedadesService {
 
     return { message: 'Propiedad rechazada' };
   }
+
+  //! Propiedades Destacadas
+  async findDestacadas() {
+    return this.prisma.propiedad.findMany({
+      where: { estado: 'APROBADA' },
+      orderBy: { puntaje: 'desc' },
+      take: 6,
+      select: {
+        id: true,
+        titulo: true,
+        descripcion: true,
+        precio: true,
+        ciudad: true,
+        barrio: true,
+        tipo: true,
+        habitaciones: true,
+        banos: true,
+        area: true,
+        estrato: true,
+        fotografias: true,
+        puntaje: true,
+        publicadoPor: {
+          select: {
+            nombres: true,
+            apellidos: true,
+            celularVerificado: true,
+            documentoVerificado: true,
+          },
+        },
+      },
+    });
+  }
 }

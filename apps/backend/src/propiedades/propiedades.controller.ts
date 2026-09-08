@@ -110,6 +110,11 @@ export class PropiedadesController {
     return this.propiedadesService.findPendientes();
   }
 
+  @Get('destacadas')
+  async findDestacadas() {
+    return this.propiedadesService.findDestacadas();
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.propiedadesService.findOne(id);
