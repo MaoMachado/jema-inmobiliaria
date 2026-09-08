@@ -1,4 +1,3 @@
-import Link from "next/link";
 import Hero from "./components/Hero";
 import PropiedadesDestacadas from "./components/PropiedadesDestacadas";
 import Footer from "./components/Footer";
