@@ -83,6 +83,7 @@ export function Login({
           </button>
         </p>
       </div>
+
       {error && (
         <p className="absolute -bottom-15 left-1/2 -translate-x-1/2 bg-red-500/20 py-2 text-center w-full rounded-xl">
           {error}

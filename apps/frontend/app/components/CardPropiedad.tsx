@@ -41,23 +41,25 @@ export function CardPropiedad({
 
   return (
     <article className="relative bg-gray-800/30 p-3 border border-gray-600 rounded-lg shadow-xs">
-      <span>
-        <p
-          className={
-            propiedad.estado === "RECHAZADA"
-              ? "text-red-400 text-center text-sm"
+      {onEdit && (
+        <span>
+          <p
+            className={
+              propiedad.estado === "RECHAZADA"
+                ? "text-red-400 text-center text-sm"
+                : propiedad.estado === "PENDIENTE"
+                  ? "text-yellow-400 text-center text-sm"
+                  : "text-green-400 text-center text-sm"
+            }
+          >
+            {propiedad.estado === "RECHAZADA"
+              ? "Publicación Rechazada"
               : propiedad.estado === "PENDIENTE"
-                ? "text-yellow-400 text-center text-sm"
-                : "text-green-400 text-center text-sm"
-          }
-        >
-          {propiedad.estado === "RECHAZADA"
-            ? "Publicación Rechazada"
-            : propiedad.estado === "PENDIENTE"
-              ? "Publicación Pendiente"
-              : "Publicación Aprobada"}
-        </p>
-      </span>
+                ? "Publicación Pendiente"
+                : "Publicación Aprobada"}
+          </p>
+        </span>
+      )}
 
       <header className="relative mt-3">
         {propiedad.fotografias?.[0] && (
@@ -95,24 +97,26 @@ export function CardPropiedad({
         </p>
       </section>
 
-      <section className="flex flex-col gap-1 md:p-4">
-        <p className="text-sm font-semibold">Documentos de la propiedad</p>
-        {propiedad.documentos && propiedad.documentos.length > 0 ? (
-          <div className="flex flex-wrap gap-3">
-            {propiedad.documentos.map((doc) => (
-              <button
-                key={doc.tipo}
-                onClick={() => setShowModalDocumentoImg(true)}
-                className={`px-2 py-1 text-sm rounded-md cursor-pointer ${doc.verificado ? "bg-green-500/20 text-green-400" : "bg-yellow-500/20 text-yellow-500"}`}
-              >
-                {doc.tipo} {doc.verificado ? "✓" : "⏳"}
-              </button>
-            ))}
-          </div>
-        ) : (
-          <p className="text-xs text-gray-500">Sin Documentos</p>
-        )}
-      </section>
+      {onDocumento && (
+        <section className="flex flex-col gap-1 md:p-4">
+          <p className="text-sm font-semibold">Documentos de la propiedad</p>
+          {propiedad.documentos && propiedad.documentos.length > 0 ? (
+            <div className="flex flex-wrap gap-3">
+              {propiedad.documentos.map((doc) => (
+                <button
+                  key={doc.tipo}
+                  onClick={() => setShowModalDocumentoImg(true)}
+                  className={`px-2 py-1 text-sm rounded-md cursor-pointer ${doc.verificado ? "bg-green-500/20 text-green-400" : "bg-yellow-500/20 text-yellow-500"}`}
+                >
+                  {doc.tipo} {doc.verificado ? "✓" : "⏳"}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-gray-500">Sin Documentos</p>
+          )}
+        </section>
+      )}
 
       <section className="flex flex-col justify-between md:p-4 leading-normal">
         <p className="flex items-center justify-between">
@@ -135,12 +139,14 @@ export function CardPropiedad({
       </section>
 
       <section className="flex justify-between items-center md:p-4 leading-normal">
-        <Button
-          title="📄"
-          onClick={handleShowDocumentoModal}
-          variant="secondary"
-          ariaLabel="Subir Documento"
-        />
+        {onDocumento && (
+          <Button
+            title="📄"
+            onClick={handleShowDocumentoModal}
+            variant="secondary"
+            ariaLabel="Subir Documento"
+          />
+        )}
         <div className="flex justify-end gap-3">
           {onEdit && (
             <Button
