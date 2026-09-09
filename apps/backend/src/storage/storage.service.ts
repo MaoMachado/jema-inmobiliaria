@@ -6,6 +6,7 @@ export class StorageService {
   private readonly bucketPropiedades = 'propiedades-fotos';
   private readonly bucketUsuarios = 'usuario-documento';
   private readonly bucketPropiedadesDocumentos = 'propiedades-documentos';
+  private readonly bucketFotoPerfil = 'foto-perfil';
 
   constructor(private readonly supabase: SupabaseClient) {}
 
@@ -32,6 +33,24 @@ export class StorageService {
 
   async subirFotos(files: Express.Multer.File[]): Promise<string[]> {
     return Promise.all(files.map((file) => this.subirFoto(file)));
+  }
+
+  async subirFotoPerfil(file: Express.Multer.File): Promise<string> {
+    const ruta = this.generarRuta(file.originalname);
+
+    const { error } = await this.supabase.storage
+      .from(this.bucketFotoPerfil)
+      .upload(ruta, file.buffer, { contentType: file.mimetype, upsert: true });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    const { data } = this.supabase.storage
+      .from(this.bucketFotoPerfil)
+      .getPublicUrl(ruta);
+
+    return data.publicUrl;
   }
 
   async subirDocumento(file: Express.Multer.File): Promise<string> {
@@ -107,6 +126,7 @@ export class StorageService {
       this.bucketPropiedades,
       this.bucketUsuarios,
       this.bucketPropiedadesDocumentos,
+      this.bucketFotoPerfil,
     ];
 
     for (const bucketName of allBuckets) {

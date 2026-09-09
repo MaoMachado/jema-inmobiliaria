@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import api from "../lib/api";
 
 import Button from "../components/Button";
@@ -47,9 +48,12 @@ export default function Dashboard() {
     <main className="min-h-screen">
       <header className="bg-blue-900/20 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto p-6 flex flex-col md:flex-row justify-between items-center border-b border-blue-900/50">
-          <h1 className="text-3xl font-bold text-blue-700 text-center mb-3">
+          <Link
+            href="/"
+            className="text-3xl font-bold text-blue-700 text-center mb-3"
+          >
             JEMA Inmobiliaria
-          </h1>
+          </Link>
 
           <section className="flex flex-col md:flex-row items-center gap-x-10 gap-y-3">
             {user ? (
@@ -68,6 +72,8 @@ export default function Dashboard() {
               onClick={handleLogout}
               variant="warning"
             />
+
+            <Link href="/dashboard/perfil">Mi Perfil</Link>
           </section>
         </div>
       </header>
