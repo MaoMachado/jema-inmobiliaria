@@ -69,4 +69,39 @@ export class UsuariosController {
   verificarTelefono(@Param('id') id: string, @Body() body: VerificarDto) {
     return this.usuariosService.verificarTelefono(id, body.verificado);
   }
+
+  //! Actualizar Datos Usuario
+  @UseGuards(JwtAuthGuard)
+  @Get('perfil')
+  async cargarPerfil(@Req() req: RequestWithUser) {
+    return this.usuariosService.cargarPerfil(req.user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('perfil')
+  async actualizarPerfil(
+    @Req() req: RequestWithUser,
+    @Body() body: { nombres?: string; apellidos?: string; celular?: string },
+  ) {
+    return this.usuariosService.actualizarPerfil(req.user.id, body);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('foto')
+  @UseInterceptors(FileInterceptor('foto'))
+  async subirFoto(
+    @Req() req: RequestWithUser,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.usuariosService.subirFoto(req.user.id, file);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('password')
+  async cambiarPassword(
+    @Req() req: RequestWithUser,
+    @Body() body: { actual: string; nueva: string },
+  ) {
+    return this.usuariosService.cambiarPassword(req.user.id, body);
+  }
 }
