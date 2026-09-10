@@ -15,7 +15,7 @@ export class UsuariosService {
   ) {}
 
   async getAll() {
-    return this.prisma.usuario.findMany({
+    const usuarios = await this.prisma.usuario.findMany({
       select: {
         id: true,
         nombres: true,
@@ -28,9 +28,31 @@ export class UsuariosService {
         documentoVerificado: true,
         role: true,
         createdAt: true,
-        updatedAt: true,
+
+        propiedades: {
+          select: {
+            id: true,
+            titulo: true,
+            documentos: {
+              select: { id: true, tipo: true, verificado: true, url: true },
+            },
+          },
+        },
       },
     });
+
+    for (const user of usuarios) {
+      for (const prop of user.propiedades) {
+        prop.documentos = await Promise.all(
+          prop.documentos.map(async (doc) => ({
+            ...doc,
+            url: await this.storage.getUrlDocumentoPropiedad(doc.url),
+          })),
+        );
+      }
+    }
+
+    return usuarios;
   }
 
   async subirDocumento(userId: string, file: Express.Multer.File) {

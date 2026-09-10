@@ -4,12 +4,24 @@ export interface Usuario {
   apellidos: string;
   celular: string;
   email: string;
+  celularVerificado: boolean;
   foto: string | null;
   documentoUrl: string | null;
+  documentoVerificado: boolean;
   role: string;
   createdAt: string;
-  documentoVerificado: boolean;
-  celularVerificado: boolean;
+
+  propiedades?: {
+    id: string;
+    titulo: string;
+
+    documentos: {
+      id: string;
+      tipo: string;
+      verificado: boolean;
+      url: string;
+    }[];
+  }[];
 }
 
 export interface Propiedad {
@@ -34,6 +46,7 @@ export interface Propiedad {
   puntaje?: number;
   createdAt: string;
   publicadoPorId: string;
+
   publicadoPor: {
     nombres: string;
     apellidos: string;
@@ -43,6 +56,7 @@ export interface Propiedad {
     celularVerificado: boolean;
     documentoVerificado?: boolean;
   };
+
   documentos?: { tipo: string; verificado: boolean }[];
   estado: "PENDIENTE" | "APROBADA" | "RECHAZADA";
   motivoRechazo?: string;
