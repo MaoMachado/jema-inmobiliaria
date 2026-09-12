@@ -70,3 +70,13 @@ export interface DocumentoPropiedad {
   createdAt: string;
   propiedadId: string;
 }
+
+export interface Reporte {
+  id: string;
+  motivo: string;
+  descripcion: string | null;
+  estado: string;
+  createAt: string;
+  creadoPor: { id: string; nombres: string; apellidos: string; email: string };
+  propiedad: { id: string; titulo: string; ciudad: string; estado: string };
+}

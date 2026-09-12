@@ -4,10 +4,22 @@ import { useEffect, useState } from "react";
 import { Propiedad } from "../lib/types";
 import { CardPropiedad } from "./CardPropiedad";
 import api from "../lib/api";
+import ReportarModal from "../dashboard/Modal/ReportarModal";
+import { useReporteFraude } from "../hooks/useReporteFraude";
 
 export default function PropiedadesDestacadas() {
+  const {
+    openModalReport,
+    closeModalReport,
+    handleEnviarReporte,
+    propiedadId,
+    message,
+    loading: loadingReporte,
+    openReporteModal,
+  } = useReporteFraude();
+
   const [propiedades, setPropiedades] = useState<Propiedad[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     api
@@ -29,10 +41,25 @@ export default function PropiedadesDestacadas() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {propiedades.map((p) => (
-            <CardPropiedad key={p.id} propiedad={p} />
+            <CardPropiedad
+              key={p.id}
+              propiedad={p}
+              onReportar={openModalReport}
+            />
           ))}
         </div>
       </div>
+
+      {openReporteModal && (
+        <ReportarModal
+          propiedadId={propiedadId}
+          message={message}
+          loading={loadingReporte}
+          isOpen={openReporteModal}
+          onClose={closeModalReport}
+          onSubmit={handleEnviarReporte}
+        />
+      )}
     </section>
   );
 }

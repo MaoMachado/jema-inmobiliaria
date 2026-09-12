@@ -1,12 +1,14 @@
 "use client";
 
+import { useReporteFraude } from "../hooks/useReporteFraude";
+import { CardPropiedad } from "./CardPropiedad";
+import ReportarModal from "../dashboard/Modal/ReportarModal";
+import Button from "./Button";
 import {
   Ciudad,
   Tipo,
   usePublicSearchProperty,
 } from "../hooks/usePublicSearchProperty";
-import Button from "./Button";
-import { CardPropiedad } from "./CardPropiedad";
 
 export default function PublicSearchProperty() {
   const {
@@ -31,6 +33,16 @@ export default function PublicSearchProperty() {
     hasActiveFiltros,
     handleClear,
   } = usePublicSearchProperty();
+
+  const {
+    openModalReport,
+    closeModalReport,
+    handleEnviarReporte,
+    propiedadId,
+    message,
+    loading: loadingReporte,
+    openReporteModal,
+  } = useReporteFraude();
 
   return (
     <section>
@@ -133,7 +145,11 @@ export default function PublicSearchProperty() {
         {hasSearched && (
           <article className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-10 p-2 md:p-0">
             {resultados.map((propiedad) => (
-              <CardPropiedad key={propiedad.id} propiedad={propiedad} />
+              <CardPropiedad
+                key={propiedad.id}
+                propiedad={propiedad}
+                onReportar={openModalReport}
+              />
             ))}
 
             {hasSearched && resultados.length === 0 && !loading && (
@@ -152,6 +168,17 @@ export default function PublicSearchProperty() {
             </span>
             <Button title="Siguiente" onClick={() => changePage(page + 1)} />
           </div>
+        )}
+
+        {openReporteModal && (
+          <ReportarModal
+            propiedadId={propiedadId}
+            message={message}
+            loading={loadingReporte}
+            isOpen={openReporteModal}
+            onClose={closeModalReport}
+            onSubmit={handleEnviarReporte}
+          />
         )}
       </div>
     </section>
