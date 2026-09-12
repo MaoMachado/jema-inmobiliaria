@@ -23,6 +23,12 @@ enum EstadoPropiedad {
   RECHAZADA
 }
 
+enum EstadoReporte {
+  ABIERTO
+  RESUELTO
+  IGNORADO
+}
+
 model Usuario {
   id                  String   @id @default(uuid())
   nombres             String
@@ -38,7 +44,8 @@ model Usuario {
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
-  propiedades Propiedad[]
+  propiedades    Propiedad[]
+  reporteFraudes ReporteFraude[]
 }
 
 model Propiedad {
@@ -69,7 +76,8 @@ model Propiedad {
   motivoRechazo  String?
 
   //Relación con Usuario
-  publicadoPor Usuario @relation(fields: [publicadoPorId], references: [id])
+  publicadoPor   Usuario         @relation(fields: [publicadoPorId], references: [id])
+  reporteFraudes ReporteFraude[]
 }
 
 model DocumentoPropiedad {
@@ -83,4 +91,17 @@ model DocumentoPropiedad {
 
   //Relacion con propiedad
   propiedad Propiedad @relation(fields: [propiedadId], references: [id], onDelete: Cascade)
+}
+
+model ReporteFraude {
+  id          String        @id @default(uuid())
+  motivo      String
+  descripcion String?
+  estado      EstadoReporte @default(ABIERTO)
+  usuarioId   String
+  propiedadId String
+  creadoPor   Usuario       @relation(fields: [usuarioId], references: [id])
+  propiedad   Propiedad     @relation(fields: [propiedadId], references: [id])
+  createAt    DateTime      @default(now())
+  updateAt    DateTime      @updatedAt
 }
