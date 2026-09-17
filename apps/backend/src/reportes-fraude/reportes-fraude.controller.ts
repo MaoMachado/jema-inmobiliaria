@@ -22,6 +22,13 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 export class ReportesFraudeController {
   constructor(private readonly reportesFraude: ReportesFraudeServices) {}
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @Get('/metricas')
+  getMetricas() {
+    return this.reportesFraude.getMetricas();
+  }
+
   @UseGuards(JwtAuthGuard)
   @Post()
   create(@Body() body: ReportesFraudeDto, @Req() req: RequestWithUser) {

@@ -80,3 +80,40 @@ export interface Reporte {
   creadoPor: { id: string; nombres: string; apellidos: string; email: string };
   propiedad: { id: string; titulo: string; ciudad: string; estado: string };
 }
+
+export interface Metricas {
+  propiedades: {
+    total: number;
+    porEstado: {
+      estado: string;
+      _count: number;
+    }[];
+    porCiudad: {
+      ciudad: string;
+      _count: number;
+    }[];
+  };
+
+  usuarios: {
+    total: number;
+    porRol: {
+      role: string;
+      _count: number;
+    }[];
+  };
+
+  reportesAbiertos: number;
+  propiedadesTop: {
+    id: string;
+    titulo: string;
+    puntaje: number | null;
+    ciudad: string;
+    precio: number;
+  }[];
+  propiedadesRecientes: {
+    id: string;
+    titulo: string;
+    ciudad: string;
+    createdAt: string;
+  }[];
+}
