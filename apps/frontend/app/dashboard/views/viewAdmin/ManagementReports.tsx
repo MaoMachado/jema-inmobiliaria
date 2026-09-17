@@ -112,11 +112,12 @@ export default function ManagementReports() {
           <ul className="flex flex-col gap-2">
             {reportes?.propiedadesRecientes.map((propiedad, idx) => (
               <li key={propiedad.id}>
-                <strong>{idx + 1}.</strong> {propiedad.titulo} ➖ {" "}
+                <strong>{idx + 1}.</strong> {propiedad.titulo} ➖{" "}
                 {new Date(propiedad.createdAt).toLocaleDateString("es-CO", {
                   year: "numeric",
                   month: "short",
                   day: "numeric",
+                  timeZone: "America/Bogota",
                 })}
               </li>
             ))}
