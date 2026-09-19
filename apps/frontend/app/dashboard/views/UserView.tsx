@@ -6,6 +6,7 @@ import { usePropiedades } from "./hooks/usePropiedades";
 import { CardPropiedad } from "@/app/components/CardPropiedad";
 import { ProbabilidadPropiedad } from "../Modal/ProbabilidadPropiedad";
 import SearchProperty from "@/app/dashboard/views/viewUser/SearchProperty";
+import ChatIA from "@/app/components/ChatIA";
 
 export default function UserView() {
   const [probabilidadId, setProbabilidadId] = useState<string | null>(null);
@@ -71,7 +72,9 @@ export default function UserView() {
             ))}
 
             {initialData.length === 0 && (
-              <p className="text-center col-span-full text-2xl mt-10 ">No hay propiedades 🧹</p>
+              <p className="text-center col-span-full text-2xl mt-10 ">
+                No hay propiedades 🧹
+              </p>
             )}
           </article>
         ) : null}
@@ -100,6 +103,8 @@ export default function UserView() {
           onClose={() => setProbabilidadId(null)}
         />
       )}
+
+      <ChatIA />
     </article>
   );
 }

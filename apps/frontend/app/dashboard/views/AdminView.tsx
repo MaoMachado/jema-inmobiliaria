@@ -8,6 +8,7 @@ import ManagementPayment from "./viewAdmin/ManagementPayment";
 import ManagementFrauds from "./viewAdmin/ManagementFrauds";
 import ManagementReports from "./viewAdmin/ManagementReports";
 import PublicationRequest from "./viewAdmin/PublicationRequest";
+import ChatIA from "@/app/components/ChatIA";
 
 export default function AdminView() {
   const [view, setView] = useState<"users" | "payments" | "frauds" | "reports">(
@@ -113,6 +114,8 @@ export default function AdminView() {
           <ManagementReports />
         </div>
       </section>
+
+      <ChatIA />
     </article>
   );
 }
