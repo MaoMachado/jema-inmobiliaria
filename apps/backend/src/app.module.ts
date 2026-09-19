@@ -6,6 +6,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { PropiedadesModule } from './propiedades/propiedades.module';
 import { UsuariosModule } from './usuarios/usuarios.module';
 import { ReporteFraude } from './reportes-fraude/reportes-fraude.module';
+import { IaModule } from './ia/ia.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { ReporteFraude } from './reportes-fraude/reportes-fraude.module';
     PropiedadesModule,
     UsuariosModule,
     ReporteFraude,
+    IaModule,
   ],
   controllers: [AppController],
   providers: [AppService],

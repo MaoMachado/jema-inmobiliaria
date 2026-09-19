@@ -1,4 +1,4 @@
-import Link from "next/link";
+import HeaderAuth from "./HeaderAuth";
 
 export default function Header() {
   return (
@@ -7,19 +7,8 @@ export default function Header() {
         <h1 className="text-2xl font-bold tracking-wider text-sky-400">
           JEMA Inmobiliaria
         </h1>
-        <div className="flex gap-6">
-          <Link
-            href="/login"
-            className="bg-sky-500/30 px-3 py-1 rounded-sm font-semibold tracking-wider hover:bg-sky-500/50 transition"
-          >
-            Iniciar sesión
-          </Link>
-          <Link
-            href="/register"
-            className="bg-sky-500/30 px-3 py-1 rounded-sm font-semibold tracking-wider hover:bg-sky-500/50 transition"
-          >
-            Registrarse
-          </Link>
+        <div>
+          <HeaderAuth />
         </div>
       </div>
     </header>
