@@ -21,6 +21,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import {
   CreatePropiedadDto,
   RechazarPropiedadDto,
+  ToggleDestacadaDto,
 } from './dto/propiedades.dto';
 import type { RequestWithUser } from '../common/types/request-with-user';
 import { VerificarDto } from '../usuarios/dto/verificar.dto';
@@ -113,6 +114,20 @@ export class PropiedadesController {
   @Get('destacadas')
   async findDestacadas() {
     return this.propiedadesService.findDestacadas();
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch(':id/destacada')
+  toggleDestacada(
+    @Param('id') id: string,
+    @Body() body: ToggleDestacadaDto,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.propiedadesService.toggleDestacada(
+      id,
+      body.destacada,
+      req.user.id,
+    );
   }
 
   @Get(':id')

@@ -29,6 +29,8 @@ export class PropiedadesService {
     private readonly storage: StorageService,
   ) {}
 
+  private readonly LIMITE_DESTACADAS_PREMIUM = 3;
+
   private validate(propiedad: CreatePropiedadDto) {
     if (
       !propiedad.titulo?.trim() ||
@@ -504,34 +506,145 @@ export class PropiedadesService {
   }
 
   //! Propiedades Destacadas
-  async findDestacadas() {
-    return this.prisma.propiedad.findMany({
-      where: { estado: 'APROBADA' },
-      orderBy: { puntaje: 'desc' },
-      take: 6,
-      select: {
-        id: true,
-        titulo: true,
-        descripcion: true,
-        precio: true,
-        ciudad: true,
-        barrio: true,
-        tipo: true,
-        habitaciones: true,
-        banos: true,
-        area: true,
-        estrato: true,
-        fotografias: true,
-        puntaje: true,
-        publicadoPor: {
-          select: {
-            nombres: true,
-            apellidos: true,
-            celularVerificado: true,
-            documentoVerificado: true,
-          },
+  async findDestacadas(limit: number = 6) {
+    const ahora = new Date();
+
+    const selectFields = {
+      id: true,
+      titulo: true,
+      descripcion: true,
+      precio: true,
+      ciudad: true,
+      barrio: true,
+      tipo: true,
+      habitaciones: true,
+      banos: true,
+      area: true,
+      estrato: true,
+      fotografias: true,
+      puntaje: true,
+      destacada: true,
+      destacadaHasta: true,
+      documentos: {
+        select: {
+          id: true,
+          tipo: true,
+          verificado: true,
         },
       },
+      publicadoPor: {
+        select: {
+          nombres: true,
+          apellidos: true,
+          celularVerificado: true,
+          documentoVerificado: true,
+        },
+      },
+    };
+
+    const destacadas = await this.prisma.propiedad.findMany({
+      where: {
+        estado: 'APROBADA',
+        destacada: true,
+        publicadoPor: { plan: 'PREMIUM' },
+        OR: [{ destacadaHasta: null }, { destacadaHasta: { gte: ahora } }],
+      },
+      orderBy: [{ puntaje: 'desc' }, { updatedAt: 'desc' }],
+      take: limit,
+      select: selectFields,
+    });
+
+    if (destacadas.length === 0) {
+      return this.prisma.propiedad.findMany({
+        where: { estado: 'APROBADA' },
+        orderBy: [{ puntaje: 'desc' }, { updatedAt: 'desc' }],
+        take: 6,
+        select: selectFields,
+      });
+    }
+
+    if (destacadas.length < limit) {
+      const idsYaIncluidos = destacadas.map((p) => p.id);
+      const faltantes = limit - destacadas.length;
+
+      const fallback = await this.prisma.propiedad.findMany({
+        where: {
+          estado: 'APROBADA',
+          id: { notIn: idsYaIncluidos },
+        },
+        orderBy: [{ puntaje: 'desc' }, { updatedAt: 'desc' }],
+        take: faltantes,
+        select: selectFields,
+      });
+
+      return [...destacadas, ...fallback];
+    }
+
+    return destacadas;
+  }
+
+  async toggleDestacada(id: string, destacada: boolean, userId: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const propiedad = await tx.propiedad.findUnique({
+        where: { id },
+        include: {
+          publicadoPor: {
+            select: {
+              plan: true,
+            },
+          },
+        },
+      });
+
+      if (!propiedad) {
+        throw new NotFoundException('Propiedad no encontrada');
+      }
+
+      if (propiedad.publicadoPorId !== userId) {
+        throw new ForbiddenException(
+          'No tienes permiso para destacar esta propiedad',
+        );
+      }
+
+      if (propiedad.destacada === destacada) {
+        return propiedad;
+      }
+
+      if (destacada) {
+        if (propiedad.publicadoPor.plan !== 'PREMIUM') {
+          throw new ForbiddenException(
+            'Debes tener un plan PREMIUM activo para destacar esta propiedad',
+          );
+        }
+
+        if (propiedad.estado !== 'APROBADA') {
+          throw new ForbiddenException(
+            'La propiedad debe estar aprobada para poder ser destacada',
+          );
+        }
+
+        const destacadasActivas = await tx.propiedad.count({
+          where: {
+            publicadoPorId: userId,
+            destacada: true,
+            estado: 'APROBADA',
+          },
+        });
+
+        if (destacadasActivas >= this.LIMITE_DESTACADAS_PREMIUM) {
+          throw new BadRequestException(
+            `Ya tienes ${this.LIMITE_DESTACADAS_PREMIUM} propiedades destacadas. Desmarca una de las actuales para destacar otra.`,
+          );
+        }
+      }
+
+      return tx.propiedad.update({
+        where: { id },
+        data: {
+          destacada,
+          destacadaHasta: null,
+        },
+      });
     });
   }
 }

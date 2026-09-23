@@ -179,6 +179,38 @@ export function usePropiedades() {
     }
   };
 
+  const handleDestacar = async (id: string, nuevoEstado: boolean) => {
+    setLoading(true);
+    setError("");
+
+    try {
+      const res = await api.patch(`/propiedades/${id}/destacada`, {
+        destacada: nuevoEstado,
+      });
+
+      setInitialData((prev) =>
+        prev.map((p) =>
+          p.id === id ? { ...p, destacada: res.data.destacada } : p,
+        ),
+      );
+
+      setMessage(
+        nuevoEstado
+          ? "Propiedad destacada correctamente ⭐"
+          : "Propiedad retirada de destacadas",
+      );
+      setTimeout(() => setMessage(""), 5000);
+    } catch (error) {
+      const fallback = "Error al actualizar propiedad destacada";
+      console.error(fallback, error);
+      const errorMsg = getErrorMessage(error, fallback);
+      setError(errorMsg);
+      setTimeout(() => setError(""), 5000);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     initialData,
     isSearching,
@@ -197,5 +229,6 @@ export function usePropiedades() {
     handleSearchResult,
     handleSearchClear,
     handleDocumento,
+    handleDestacar,
   };
 }

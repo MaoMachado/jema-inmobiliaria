@@ -8,10 +8,14 @@ import { ProbabilidadPropiedad } from "../Modal/ProbabilidadPropiedad";
 import SearchProperty from "@/app/dashboard/views/viewUser/SearchProperty";
 import ChatIA from "@/app/components/ChatIA";
 import PlanSuscripcion from "./viewUser/PlanSuscripcion";
+import { usePagos } from "./hooks/usePagos";
 
 export default function UserView() {
   const [probabilidadId, setProbabilidadId] = useState<string | null>(null);
   const [showPlan, setShowPlan] = useState(false);
+
+  const { planInfo } = usePagos();
+  const esPremium = planInfo?.plan === "PREMIUM";
 
   const {
     initialData,
@@ -31,6 +35,7 @@ export default function UserView() {
     handleSearchResult,
     handleSearchClear,
     handleDocumento,
+    handleDestacar,
   } = usePropiedades();
 
   useEffect(() => {
@@ -40,8 +45,21 @@ export default function UserView() {
   return (
     <article>
       <header className="flex justify-between items-center mb-3">
-        <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold">
+        <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold flex flex-col gap-2">
           Propiedades
+          {esPremium && (
+            <div className="inline-flex items-center gap-2 bg-amber-500/50 border border-amber-500/30 text-amber-300 text-sm px-3 py-1.5 rounded-lg">
+              <span>⭐ Propiedades Destacadas:</span>
+              <span>
+                {
+                  initialData.filter(
+                    (p) => p.destacada && p.estado === "APROBADA",
+                  ).length
+                }{" "}
+                / 3
+              </span>
+            </div>
+          )}
         </h2>
 
         <div className="flex gap-3">
@@ -85,6 +103,7 @@ export default function UserView() {
                     onEdit={openEdit}
                     onDelete={handleDeleteProperty}
                     onProbabilidad={setProbabilidadId}
+                    onDestacar={esPremium ? handleDestacar : undefined}
                   />
                 ))}
 
@@ -97,8 +116,14 @@ export default function UserView() {
             ) : null}
 
             {message && (
-              <div className="fixed bottom-0 right-0 m-4 bg-green-500/30 p-2 rounded-md font-semibold tracking-wide">
+              <div className="fixed bottom-4 right-4 z-50 bg-green-500/80 text-white px-4 py-2 rounded-md font-semibold shadow-lg">
                 <p>{message}</p>
+              </div>
+            )}
+
+            {error && (
+              <div className="fixed bottom-4 right-4 z-50 bg-red-500/80 text-white px-4 py-2 rounded-md font-semibold shadow-lg">
+                <p>{error}</p>
               </div>
             )}
           </section>

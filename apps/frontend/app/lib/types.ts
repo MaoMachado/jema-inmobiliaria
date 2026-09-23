@@ -46,6 +46,8 @@ export interface Propiedad {
   puntaje?: number;
   createdAt: string;
   publicadoPorId: string;
+  destacada: boolean;
+  destacadaHasta?: string | null;
 
   publicadoPor: {
     nombres: string;
