@@ -1,11 +1,17 @@
 import { Type } from 'class-transformer';
 import {
   IsArray,
+  IsBoolean,
   IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
 } from 'class-validator';
+
+export class ToggleDestacadaDto {
+  @IsBoolean({ message: 'El estado de destacada debe ser un booleano' })
+  destacada: boolean;
+}
 
 export class CreatePropiedadDto {
   @IsString()

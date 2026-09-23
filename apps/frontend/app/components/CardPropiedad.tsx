@@ -13,6 +13,7 @@ interface CardPropiedadProps {
   onProbabilidad?: (id: string) => void;
   onDocumento?: (id: string, file: File, tipo: string) => void;
   onReportar?: (propiedadId: string) => void;
+  onDestacar?: (propiedadId: string, nuevoEstado: boolean) => void;
 }
 
 export function CardPropiedad({
@@ -22,6 +23,7 @@ export function CardPropiedad({
   onProbabilidad,
   onDocumento,
   onReportar,
+  onDestacar,
 }: CardPropiedadProps) {
   const precioFormateado = new Intl.NumberFormat("es-CO", {
     style: "currency",
@@ -42,7 +44,11 @@ export function CardPropiedad({
   };
 
   return (
-    <article className="relative bg-gray-800/30 p-3 border border-gray-600 rounded-lg shadow-xs">
+    <article
+      className={`relative bg-gray-800/30 p-3 border  rounded-lg shadow-xs ${
+        propiedad.destacada ? "border-2 border-sky-700/50" : "border-gray-600"
+      }`}
+    >
       {onEdit && (
         <span>
           <p
@@ -61,6 +67,28 @@ export function CardPropiedad({
                 : "Publicación Aprobada"}
           </p>
         </span>
+      )}
+
+      {onDestacar && (
+        <button
+          disabled={propiedad.estado !== "APROBADA"}
+          onClick={() => onDestacar?.(propiedad.id, !propiedad.destacada)}
+          title={
+            propiedad.estado !== "APROBADA"
+              ? "Solo se pueden destacar propiedades aprobadas"
+              : propiedad.destacada
+                ? "Quitar de destacadas"
+                : "Destacar en landing"
+          }
+          className={`absolute -top-2 -left-2 cursor-pointer transition-all duration-200 ease-in-out ${
+            propiedad.estado !== "APROBADA"
+              ? "opacity-30 cursor-not-allowed grayscale"
+              : "hover:scale-125"
+          }`}
+          aria-label="Destacar Propiedad"
+        >
+          {propiedad.destacada ? "✨" : "⭐"}
+        </button>
       )}
 
       <header className="relative mt-3">
