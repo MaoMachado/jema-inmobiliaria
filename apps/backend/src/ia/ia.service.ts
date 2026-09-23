@@ -39,7 +39,52 @@ export class IaServices {
     }
   }
 
-  async chat(mensaje: string) {
+  private inicioHoy() {
+    const zona = process.env.APP_TIMEZONE ?? 'America/Bogota';
+    const partes = new Intl.DateTimeFormat('en', {
+      timeZone: zona,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(new Date());
+
+    const map: Record<string, string> = {};
+    for (const p of partes) if (p.type !== 'literal') map[p.type] = p.value;
+
+    return new Date(`${map.year}-${map.month}-${map.day}T00:00:00Z`);
+  }
+
+  async chat(mensaje: string, userId: string) {
+    const usuario = await this.prisma.usuario.findUnique({
+      where: { id: userId },
+      select: { chatIaLimite: true, chatUsados: true, chatFecha: true },
+    });
+
+    if (!usuario)
+      throw new HttpException('Usuario no encontrado', HttpStatus.NOT_FOUND);
+
+    const esDiaNuevo =
+      !usuario.chatFecha || usuario.chatFecha < this.inicioHoy();
+
+    if (esDiaNuevo) {
+      await this.prisma.usuario.update({
+        where: { id: userId },
+        data: { chatUsados: 1, chatFecha: this.inicioHoy() },
+      });
+    } else {
+      const reserva = await this.prisma.usuario.updateMany({
+        where: { id: userId, chatUsados: { lt: usuario.chatIaLimite } },
+        data: { chatUsados: { increment: 1 } },
+      });
+
+      if (reserva.count === 0) {
+        throw new HttpException(
+          `Alcanzaste el limite de ${usuario.chatIaLimite} consultas del dia. Mejora tu plan para ampliarlo.`,
+          HttpStatus.FORBIDDEN,
+        );
+      }
+    }
+
     try {
       const propiedades = await this.prisma.propiedad.findMany({
         where: { estado: 'APROBADA' },
@@ -68,6 +113,10 @@ export class IaServices {
       const response = await this.generarRespuesta(prompt);
       return response?.text;
     } catch (error) {
+      await this.prisma.usuario.update({
+        where: { id: userId },
+        data: { chatUsados: { decrement: 1 } },
+      });
       console.error('Error en chat IA:', error);
       throw new HttpException(
         'No se pudo procesar la consulta. Inténtalo de nuevo',

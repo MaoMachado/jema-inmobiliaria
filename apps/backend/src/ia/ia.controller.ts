@@ -1,7 +1,8 @@
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import type { RequestWithUser } from '../common/types/request-with-user';
 import { ChatDto } from './dto/chat.dto';
 import { IaServices } from './ia.service';
-import { Body, Controller, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
 
 @Controller('ia')
 export class IaController {
@@ -9,7 +10,7 @@ export class IaController {
 
   @UseGuards(JwtAuthGuard)
   @Post('chat')
-  async chat(@Body() dto: ChatDto) {
-    return this.IaServices.chat(dto.mensaje);
+  async chat(@Body() dto: ChatDto, @Req() req: RequestWithUser) {
+    return this.IaServices.chat(dto.mensaje, req.user.id);
   }
 }

@@ -7,6 +7,10 @@ import Button from "./Button";
 
 type Mensaje = { role: "user" | "assistant"; content: string };
 
+const getErrorMessage = (error: any, fallback: string) => {
+  return error?.response?.data?.message ?? fallback;
+};
+
 export default function ChatIA() {
   const [open, setOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -33,8 +37,13 @@ export default function ChatIA() {
         { role: "assistant", content: res.data ?? "Sin Respuesta." },
       ]);
       endRef.current?.scrollIntoView({ behavior: "smooth" });
-    } catch {
-      setError("No se pudo contactar al asesor. Inténtalo de nuevo.");
+    } catch (error) {
+      setError(
+        getErrorMessage(
+          error,
+          "No se pudo contactar al asesor. Inténtalo de nuevo.",
+        ),
+      );
     } finally {
       setLoading(false);
     }
@@ -110,7 +119,9 @@ export default function ChatIA() {
             </>
           ) : (
             <div className="p-6 text-center">
-              <p className="mb-6">Inicia sesión para usar el asesor inmobiliario.</p>
+              <p className="mb-6">
+                Inicia sesión para usar el asesor inmobiliario.
+              </p>
               <Link href="/login">
                 <Button title="Iniciar sesión" />
               </Link>

@@ -4,6 +4,10 @@ import api from "@/app/lib/api";
 import { Propiedad } from "@/app/lib/types";
 import { useState } from "react";
 
+const getErrorMessage = (error: any, fallback: string) => {
+  return error?.response?.data?.message ?? fallback;
+};
+
 export function usePropiedades() {
   const [initialData, setInitialData] = useState<Propiedad[]>([]);
   const [isSearching, setIsSearching] = useState<boolean>(false);
@@ -25,8 +29,9 @@ export function usePropiedades() {
       setInitialData(res.data);
       setIsSearching(false);
     } catch (error) {
-      console.error("Error al cargar propiedades", error);
-      setError("Error al cargar las propiedades");
+      const fallback = "Error al cargar las propiedades";
+      console.error(fallback, error);
+      setError(getErrorMessage(error, fallback));
     } finally {
       setLoading(false);
     }
@@ -110,17 +115,11 @@ export function usePropiedades() {
         setMessage("");
       }, 5000);
     } catch (error) {
-      console.error(
-        editingPropiedad
-          ? "Error al actualizar la propiedad"
-          : "Error al crear la propiedad",
-        error,
-      );
-      setError(
-        editingPropiedad
-          ? "Error al actualizar la propiedad"
-          : "Error al crear la propiedad",
-      );
+      const fallback = editingPropiedad
+        ? "Error al actualizar la propiedad"
+        : "Error al crear la propiedad";
+      console.error(fallback, error);
+      setError(getErrorMessage(error, fallback));
     } finally {
       setSaving(false);
     }
@@ -140,8 +139,9 @@ export function usePropiedades() {
       loadInitial();
       setMessage("Propiedad eliminada correctamente");
     } catch (error) {
-      console.error("Error al eliminar la propiedad", error);
-      setError("Error al eliminar la propiedad");
+      const fallback = "Error al eliminar la propiedad";
+      console.error(fallback, error);
+      setError(getErrorMessage(error, fallback));
     } finally {
       setLoading(false);
     }
@@ -171,8 +171,9 @@ export function usePropiedades() {
       loadInitial();
       setTimeout(() => setMessage(""), 5000);
     } catch (error) {
-      console.error("Error al cargar el documento", error);
-      setError("Error al cargar el documento");
+      const fallback = "Error al cargar el documento";
+      console.error(fallback, error);
+      setError(getErrorMessage(error, fallback));
     } finally {
       setLoading(false);
     }

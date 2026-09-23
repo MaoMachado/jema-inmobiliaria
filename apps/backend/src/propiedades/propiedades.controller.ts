@@ -31,7 +31,7 @@ export class PropiedadesController {
 
   @UseGuards(JwtAuthGuard)
   @Post()
-  @UseInterceptors(FilesInterceptor('fotografias', 10))
+  @UseInterceptors(FilesInterceptor('fotografias', 20))
   create(
     @Body() body: CreatePropiedadDto,
     @UploadedFiles() files: Express.Multer.File[],
@@ -120,9 +120,10 @@ export class PropiedadesController {
     return this.propiedadesService.findOne(id);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get(':id/probabilidades')
-  calcularProbabilidad(@Param('id') id: string) {
-    return this.propiedadesService.calcularProbabilidad(id);
+  calcularProbabilidad(@Param('id') id: string, @Req() req: RequestWithUser) {
+    return this.propiedadesService.calcularProbabilidad(id, req.user);
   }
 
   @UseGuards(JwtAuthGuard)

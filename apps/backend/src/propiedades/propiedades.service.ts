@@ -20,6 +20,7 @@ import {
   CreatePropiedadDto,
   RechazarPropiedadDto,
 } from './dto/propiedades.dto';
+import { PLANES } from '../pagos/planes';
 
 @Injectable()
 export class PropiedadesService {
@@ -49,6 +50,34 @@ export class PropiedadesService {
     files: Express.Multer.File[],
     userId: string,
   ) {
+    const usuario = await this.prisma.usuario.findUnique({
+      where: { id: userId },
+      select: {
+        plan: true,
+        propiedadesLimite: true,
+      },
+    });
+
+    if (!usuario) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    const cantidad = await this.prisma.propiedad.count({
+      where: { publicadoPorId: userId },
+    });
+
+    if (cantidad >= usuario.propiedadesLimite) {
+      throw new ForbiddenException(
+        `Alcanzaste el límite de ${usuario.propiedadesLimite} propiedades. Mejora tu plan para ampliarlo.`,
+      );
+    }
+
+    if (files.length > PLANES[usuario.plan].fotos) {
+      throw new ForbiddenException(
+        `Tu plan permite máximo ${PLANES[usuario.plan].fotos} fotos por propiedad.`,
+      );
+    }
+
     const data: CreatePropiedadDto = {
       ...propiedad,
       precio: Number(propiedad.precio),
@@ -216,6 +245,20 @@ export class PropiedadesService {
       );
     }
 
+    if (data.fotografias !== undefined) {
+      const dueno = await this.prisma.usuario.findUnique({
+        where: { id: propiedad.publicadoPorId },
+        select: { plan: true },
+      });
+
+      const fotosLimite = PLANES[dueno?.plan ?? 'GRATIS'].fotos;
+      if (data.fotografias.length > fotosLimite) {
+        throw new ForbiddenException(
+          `Tu plan actual permite máximo ${fotosLimite} fotos por propiedad`,
+        );
+      }
+    }
+
     const cambios: CreatePropiedadDto = {
       titulo: data.titulo ?? propiedad.titulo ?? '',
       descripcion: data.descripcion ?? propiedad.descripcion ?? '',
@@ -289,8 +332,11 @@ export class PropiedadesService {
     return { message: 'Propiedad eliminada' };
   }
 
-  async calcularProbabilidad(id: string) {
-    const propiedad = await this.findOne(id);
+  async calcularProbabilidad(
+    id: string,
+    usuario?: { id: string; role: string },
+  ) {
+    const propiedad = await this.findOne(id, usuario);
 
     const similares = await this.prisma.propiedad.findMany({
       where: {
