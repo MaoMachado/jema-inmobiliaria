@@ -7,9 +7,11 @@ import { CardPropiedad } from "@/app/components/CardPropiedad";
 import { ProbabilidadPropiedad } from "../Modal/ProbabilidadPropiedad";
 import SearchProperty from "@/app/dashboard/views/viewUser/SearchProperty";
 import ChatIA from "@/app/components/ChatIA";
+import PlanSuscripcion from "./viewUser/PlanSuscripcion";
 
 export default function UserView() {
   const [probabilidadId, setProbabilidadId] = useState<string | null>(null);
+  const [showPlan, setShowPlan] = useState(false);
 
   const {
     initialData,
@@ -42,49 +44,66 @@ export default function UserView() {
           Propiedades
         </h2>
 
-        <button
-          onClick={openCreate}
-          className="text-white bg-blue-700/40 hover:bg-blue-500/50 rounded-md box-border border border-transparent hover:bg-brand-strong  shadow-xs font-medium leading-5 rounded-base text-sm px-4 py-2.5 focus:outline-none cursor-pointer"
-        >
-          Nueva Propiedad
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={() => setShowPlan((v) => !v)}
+            className="bg-sky-700/40 hover:bg-sky-500/50 rounded-md cursor-pointer px-4 py-2.5 text-sm"
+          >
+            {showPlan ? "Mis Propiedades" : "Mi Plan"}
+          </button>
+
+          {!showPlan && (
+            <button
+              onClick={openCreate}
+              className="text-white bg-blue-700/40 hover:bg-blue-500/50 rounded-md box-border border border-transparent hover:bg-brand-strong  shadow-xs font-medium leading-5 rounded-base text-sm px-4 py-2.5 focus:outline-none cursor-pointer"
+            >
+              Nueva Propiedad
+            </button>
+          )}
+        </div>
       </header>
 
-      <SearchProperty
-        onResult={handleSearchResult}
-        onClear={handleSearchClear}
-      />
+      {showPlan ? (
+        <PlanSuscripcion />
+      ) : (
+        <>
+          <SearchProperty
+            onResult={handleSearchResult}
+            onClear={handleSearchClear}
+          />
 
-      <section>
-        {!isSearching && loading ? (
-          <p>Cargando...</p>
-        ) : !isSearching ? (
-          <article className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {initialData.map((propiedad) => (
-              <CardPropiedad
-                key={propiedad.id}
-                propiedad={propiedad}
-                onDocumento={handleDocumento}
-                onEdit={openEdit}
-                onDelete={handleDeleteProperty}
-                onProbabilidad={setProbabilidadId}
-              />
-            ))}
+          <section>
+            {!isSearching && loading ? (
+              <p>Cargando...</p>
+            ) : !isSearching ? (
+              <article className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-6">
+                {initialData.map((propiedad) => (
+                  <CardPropiedad
+                    key={propiedad.id}
+                    propiedad={propiedad}
+                    onDocumento={handleDocumento}
+                    onEdit={openEdit}
+                    onDelete={handleDeleteProperty}
+                    onProbabilidad={setProbabilidadId}
+                  />
+                ))}
 
-            {initialData.length === 0 && (
-              <p className="text-center col-span-full text-2xl mt-10 ">
-                No hay propiedades 🧹
-              </p>
+                {initialData.length === 0 && (
+                  <p className="text-center col-span-full text-2xl mt-10 ">
+                    No hay propiedades 🧹
+                  </p>
+                )}
+              </article>
+            ) : null}
+
+            {message && (
+              <div className="fixed bottom-0 right-0 m-4 bg-green-500/30 p-2 rounded-md font-semibold tracking-wide">
+                <p>{message}</p>
+              </div>
             )}
-          </article>
-        ) : null}
-
-        {message && (
-          <div className="fixed bottom-0 right-0 m-4 bg-green-500/30 p-2 rounded-md font-semibold tracking-wide">
-            <p>{message}</p>
-          </div>
-        )}
-      </section>
+          </section>
+        </>
+      )}
 
       {modalOpen && (
         <NewPropertyModal

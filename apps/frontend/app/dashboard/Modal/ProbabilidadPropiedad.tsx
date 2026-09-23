@@ -18,6 +18,10 @@ interface Props {
   onClose: () => void;
 }
 
+const getErrorMessage = (error: any, fallback: string) => {
+  return error?.response?.data?.message ?? fallback;
+};
+
 export function ProbabilidadPropiedad({ id, onClose }: Props) {
   const [probabilidad, setProbabilidad] =
     useState<ProbabilidadPropiedades | null>(null);
@@ -36,7 +40,7 @@ export function ProbabilidadPropiedad({ id, onClose }: Props) {
 
         setProbabilidad(res.data);
       } catch (error) {
-        setError("Error al cargar la probabilidad");
+        setError(getErrorMessage(error, "Error al cargar la probabilidad"));
       } finally {
         setLoading(false);
       }

@@ -29,20 +29,51 @@ enum EstadoReporte {
   IGNORADO
 }
 
+enum Plan {
+  GRATIS
+  BASICO
+  PREMIUM
+}
+
+enum EstadoPago {
+  PENDIENTE
+  APROBADO
+  RECHAZADO
+}
+
+model Pago {
+  id          String     @id @default(uuid())
+  usuarioId   String
+  usuario     Usuario    @relation(fields: [usuarioId], references: [id])
+  monto       Float
+  plan        Plan
+  comprobante String?
+  estado      EstadoPago @default(PENDIENTE)
+  createAt    DateTime   @default(now())
+  updateAt    DateTime   @updatedAt
+}
+
 model Usuario {
-  id                  String   @id @default(uuid())
+  id                  String    @id @default(uuid())
   nombres             String
   apellidos           String
-  email               String   @unique
+  email               String    @unique
   password            String
   foto                String?
   celular             String?
-  celularVerificado   Boolean  @default(false)
+  celularVerificado   Boolean   @default(false)
   documentoUrl        String?
-  documentoVerificado Boolean  @default(false)
-  role                Role     @default(USER)
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  documentoVerificado Boolean   @default(false)
+  role                Role      @default(USER)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  // PlanMonetización
+  plan                Plan      @default(GRATIS)
+  propiedadesLimite   Int       @default(5)
+  chatIaLimite        Int       @default(10)
+  chatUsados          Int       @default(0)
+  chatFecha           DateTime?
+  pagos               Pago[]
 
   propiedades    Propiedad[]
   reporteFraudes ReporteFraude[]
@@ -74,6 +105,8 @@ model Propiedad {
   documentos     DocumentoPropiedad[]
   estado         EstadoPropiedad      @default(PENDIENTE)
   motivoRechazo  String?
+  destacada      Boolean              @default(false)
+  destacadaHasta DateTime?
 
   //Relación con Usuario
   publicadoPor   Usuario         @relation(fields: [publicadoPorId], references: [id])

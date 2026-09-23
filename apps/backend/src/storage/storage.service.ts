@@ -7,6 +7,7 @@ export class StorageService {
   private readonly bucketUsuarios = 'usuario-documento';
   private readonly bucketPropiedadesDocumentos = 'propiedades-documentos';
   private readonly bucketFotoPerfil = 'foto-perfil';
+  private readonly bucketPagosComprobantes = 'pagos-comprobantes';
 
   constructor(private readonly supabase: SupabaseClient) {}
 
@@ -85,6 +86,26 @@ export class StorageService {
     return ruta;
   }
 
+  async subirComprobantePago(file: Express.Multer.File): Promise<string> {
+    const ruta = this.generarRuta(file.originalname);
+
+    const { error } = await this.supabase.storage
+      .from(this.bucketPagosComprobantes)
+      .upload(ruta, file.buffer, {
+        contentType: file.mimetype,
+      });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return ruta;
+  }
+
+  async getUrlComprobantePago(path: string): Promise<string> {
+    return this.crearUrlFirmada(this.bucketPagosComprobantes, path);
+  }
+
   private generarRuta(original: string): string {
     const ext = original.split('.').pop()?.toLowerCase() ?? 'jpg';
     const base =
@@ -127,6 +148,7 @@ export class StorageService {
       this.bucketUsuarios,
       this.bucketPropiedadesDocumentos,
       this.bucketFotoPerfil,
+      this.bucketPagosComprobantes,
     ];
 
     for (const bucketName of allBuckets) {

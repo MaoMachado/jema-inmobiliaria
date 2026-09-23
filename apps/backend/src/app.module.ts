@@ -7,6 +7,7 @@ import { PropiedadesModule } from './propiedades/propiedades.module';
 import { UsuariosModule } from './usuarios/usuarios.module';
 import { ReporteFraude } from './reportes-fraude/reportes-fraude.module';
 import { IaModule } from './ia/ia.module';
+import { PagosModule } from './pagos/pagos.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { IaModule } from './ia/ia.module';
     UsuariosModule,
     ReporteFraude,
     IaModule,
+    PagosModule,
   ],
   controllers: [AppController],
   providers: [AppService],

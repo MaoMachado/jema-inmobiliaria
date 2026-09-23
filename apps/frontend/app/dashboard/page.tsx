@@ -50,7 +50,7 @@ export default function Dashboard() {
         <div className="max-w-7xl mx-auto p-6 flex flex-col md:flex-row justify-between items-center border-b border-blue-900/50">
           <Link
             href="/"
-            className="text-3xl font-bold text-blue-700 text-center mb-3"
+            className="text-3xl font-bold text-blue-700 text-center"
           >
             JEMA Inmobiliaria
           </Link>
