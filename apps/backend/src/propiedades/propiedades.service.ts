@@ -199,7 +199,22 @@ export class PropiedadesService {
   }
 
   async findOne(id: string, usuario?: { id?: string; role?: string }) {
-    const propiedad = await this.prisma.propiedad.findUnique({ where: { id } });
+    const propiedad = await this.prisma.propiedad.findUnique({
+      where: { id },
+      include: {
+        publicadoPor: {
+          select: {
+            nombres: true,
+            apellidos: true,
+            celularVerificado: true,
+            documentoVerificado: true,
+          },
+        },
+        documentos: {
+          select: { tipo: true, verificado: true },
+        },
+      },
+    });
 
     if (!propiedad) {
       throw new NotFoundException('Propiedad no encontrada');

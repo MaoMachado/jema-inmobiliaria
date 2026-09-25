@@ -2,8 +2,8 @@ import Link from "next/link";
 
 export default function Hero() {
   return (
-    <section className="bg-linear-to-br from-blue-900/50 to-blue-700/20 text-white py-20 px-6 rounded-xl">
-      <div className="max-w-4xl mx-auto text-center">
+    <section className="">
+      <div className="max-w-7xl mx-auto text-center bg-linear-to-br from-blue-900/50 to-blue-700/20 text-white rounded-xl py-20 px-6">
         <h1 className="text-4xl mx-auto text-center">
           Encuentra tu próximo hogar
         </h1>
