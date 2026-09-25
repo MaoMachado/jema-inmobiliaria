@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Propiedad } from "@/app/lib/types";
 import api from "@/app/lib/api";
 import CarruselPropiedad from "./components/CarruselPropiedad";
-import BotonWhatsapp from "./components/BotonWhatsApp";
+import BotonWhatsApp from "./components/BotonWhatsApp";
 
 const MapaPropiedad = dynamic(() => import("./components/MapaPropiedad"), {
   ssr: false,
@@ -44,10 +44,10 @@ export default function PropiedadDetailPage({
 
   if (loading) {
     return (
-      <main className="max-w-7xl mx-auto px-4 py-12">
+      <main className="max-w-7xl w-full mx-auto px-4 py-12">
         <div className="animate-pulse space-y-6">
           <div className="h-8 bg-gray-800 rounded w-1/3" />
-          <div className="h-[450px] bg-gray-800 rounded-2xl w-full" />
+          <div className="h-112.5 w-full bg-gray-800 rounded-2xl " />
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 h-64 bg-gray-800 rounded-2xl" />
             <div className="h-64 bg-gray-800 rounded-2xl" />
@@ -113,6 +113,7 @@ export default function PropiedadDetailPage({
             </span>
           )}
         </div>
+
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">
@@ -143,6 +144,7 @@ export default function PropiedadDetailPage({
             <h2 className="text-xl font-bold tracking-wider">
               Características de la Propiedad
             </h2>
+
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
               <div className="bg-gray-800/60 p-3 rounded-xl border border-gray-700/40">
                 <span className="text-gray-400 block text-xs">
@@ -198,12 +200,14 @@ export default function PropiedadDetailPage({
               </div>
             </div>
           </div>
+
           <div className="bg-gray-800/50 p-6 rounded-2xl border border-gray-700/60 shadow-lg space-y-3">
             <h2 className="text-xl font-bold tracking-wider">Descripción</h2>
             <p className="text-gray-300 leading-relaxed whitespace-pre-line text-sm md:text-base">
               {propiedad.descripcion}
             </p>
           </div>
+
           {embedVideo && (
             <div className="bg-gray-800/50 p-6 rounded-2xl border border-gray-700/60 shadow-lg space-y-3">
               <h2 className="text-xl font-bold tracking-wider">
@@ -227,6 +231,7 @@ export default function PropiedadDetailPage({
               </div>
             </div>
           )}
+
           {propiedad.ubicacionLat && propiedad.ubicacionLong && (
             <div className="bg-gray-800/50 p-6 rounded-2xl border border-gray-700/60 shadow-lg space-y-3">
               <h2 className="text-xl font-bold tracking-wider">Ubicación</h2>
@@ -242,6 +247,7 @@ export default function PropiedadDetailPage({
             </div>
           )}
         </section>
+
         <aside className="space-y-6 lg:sticky lg:top-8">
           <div className="bg-gray-800/50 p-6 rounded-2xl border border-gray-700/60 shadow-xl space-y-6">
             <div>
@@ -250,15 +256,19 @@ export default function PropiedadDetailPage({
               </span>
               <p className="text-3xl font-black text-green-400">{precioCOP}</p>
             </div>
+
             <hr className="border-gray-700/50" />
+
             <div className="space-y-3">
               <span className="text-xs uppercase text-gray-400 tracking-wider block">
                 Publicado por
               </span>
+
               <p className="text-base font-bold">
                 {propiedad.publicadoPor?.nombres}{" "}
                 {propiedad.publicadoPor?.apellidos}
               </p>
+
               <div className="space-y-2 text-xs">
                 <div className="flex items-center justify-between bg-gray-800/60 px-3 py-2 rounded-lg">
                   <span className="text-gray-300">Celular Verificado</span>
@@ -268,6 +278,7 @@ export default function PropiedadDetailPage({
                       : "⏳ No"}
                   </span>
                 </div>
+
                 <div className="flex items-center justify-between bg-gray-800/60 px-3 py-2 rounded-lg">
                   <span className="text-gray-300">Documento Verificado</span>
                   <span className="font-semibold text-sm">
@@ -278,7 +289,8 @@ export default function PropiedadDetailPage({
                 </div>
               </div>
             </div>
-            <BotonWhatsapp
+
+            <BotonWhatsApp
               propiedadId={propiedad.id}
               titulo={propiedad.titulo}
             />

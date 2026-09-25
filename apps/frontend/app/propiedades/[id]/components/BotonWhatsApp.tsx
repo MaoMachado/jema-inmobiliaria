@@ -9,7 +9,7 @@ interface BotonWhatsAppProps {
   titulo: string;
 }
 
-export default function BotonWhatsapp({
+export default function BotonWhatsApp({
   propiedadId,
   titulo,
 }: BotonWhatsAppProps) {

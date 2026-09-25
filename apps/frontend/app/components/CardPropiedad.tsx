@@ -44,6 +44,8 @@ export function CardPropiedad({
     }
   };
 
+  const esNavegable = !onEdit || propiedad.estado === "APROBADA";
+
   return (
     <article
       className={`relative bg-gray-800/30 p-3 border  rounded-lg shadow-xs ${
@@ -93,23 +95,40 @@ export function CardPropiedad({
       )}
 
       <header className="relative mt-3">
-        <Link
-          href={`/propiedades/${propiedad.id}`}
-          className="block overflow-hidden rounded-lg group"
-        >
-          {propiedad.fotografias?.[0] ? (
-            <img
-              src={propiedad.fotografias[0]}
-              alt={propiedad.titulo}
-              className="rounded-lg w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-            />
-          ) : (
-            <div className="w-full h-48 bg-gray-700/50 rounded-lg flex flex-col items-center justify-center text-gray-400 group-hover:bg-gray-700/70 transition-colors">
-              <span className="text-3xl mb-1">🏠</span>
-              <span className="text-xs">Sin fotografías</span>
-            </div>
-          )}
-        </Link>
+        {esNavegable ? (
+          <Link
+            href={`/propiedades/${propiedad.id}`}
+            className="block overflow-hidden rounded-lg group"
+          >
+            {propiedad.fotografias?.[0] ? (
+              <img
+                src={propiedad.fotografias[0]}
+                alt={propiedad.titulo}
+                className="rounded-lg w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+              />
+            ) : (
+              <div className="w-full h-48 bg-gray-700/50 rounded-lg flex flex-col items-center justify-center text-gray-400 group-hover:bg-gray-700/70 transition-colors">
+                <span className="text-3xl mb-1">🏠</span>
+                <span className="text-xs">Sin fotografías</span>
+              </div>
+            )}
+          </Link>
+        ) : (
+          <div className="block overflow-hidden rounded-lg">
+            {propiedad.fotografias?.[0] ? (
+              <img
+                src={propiedad.fotografias[0]}
+                alt={propiedad.titulo}
+                className="rounded-lg w-full h-48 object-cover"
+              />
+            ) : (
+              <div className="w-full h-48 bg-gray-700/50 rounded-lg flex flex-col items-center justify-center text-gray-400">
+                <span className="text-3xl mb-1">🏠</span>
+                <span className="text-xs">Sin fotografías</span>
+              </div>
+            )}
+          </div>
+        )}
 
         {propiedad.puntaje !== undefined && propiedad.puntaje !== null && (
           <p className="absolute -translate-y-8 translate-x-4 opacity-80">
@@ -121,12 +140,18 @@ export function CardPropiedad({
         )}
 
         <h3 className="text-xl font-semibold tracking-wider text-center mt-2">
-          <Link
-            href={`/propiedades/${propiedad.id}`}
-            className="hover:text-sky-400 transition-colors line-clamp-1"
-          >
-            {propiedad.titulo}
-          </Link>
+          {esNavegable ? (
+            <Link
+              href={`/propiedades/${propiedad.id}`}
+              className="hover:text-sky-400 transition-colors line-clamp-1"
+            >
+              {propiedad.titulo}
+            </Link>
+          ) : (
+            <span className="line-clamp-1 cursor-default">
+              {propiedad.titulo}
+            </span>
+          )}
         </h3>
       </header>
 

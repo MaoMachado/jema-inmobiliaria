@@ -52,6 +52,7 @@ export default function MapaPropiedad({
             <span style="transform: rotate(45deg); font-size: 18px;">📍</span>
           </div>
         `,
+
         iconSize: [38, 38],
         iconAnchor: [19, 38],
         popupAnchor: [0, -38],
@@ -60,13 +61,31 @@ export default function MapaPropiedad({
       const marker = L.marker([lat, lng], { icon: customPin }).addTo(map);
 
       if (titulo || direccion) {
-        marker.bindPopup(`
-          <div style="font-family: inherit; font-size: 13px; color: #1e293b;">
-            <strong style="font-size: 14px; color: #0284c7;">${titulo ?? "Propiedad"}</strong>
-            ${direccion ? `<p style="margin: 4px 0 0; color: #64748b;">${direccion}</p>` : ""}
-          </div>
-        `);
+        const popupContainer = document.createElement("div");
+        popupContainer.style.fontFamily = "inherit";
+        popupContainer.style.fontSize = "13px";
+        popupContainer.style.color = "#1e293b";
+
+        if (titulo) {
+          const strong = document.createElement("strong");
+          strong.style.fontSize = "14px";
+          strong.style.color = "#0284c7";
+          strong.style.display = "block";
+          strong.textContent = titulo;
+          popupContainer.appendChild(strong);
+        }
+
+        if (direccion) {
+          const p = document.createElement("p");
+          p.style.margin = "4px 0 0";
+          p.style.color = "#64748b";
+          p.textContent = direccion;
+          popupContainer.appendChild(p);
+        }
+
+        marker.bindPopup(popupContainer);
       }
+
       mapInstanceRef.current = map;
     } else {
       mapInstanceRef.current.setView([lat, lng], 15);

@@ -26,7 +26,7 @@ export default function CarruselPropiedad({
   // Si no hay fotografías cargadas, mostramos un placeholder elegante
   if (!fotografias || total === 0) {
     return (
-      <div className="w-full h-80 md:h-[450px] bg-gray-800/60 border border-gray-700 rounded-2xl flex flex-col items-center justify-center text-gray-400">
+      <div className="w-full h-80 md:h-112.5 bg-gray-800/60 border border-gray-700 rounded-2xl flex flex-col items-center justify-center text-gray-400">
         <span className="text-6xl mb-3">🏠</span>
         <p className="text-lg font-medium">Sin fotografías disponibles</p>
         <p className="text-sm text-gray-500">
@@ -38,20 +38,17 @@ export default function CarruselPropiedad({
 
   return (
     <div className="space-y-4">
-      {/* Contenedor de la foto principal */}
-      <div className="relative w-full h-80 md:h-[480px] bg-gray-900 rounded-2xl overflow-hidden border border-gray-700/60 shadow-xl group">
+      <div className="relative w-full h-80 md:h-120 bg-gray-900 rounded-2xl overflow-hidden border border-gray-700/60 shadow-xl group">
         <img
           src={fotografias[currentIndex]}
           alt={`${titulo} - Foto ${currentIndex + 1}`}
           className="w-full h-full object-cover transition-all duration-300 select-none"
         />
 
-        {/* Contador de fotos */}
         <div className="absolute top-4 right-4 bg-gray-950/75 backdrop-blur-md text-white text-xs md:text-sm font-semibold px-3 py-1.5 rounded-full border border-gray-700/60 z-10">
           📷 {currentIndex + 1} / {total}
         </div>
 
-        {/* Flechas de navegación (solo si hay más de 1 foto) */}
         {total > 1 && (
           <>
             <button
@@ -72,7 +69,6 @@ export default function CarruselPropiedad({
         )}
       </div>
 
-      {/* Miniaturas (Thumbnails) */}
       {total > 1 && (
         <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-700">
           {fotografias.map((foto, index) => (
