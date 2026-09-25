@@ -5,6 +5,7 @@ import { Propiedad } from "../lib/types";
 import { SubirDocumentoModal } from "../dashboard/Modal/SubirDocumentoModal";
 import { DocumentoImgModal } from "../dashboard/Modal/DocumentoImgModal";
 import Button from "./Button";
+import Link from "next/link";
 
 interface CardPropiedadProps {
   propiedad: Propiedad;
@@ -92,23 +93,40 @@ export function CardPropiedad({
       )}
 
       <header className="relative mt-3">
-        {propiedad.fotografias?.[0] && (
-          <img
-            src={propiedad.fotografias[0]}
-            alt={propiedad.titulo}
-            className="rounded-lg"
-          />
+        <Link
+          href={`/propiedades/${propiedad.id}`}
+          className="block overflow-hidden rounded-lg group"
+        >
+          {propiedad.fotografias?.[0] ? (
+            <img
+              src={propiedad.fotografias[0]}
+              alt={propiedad.titulo}
+              className="rounded-lg w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+          ) : (
+            <div className="w-full h-48 bg-gray-700/50 rounded-lg flex flex-col items-center justify-center text-gray-400 group-hover:bg-gray-700/70 transition-colors">
+              <span className="text-3xl mb-1">🏠</span>
+              <span className="text-xs">Sin fotografías</span>
+            </div>
+          )}
+        </Link>
+
+        {propiedad.puntaje !== undefined && propiedad.puntaje !== null && (
+          <p className="absolute -translate-y-8 translate-x-4 opacity-80">
+            Calificación:{" "}
+            <span className="bg-blue-700/80 rounded-full px-3 py-1.5 font-semibold">
+              {propiedad.puntaje}
+            </span>
+          </p>
         )}
 
-        <p className="absolute -translate-y-8 translate-x-4 opacity-80">
-          Calificación:{" "}
-          <span className="bg-blue-700/80 rounded-full px-3 py-1.5 font-semibold">
-            {propiedad.puntaje}
-          </span>
-        </p>
-
-        <h3 className="text-xl font-semibold tracking-wider text-center">
-          {propiedad.titulo}
+        <h3 className="text-xl font-semibold tracking-wider text-center mt-2">
+          <Link
+            href={`/propiedades/${propiedad.id}`}
+            className="hover:text-sky-400 transition-colors line-clamp-1"
+          >
+            {propiedad.titulo}
+          </Link>
         </h3>
       </header>
 
