@@ -4,11 +4,12 @@ import api from "@/app/lib/api";
 import { Propiedad } from "@/app/lib/types";
 import { useState } from "react";
 
-const getErrorMessage = (error: any, fallback: string) => {
-  return error?.response?.data?.message ?? fallback;
+const getErrorMessage = (error: unknown, fallback: string) => {
+  const e = error as { response?: { data?: { message?: string } } };
+  return e?.response?.data?.message ?? fallback;
 };
 
-export function usePropiedades() {
+export function usePropiedades(onCreated?: (id: string) => void) {
   const [initialData, setInitialData] = useState<Propiedad[]>([]);
   const [isSearching, setIsSearching] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
@@ -100,7 +101,8 @@ export function usePropiedades() {
         };
         await api.patch(`/propiedades/${editingPropiedad.id}`, body);
       } else {
-        await api.post("/propiedades", formData);
+        const res = await api.post("/propiedades", formData);
+        onCreated?.(res.data.id);
       }
 
       closeModal();

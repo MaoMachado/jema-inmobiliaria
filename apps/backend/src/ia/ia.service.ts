@@ -1,6 +1,14 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { GoogleGenAI, ApiError } from '@google/genai';
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  canonEsperado,
+  probabilidadOcupacional,
+  probabilidadVenta,
+  rentabilidadAnual,
+  tiempoEstimadoDias,
+  tiempoEstimadoOcupacion,
+} from '../propiedades/calcular-probabilidad';
 
 @Injectable()
 export class IaServices {
@@ -123,5 +131,61 @@ export class IaServices {
         HttpStatus.BAD_GATEWAY,
       );
     }
+  }
+
+  async estimacionPropiedad(propiedadId: string, userId: string) {
+    const propiedad = await this.prisma.propiedad.findUnique({
+      where: { id: propiedadId },
+    });
+
+    if (!propiedad)
+      throw new HttpException('Propiedad no encontrada', HttpStatus.NOT_FOUND);
+
+    if (propiedad.publicadoPorId !== userId) {
+      throw new HttpException('Propiedad no encontrada', HttpStatus.NOT_FOUND);
+    }
+
+    const similares = await this.prisma.propiedad.findMany({
+      where: {
+        id: { not: propiedadId },
+        tipo: propiedad.tipo,
+        ciudad: propiedad.ciudad,
+      },
+      take: 10,
+    });
+
+    const valores = {
+      venta: probabilidadVenta(propiedad, similares),
+      ocupacional: probabilidadOcupacional(propiedad, similares),
+      tiempoDias: tiempoEstimadoDias(propiedad, similares),
+      canon: canonEsperado(propiedad),
+      rentabilidad: rentabilidadAnual(propiedad),
+      tiempoOcupacion: tiempoEstimadoOcupacion(propiedad, similares),
+    };
+
+    let mensajeIA: string | null = null;
+
+    try {
+      const prompt = `Eres un asesor inmobiliario de JEMA para una propiedad ${propiedad.tipo} en ${propiedad.ciudad}.
+      Interpreta estos valores: ${JSON.stringify(valores)}.
+      Responde en 2-3 frases comerciales, en español, orientadas a un propietario.`;
+
+      const response = await this.generarRespuesta(prompt);
+      mensajeIA = response?.text ?? null;
+    } catch (error) {
+      console.error('Error en estimación de propiedad:', error);
+    }
+
+    return {
+      mensajeIA,
+      valores: {
+        probabilidadVenta: valores.venta,
+        probabilidadOcupacional: valores.ocupacional,
+        tiempoEstimadoDias: valores.tiempoDias,
+        canonEsperado: valores.canon,
+        rentabilidadAnual: valores.rentabilidad,
+        tiempoEstimadoOcupacion: valores.tiempoOcupacion,
+      },
+    };
   }
 }
