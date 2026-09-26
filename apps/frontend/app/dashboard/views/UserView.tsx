@@ -4,11 +4,11 @@ import { useEffect, useState } from "react";
 import { NewPropertyModal } from "../Modal/NewProperty";
 import { usePropiedades } from "./hooks/usePropiedades";
 import { CardPropiedad } from "@/app/components/CardPropiedad";
-import { ProbabilidadPropiedad } from "../Modal/ProbabilidadPropiedad";
+import { usePagos } from "./hooks/usePagos";
 import SearchProperty from "@/app/dashboard/views/viewUser/SearchProperty";
 import ChatIA from "@/app/components/ChatIA";
 import PlanSuscripcion from "./viewUser/PlanSuscripcion";
-import { usePagos } from "./hooks/usePagos";
+import { EstimacionPropiedad } from "../Modal/EstimacionPropiedad";
 
 export default function UserView() {
   const [probabilidadId, setProbabilidadId] = useState<string | null>(null);
@@ -36,7 +36,7 @@ export default function UserView() {
     handleSearchClear,
     handleDocumento,
     handleDestacar,
-  } = usePropiedades();
+  } = usePropiedades((id) => setProbabilidadId(id));
 
   useEffect(() => {
     loadInitial();
@@ -142,7 +142,7 @@ export default function UserView() {
       )}
 
       {probabilidadId && (
-        <ProbabilidadPropiedad
+        <EstimacionPropiedad
           id={probabilidadId}
           onClose={() => setProbabilidadId(null)}
         />

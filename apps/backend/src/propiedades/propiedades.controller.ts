@@ -136,12 +136,6 @@ export class PropiedadesController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get(':id/probabilidades')
-  calcularProbabilidad(@Param('id') id: string, @Req() req: RequestWithUser) {
-    return this.propiedadesService.calcularProbabilidad(id, req.user);
-  }
-
-  @UseGuards(JwtAuthGuard)
   @Get(':id/contacto')
   obtenerContacto(@Param('id') id: string, @Req() req: RequestWithUser) {
     return this.propiedadesService.obtenerContacto(id, req.user);

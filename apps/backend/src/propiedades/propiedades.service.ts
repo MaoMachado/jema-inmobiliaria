@@ -9,14 +9,6 @@ import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
 import { calcularPuntaje } from './calcular-puntaje';
 import {
-  canonEsperado,
-  probabilidadOcupacional,
-  probabilidadVenta,
-  rentabilidadAnual,
-  tiempoEstimadoDias,
-  tiempoEstimadoOcupacion,
-} from './calcular-probabilidad';
-import {
   CreatePropiedadDto,
   RechazarPropiedadDto,
 } from './dto/propiedades.dto';
@@ -349,32 +341,6 @@ export class PropiedadesService {
     return { message: 'Propiedad eliminada' };
   }
 
-  async calcularProbabilidad(
-    id: string,
-    usuario?: { id: string; role: string },
-  ) {
-    const propiedad = await this.findOne(id, usuario);
-
-    const similares = await this.prisma.propiedad.findMany({
-      where: {
-        id: { not: id },
-        tipo: propiedad.tipo,
-        ciudad: propiedad.ciudad,
-      },
-      take: 10,
-    });
-
-    return {
-      probabilidadVenta: probabilidadVenta(propiedad, similares),
-      probabilidadOcupacional: probabilidadOcupacional(propiedad, similares),
-      tiempoEstimadoDias: tiempoEstimadoDias(propiedad, similares),
-      canonEsperado: canonEsperado(propiedad),
-      rentabilidadAnual: rentabilidadAnual(propiedad),
-      tiempoEstimadoOcupacion: tiempoEstimadoOcupacion(propiedad, similares),
-    };
-  }
-
-  //! Servicios para documentos propiedad
   async subirDocumentos(
     propiedadId: string,
     userId: string,
