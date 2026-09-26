@@ -5,6 +5,7 @@ type VarianButton = "primary" | "secondary" | "warning" | "danger";
 
 interface Props {
   title: string;
+  placeHolder?: string;
   type?: TypeButton;
   variant?: VarianButton;
   className?: string;
@@ -16,6 +17,7 @@ interface Props {
 
 export default function Button({
   title,
+  placeHolder = "",
   type = "button",
   variant = "primary",
   className,
@@ -39,6 +41,7 @@ export default function Button({
       aria-busy={loading}
       aria-disabled={disabled}
       aria-label={ariaLabel}
+      title={placeHolder}
       className={`px-3 py-1 rounded-md cursor-pointer hover:scale-105 transition-all disabled:cursor-not-allowed disabled:bg-gray-800/30 disabled:opacity-50 ${variantStyle[variant]} ${className}`}
     >
       {title}

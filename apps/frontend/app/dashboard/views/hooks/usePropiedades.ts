@@ -1,6 +1,7 @@
 "use client";
 
 import api from "@/app/lib/api";
+import { borrarEstimacionCache } from "@/app/lib/estimacionesCache";
 import { Propiedad } from "@/app/lib/types";
 import { useState } from "react";
 
@@ -36,21 +37,6 @@ export function usePropiedades(onCreated?: (id: string) => void) {
     } finally {
       setLoading(false);
     }
-  };
-
-  const openCreate = () => {
-    setEditingPropiedad(null);
-    setModalOpen(true);
-  };
-
-  const openEdit = (propiedad: Propiedad) => {
-    setEditingPropiedad(propiedad);
-    setModalOpen(true);
-  };
-
-  const closeModal = () => {
-    setEditingPropiedad(null);
-    setModalOpen(false);
   };
 
   const handleSubmitPropiedad = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -138,6 +124,7 @@ export function usePropiedades(onCreated?: (id: string) => void) {
 
     try {
       await api.delete(`/propiedades/${id}`);
+      borrarEstimacionCache(id);
       loadInitial();
       setMessage("Propiedad eliminada correctamente");
     } catch (error) {
@@ -147,16 +134,6 @@ export function usePropiedades(onCreated?: (id: string) => void) {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleSearchResult = (data: Propiedad[]) => {
-    setInitialData(data);
-    setIsSearching(true);
-  };
-
-  const handleSearchClear = () => {
-    setIsSearching(false);
-    loadInitial();
   };
 
   const handleDocumento = async (id: string, file: File, tipo: string) => {
@@ -211,6 +188,31 @@ export function usePropiedades(onCreated?: (id: string) => void) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const openCreate = () => {
+    setEditingPropiedad(null);
+    setModalOpen(true);
+  };
+
+  const openEdit = (propiedad: Propiedad) => {
+    setEditingPropiedad(propiedad);
+    setModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setEditingPropiedad(null);
+    setModalOpen(false);
+  };
+
+  const handleSearchResult = (data: Propiedad[]) => {
+    setInitialData(data);
+    setIsSearching(true);
+  };
+
+  const handleSearchClear = () => {
+    setIsSearching(false);
+    loadInitial();
   };
 
   return {

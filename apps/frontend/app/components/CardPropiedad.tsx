@@ -215,6 +215,7 @@ export function CardPropiedad({
         {onDocumento && (
           <Button
             title="📄"
+            placeHolder="Subir Documento"
             onClick={handleShowDocumentoModal}
             variant="secondary"
             ariaLabel="Subir Documento"
@@ -224,6 +225,7 @@ export function CardPropiedad({
           {onEdit && (
             <Button
               title="✏️"
+              placeHolder="Editar Propiedad"
               onClick={() => onEdit(propiedad)}
               variant="secondary"
               ariaLabel="Editar Propiedad"
@@ -233,6 +235,7 @@ export function CardPropiedad({
           {onDelete && (
             <Button
               title="🗑️"
+              placeHolder="Eliminar Propiedad"
               onClick={() => onDelete(propiedad.id)}
               variant="danger"
               ariaLabel="Eliminar Propiedad"
@@ -242,6 +245,7 @@ export function CardPropiedad({
           {onProbabilidad && (
             <Button
               title="📊"
+              placeHolder="Ver Probabilidad"
               onClick={() => onProbabilidad(propiedad.id)}
               variant="secondary"
               ariaLabel="Ver Probabilidad"
@@ -250,6 +254,7 @@ export function CardPropiedad({
           {onReportar && (
             <Button
               title="⚠️"
+              placeHolder="Reportar Propiedad"
               onClick={() => onReportar(propiedad.id)}
               variant="secondary"
               ariaLabel="Reportar Propiedad"
