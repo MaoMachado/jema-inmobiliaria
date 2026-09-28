@@ -186,6 +186,10 @@ export class UsuariosService {
         ...(data.nombres !== undefined && { nombres: data.nombres }),
         ...(data.apellidos !== undefined && { apellidos: data.apellidos }),
         ...(data.celular !== undefined && { celular: data.celular }),
+        celularVerificado:
+          data.celular !== undefined && data.celular !== usuario.celular
+            ? false
+            : undefined,
       },
       select: {
         id: true,

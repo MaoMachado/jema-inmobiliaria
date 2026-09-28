@@ -8,6 +8,7 @@ import { UsuariosModule } from './usuarios/usuarios.module';
 import { ReporteFraude } from './reportes-fraude/reportes-fraude.module';
 import { IaModule } from './ia/ia.module';
 import { PagosModule } from './pagos/pagos.module';
+import { OtpModule } from './otp/otp.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { PagosModule } from './pagos/pagos.module';
     ReporteFraude,
     IaModule,
     PagosModule,
+    OtpModule,
   ],
   controllers: [AppController],
   providers: [AppService],

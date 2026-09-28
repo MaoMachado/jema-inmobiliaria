@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import Button from "@/app/components/Button";
-import Link from "next/link";
 import { usePerfil } from "../views/hooks/usePerfil";
+import { VerificacionCelular } from "./VerificarCelular";
+import Image from "next/image";
+import Link from "next/link";
+import Button from "@/app/components/Button";
 
 export default function PerfilEditar() {
   const [file, setFile] = useState<File | null>(null);
@@ -15,13 +17,14 @@ export default function PerfilEditar() {
 
   const {
     perfil,
-    loading,
     saving,
     error,
     success,
     actualizarPerfil,
     subirFoto,
     cambiarPassword,
+    solicitarOtp,
+    verificarOtp,
   } = usePerfil();
 
   const handleActualizarDatos = async () => {
@@ -47,7 +50,7 @@ export default function PerfilEditar() {
 
   return (
     <main className="h-dvh place-content-center">
-      <section className="relative flex flex-col justify-center max-w-3xl mx-auto border border-gray-400/50 bg-gray-400/10 p-10 rounded-lg">
+      <section className="relative flex flex-col gap-10 h-[90%] overflow-y-auto justify-center max-w-3xl mx-auto border border-gray-400/50 bg-gray-400/10 p-10 rounded-lg">
         <Link
           href="/dashboard"
           className="absolute top-3 left-5 text-3xl hover:text-sky-600 hover:scale-105 transition"
@@ -55,16 +58,18 @@ export default function PerfilEditar() {
           ⬅
         </Link>
 
-        <form onSubmit={handleSubirFoto} className="flex flex-col gap-6 mb-10">
+        <form onSubmit={handleSubirFoto} className="flex flex-col gap-6">
           <h2 className="text-center text-2xl font-semibold tracking-wider">
             Foto Perfil
           </h2>
 
           <div className="flex flex-wrap justify-center items-center gap-6">
-            <img
+            <Image
               src={perfil?.foto ?? "https://placehold.co/600x400?text=Foto"}
               alt="Foto Perfil"
-              className="rounded-full max-w-25"
+              width={200}
+              height={200}
+              className="rounded-full"
             />
             <input
               type="file"
@@ -80,16 +85,11 @@ export default function PerfilEditar() {
             loading={saving}
             disabled={saving}
           />
-          {success && (
-            <p className="ml-auto bg-sky-600/20 w-fit p-1 text-sm font-semibold rounded-lg">
-              {success} 👍
-            </p>
-          )}
         </form>
 
         <form
           onSubmit={handleActualizarDatos}
-          className="text-center flex flex-col gap-6 mb-10"
+          className="text-center flex flex-col gap-6"
         >
           <h2 className="text-center text-2xl font-semibold tracking-wider">
             Datos Personales
@@ -144,7 +144,7 @@ export default function PerfilEditar() {
 
         <form
           onSubmit={handleCambiarPassword}
-          className="text-center flex flex-col gap-6 mb-10"
+          className="text-center flex flex-col gap-6"
         >
           <h2 className="text-center text-2xl font-semibold tracking-wider">
             Cambiar Contraseña
@@ -180,9 +180,23 @@ export default function PerfilEditar() {
             className="mx-auto"
           />
         </form>
-      </section>
 
-      {error && <p>{error}</p>}
+        {perfil?.celular && (
+          <VerificacionCelular
+            celularVerificado={perfil.celularVerificado}
+            celular={perfil.celular}
+            onSolicitar={solicitarOtp}
+            onVerificar={verificarOtp}
+          />
+        )}
+
+        {success && (
+          <p className="absolute bottom-0 right-5 ml-auto bg-sky-600/20 w-fit p-1 text-sm font-semibold rounded-lg">
+            {success} 👍
+          </p>
+        )}
+        {error && <p>{error}</p>}
+      </section>
     </main>
   );
 }

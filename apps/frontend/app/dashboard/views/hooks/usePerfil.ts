@@ -3,6 +3,11 @@
 import api from "@/app/lib/api";
 import { useCallback, useEffect, useState } from "react";
 
+const getErrorMessage = (error: unknown, fallback: string) => {
+  const e = error as { response?: { data?: { message?: string } } };
+  return e?.response?.data?.message ?? fallback;
+};
+
 interface PerfilData {
   id: string;
   nombres: string;
@@ -22,7 +27,7 @@ export function usePerfil() {
   const [success, setSuccess] = useState("");
 
   const cargarPerfil = useCallback(async () => {
-    // setLoading(true);
+    setLoading(true);
 
     try {
       const res = await api.get("/usuarios/perfil");
@@ -47,8 +52,9 @@ export function usePerfil() {
       const res = await api.patch("/usuarios/perfil", data);
       setPerfil(res.data);
       setSuccess("Perfil actualizado");
-    } catch (err: any) {
-      setError(err.response?.data?.message ?? "Error al actualizar");
+    } catch (error) {
+      const fallback = getErrorMessage(error, "Error al actualizar");
+      setError(fallback);
     } finally {
       setSaving(false);
     }
@@ -68,8 +74,9 @@ export function usePerfil() {
 
       setPerfil((prev) => (prev ? { ...prev, foto: res.data.fotoUrl } : null));
       setSuccess("Foto actualizada");
-    } catch (err: any) {
-      setError(err.response?.data?.message ?? "Error al subir foto");
+    } catch (error) {
+      const fallback = getErrorMessage(error, "Error al subir foto");
+      setError(fallback);
     } finally {
       setSaving(false);
     }
@@ -83,14 +90,53 @@ export function usePerfil() {
     try {
       await api.patch("/usuarios/password", { actual, nueva });
       setSuccess("Contraseña actualizada");
-    } catch (err: any) {
-      setError(err.response?.data?.message ?? "Error al cambiar contraseña");
+    } catch (error) {
+      const fallback = getErrorMessage(error, "Error al cambiar contraseña");
+      setError(fallback);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const solicitarOtp = async () => {
+    setSaving(true);
+    setError("");
+    setSuccess("");
+
+    try {
+      const res = await api.post("/otp/solicitar");
+      setSuccess(res.data.message);
+      return true;
+    } catch (error) {
+      const fallback = getErrorMessage(error, "Error al solicitar OTP");
+      setError(fallback);
+      return false;
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const verificarOtp = async (codigo: string) => {
+    setSaving(true);
+    setError("");
+    setSuccess("");
+
+    try {
+      const res = await api.post("/otp/verificar", { codigo });
+      setPerfil((prev) => (prev ? { ...prev, celularVerificado: true } : prev));
+      setSuccess(res.data.message);
+      return true;
+    } catch (error) {
+      const fallback = getErrorMessage(error, "Error al verificar OTP");
+      setError(fallback);
+      return false;
     } finally {
       setSaving(false);
     }
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void cargarPerfil();
   }, [cargarPerfil]);
 
@@ -103,5 +149,7 @@ export function usePerfil() {
     actualizarPerfil,
     subirFoto,
     cambiarPassword,
+    solicitarOtp,
+    verificarOtp,
   };
 }

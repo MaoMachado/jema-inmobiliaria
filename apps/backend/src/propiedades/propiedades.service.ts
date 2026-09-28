@@ -443,6 +443,16 @@ export class PropiedadesService {
   async findMisPropiedades(usuarioId: string) {
     const propiedad = await this.prisma.propiedad.findMany({
       where: { publicadoPorId: usuarioId },
+      include: {
+        publicadoPor: {
+          select: {
+            nombres: true,
+            apellidos: true,
+            celularVerificado: true,
+            documentoVerificado: true,
+          },
+        },
+      },
     });
 
     return propiedad;
