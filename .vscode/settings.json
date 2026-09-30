@@ -5,6 +5,9 @@
     "BASICO",
     "Boton",
     "caracteristicas",
+    "codigo",
+    "Codigo",
+    "codigos",
     "COMISION",
     "datasource",
     "descripcion",
@@ -29,7 +32,9 @@
     "Supabase",
     "SUPABASE",
     "telefono",
-    "ubicacion"
+    "twilio",
+    "ubicacion",
+    "Verificacion"
   ],
 
   "editor.codeActionsOnSave": {

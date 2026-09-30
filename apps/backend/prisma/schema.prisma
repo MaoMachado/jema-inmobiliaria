@@ -41,6 +41,18 @@ enum EstadoPago {
   RECHAZADO
 }
 
+model CodigoOt {
+  id        String   @id @default(uuid())
+  usuarioId String
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id])
+  codigo    String
+  expiraAt  DateTime
+  intentos  Int      @default(0)
+  usado     Boolean  @default(false)
+  createAt  DateTime @default(now())
+  updateAt  DateTime @updatedAt
+}
+
 model Pago {
   id          String     @id @default(uuid())
   usuarioId   String
@@ -54,29 +66,31 @@ model Pago {
 }
 
 model Usuario {
-  id                  String    @id @default(uuid())
+  id                  String   @id @default(uuid())
   nombres             String
   apellidos           String
-  email               String    @unique
+  email               String   @unique
   password            String
   foto                String?
   celular             String?
-  celularVerificado   Boolean   @default(false)
+  celularVerificado   Boolean  @default(false)
   documentoUrl        String?
-  documentoVerificado Boolean   @default(false)
-  role                Role      @default(USER)
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
-  // PlanMonetización
-  plan                Plan      @default(GRATIS)
-  propiedadesLimite   Int       @default(5)
-  chatIaLimite        Int       @default(10)
-  chatUsados          Int       @default(0)
-  chatFecha           DateTime?
-  pagos               Pago[]
+  documentoVerificado Boolean  @default(false)
+  role                Role     @default(USER)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  //Plan Monetización
+  plan              Plan      @default(GRATIS)
+  propiedadesLimite Int       @default(5)
+  chatIaLimite      Int       @default(10)
+  chatUsados        Int       @default(0)
+  chatFecha         DateTime?
+  pagos             Pago[]
 
   propiedades    Propiedad[]
   reporteFraudes ReporteFraude[]
+  codigosOts     CodigoOt[]
 }
 
 model Propiedad {

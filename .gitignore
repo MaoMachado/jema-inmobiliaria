@@ -3,3 +3,5 @@ dist
 .env
 .next
 apps/backend/dist
+.cursor
+.opencode
