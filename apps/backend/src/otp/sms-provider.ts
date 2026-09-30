@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import twilio from 'twilio';
 
 export interface SmsProvider {
@@ -7,20 +7,28 @@ export interface SmsProvider {
 
 @Injectable()
 export class DevSmsProvider implements SmsProvider {
+  private readonly logger = new Logger(DevSmsProvider.name);
+
   enviarCodigo(celular: string, codigo: string): Promise<void> {
-    console.log(`[DEV] OTP para ${celular}: ${codigo}`);
+    this.logger.log(`[DEV] OTP para ${celular}: ${codigo}`);
     return Promise.resolve();
   }
 }
 
 @Injectable()
 export class TwilioSmsProvider implements SmsProvider {
+  private readonly logger = new Logger(TwilioSmsProvider.name);
+
   async enviarCodigo(celular: string, codigo: string): Promise<void> {
     const sid = process.env.TWILIO_SID;
     const token = process.env.TWILIO_TOKEN;
     const from = process.env.TWILIO_FROM;
 
     if (!sid || !token || !from) {
+      this.logger.warn(
+        'Credenciales de Twilio incompletas, usando DevSmsProvider como fallback',
+      );
+
       return new DevSmsProvider().enviarCodigo(celular, codigo);
     }
 
@@ -33,7 +41,7 @@ export class TwilioSmsProvider implements SmsProvider {
         to: celular,
       });
     } catch (error) {
-      console.error('Error al enviar SMS con Twilio:', error);
+      this.logger.error('Error al enviar SMS con Twilio:', error);
       throw new Error('No se pudo enviar el SMS. Inténtalo de nuevo.');
     }
   }

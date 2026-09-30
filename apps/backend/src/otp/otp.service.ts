@@ -1,5 +1,13 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { createHash, randomInt } from 'crypto';
+import {
+  BadRequestException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
+import { createHash, randomInt, timingSafeEqual } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { SmsProviderFactory } from './sms-provider';
 
@@ -9,6 +17,8 @@ const MAX_INTENTOS = 5;
 
 @Injectable()
 export class OtpService {
+  private readonly logger = new Logger(OtpService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly smsProviderFactory: SmsProviderFactory,
@@ -17,13 +27,26 @@ export class OtpService {
   private hashCodigo(codigo: string): string {
     const pepper = process.env.OTP_PEPPER;
     if (!pepper) {
-      throw new HttpException(
-        'Error de configuración',
-        HttpStatus.INTERNAL_SERVER_ERROR,
+      this.logger.error('Variable OTP_PEPPER no esta configurada');
+      throw new InternalServerErrorException(
+        'Error de configuración del servidor',
       );
     }
 
     return createHash('sha256').update(`${pepper}:${codigo}`).digest('hex');
+  }
+
+  private compararHash(hashGuardado: string, hashEntrante: string): boolean {
+    try {
+      const bufferGuardado = Buffer.from(hashGuardado, 'hex');
+      const bufferEntrante = Buffer.from(hashEntrante, 'hex');
+
+      if (bufferGuardado.length !== bufferEntrante.length) return false;
+
+      return timingSafeEqual(bufferGuardado, bufferEntrante);
+    } catch {
+      return false;
+    }
   }
 
   async solicitar(userId: string) {
@@ -32,13 +55,12 @@ export class OtpService {
     });
 
     if (!usuario) {
-      throw new HttpException('Usuario no encontrado', HttpStatus.NOT_FOUND);
+      throw new NotFoundException('Usuario no encontrado');
     }
 
     if (!usuario.celular) {
-      throw new HttpException(
-        'Registrar tu celular primero',
-        HttpStatus.BAD_REQUEST,
+      throw new BadRequestException(
+        'Debes registrar tu número celular primero',
       );
     }
 
@@ -46,7 +68,12 @@ export class OtpService {
       return { message: 'Tu celular ya está verificado' };
     }
 
-    const celular = '+57' + usuario.celular.replace(/\D/g, '').slice(-10);
+    const digitos = usuario.celular.replace(/\D/g, '');
+    if (digitos.length < 10) {
+      throw new BadRequestException('Debes registrar un número celular válido');
+    }
+
+    const celular = '+57' + digitos.slice(-10);
 
     const ultimo = await this.prisma.codigoOt.findFirst({
       where: { usuarioId: userId },
@@ -58,9 +85,8 @@ export class OtpService {
         (COOLDOWN_MS - (Date.now() - ultimo.createAt.getTime())) / 1000,
       );
 
-      throw new HttpException(
+      throw new BadRequestException(
         `Puedes solicitar otro código en ${faltan}s`,
-        HttpStatus.BAD_REQUEST,
       );
     }
 
@@ -79,7 +105,10 @@ export class OtpService {
     try {
       await sms.enviarCodigo(celular, codigo);
     } catch (error) {
-      await this.prisma.codigoOt.deleteMany({ where: { usuarioId: userId } });
+      this.logger.error(
+        `Error al enviar SMS para el usuario ${userId}:`,
+        error,
+      );
       throw error;
     }
 
@@ -93,33 +122,28 @@ export class OtpService {
     });
 
     if (!codigoOtp) {
-      throw new HttpException(
-        'Solicita un código primero',
-        HttpStatus.BAD_REQUEST,
-      );
+      throw new BadRequestException('Solicita un código primero');
     }
 
     if (codigoOtp.expiraAt.getTime() < Date.now()) {
-      throw new HttpException(
-        'El codigo expiró. Solicita uno nuevo',
-        HttpStatus.BAD_REQUEST,
-      );
+      throw new BadRequestException('El codigo expiró. Solicita uno nuevo');
     }
 
     if (codigoOtp.intentos >= MAX_INTENTOS) {
       throw new HttpException(
         'Demasiados intentos fallidos. Solicita otro codigo',
-        HttpStatus.TOO_MANY_REQUESTS,
+        HttpStatus.BAD_REQUEST,
       );
     }
 
-    if (codigoOtp.codigo !== this.hashCodigo(codigo)) {
+    const hashEntrante = this.hashCodigo(codigo);
+    if (!this.compararHash(codigoOtp.codigo, hashEntrante)) {
       await this.prisma.codigoOt.update({
         where: { id: codigoOtp.id },
         data: { intentos: { increment: 1 } },
       });
 
-      throw new HttpException('Código Incorrecto', HttpStatus.BAD_REQUEST);
+      throw new BadRequestException('Codigo Incorrecto');
     }
 
     await this.prisma.$transaction([
