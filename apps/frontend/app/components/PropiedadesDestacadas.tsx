@@ -48,7 +48,10 @@ export default function PropiedadesDestacadas() {
   }, []);
 
   return (
-    <section id="destacadas" className="scroll-mt-24 py-16 px-4 sm:px-6 bg-linear-to-br from-gray-900/20 to-sky-900/20">
+    <section
+      id="destacadas"
+      className="scroll-mt-24 py-16 px-4 sm:px-6 bg-linear-to-br from-gray-900/20 to-sky-900/20"
+    >
       <div className="max-w-7xl mx-auto">
         <header className="text-center mb-12">
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-semibold mb-3">

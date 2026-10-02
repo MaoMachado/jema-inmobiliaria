@@ -51,9 +51,10 @@ export default function CookieBanner({ onOpenLegal }: CookieBannerProps) {
             Tratamiento de Datos y Cookies
           </p>
           <p>
-            Utilizamos cookies técnicas y tratamiento de datos para garantizar la
-            seguridad de tu sesión, verificación de identidad y mejorar tu
-            experiencia según la normativa de Habeas Data (Ley 1581 de Colombia).
+            Utilizamos cookies técnicas y tratamiento de datos para garantizar
+            la seguridad de tu sesión, verificación de identidad y mejorar tu
+            experiencia según la normativa de Habeas Data (Ley 1581 de
+            Colombia).
           </p>
           {onOpenLegal && (
             <button

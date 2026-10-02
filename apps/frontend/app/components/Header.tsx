@@ -49,7 +49,7 @@ export default function Header() {
 
         {/* Menú móvil */}
         {menuAbierto && (
-          <div className="md:hidden px-4 pt-2 pb-6 border-t border-gray-800 bg-gray-950/95 flex flex-col gap-4 animate-fade-in">
+          <div className="md:hidden px-4 pt-2 pb-6 border-t border-gray-800 bg-gray-950/95 absolute top-19 left-0 right-0 gap-4 animate-fade-in">
             <nav className="flex flex-col gap-3 text-base text-gray-300">
               <Link
                 href="/buscar"
