@@ -1,12 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Propiedad } from "../lib/types";
 import { CardPropiedad } from "./CardPropiedad";
 import { useReporteFraude } from "../hooks/useReporteFraude";
+import Link from "next/link";
 import api from "../lib/api";
 import ReportarModal from "../dashboard/Modal/ReportarModal";
-import Link from "next/link";
 
 export default function PropiedadesDestacadas() {
   const {
@@ -47,57 +47,70 @@ export default function PropiedadesDestacadas() {
     };
   }, []);
 
-  if (!loading && propiedades.length === 0) {
-    return null;
-  }
-
   return (
-    <section className="py-16 px-6">
+    <section id="destacadas" className="scroll-mt-24 py-16 px-4 sm:px-6 bg-linear-to-br from-gray-900/20 to-sky-900/20">
       <div className="max-w-7xl mx-auto">
-        <header className="text-center mb-10">
-          <h2 className="text-3xl font-bold text-center tracking-tight">
-            ⭐ Propiedades Destacadas
+        <header className="text-center mb-12">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-semibold mb-3">
+            <span>⭐</span>
+            <span>Selección Exclusiva</span>
+          </div>
+
+          <h2 className="text-3xl sm:text-4xl font-black tracking-tight">
+            Propiedades Destacadas
           </h2>
-          <p className="text-gray-400 mt-2 text-sm md:text-base">
+
+          <p className="text-gray-400 mt-2 text-sm md:text-base max-w-xl mx-auto">
             Descubre las mejores oportunidades seleccionadas y verificadas
           </p>
         </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {loading
-            ? Array.from({ length: 3 }).map((_, idx) => (
-                <div
-                  key={idx}
-                  className="bg-gray-800/30 p-4 border border-gray-700/50 rounded-lg animate-pulse h-96 flex flex-col justify-between"
-                >
-                  <div className="bg-gray-700/50 h-48 rounded-md w-full" />
-                  <div className="space-y-3 mt-4">
-                    <div className="bg-gray-700/40 h-6 rounded w-3/4" />
-                    <div className="bg-gray-700/40 h-4 rounded w-1/2" />
-                    <div className="bg-gray-700/40 h-4 rounded w-2/3" />
-                  </div>
-                  <div className="bg-gray-700/40 h-10 rounded w-full mt-4" />
+        <article className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+          {loading ? (
+            Array.from({ length: 3 }).map((_, idx) => (
+              <div
+                key={idx}
+                className="bg-gray-900/40 p-4 border border-gray-800 rounded-2xl animate-pulse flex flex-col justify-between h-105"
+              >
+                <div className="bg-gray-800 h-52 rounded-xl w-full" />
+                <div className="space-y-3 mt-4">
+                  <div className="bg-gray-800 h-6 rounded w-3/4" />
+                  <div className="bg-gray-700/40 h-4 rounded w-1/2" />
+                  <div className="bg-gray-700/40 h-4 rounded w-2/3" />
                 </div>
-              ))
-            : propiedades.map((p) => (
-                <CardPropiedad
-                  key={p.id}
-                  propiedad={p}
-                  onReportar={openModalReport}
-                />
-              ))}
-        </div>
+                <div className="bg-gray-700/40 h-10 rounded w-full mt-4" />
+              </div>
+            ))
+          ) : propiedades.length > 0 ? (
+            propiedades.map((p) => (
+              <CardPropiedad
+                key={p.id}
+                propiedad={p}
+                onReportar={openModalReport}
+              />
+            ))
+          ) : (
+            <div className="col-span-full text-center py-12 px-4 rounded-2xl bg-gray-900/30 border border-gray-800">
+              <span className="text-4xl mb-2 block">🏠</span>
+              <p className="text-gray-300 font-semibold text-lg">
+                No hay propiedades destacadas en este momento
+              </p>
+              <p className="text-gray-500 text-sm mt-1">
+                Explora el catálogo completo para encontrar tu próximo inmueble.
+              </p>
+            </div>
+          )}
+        </article>
 
-        {!loading && propiedades.length > 0 && (
-          <div className="text-center mt-12">
-            <Link
-              href="/buscar"
-              className="inline-flex items-center gap-2 border border-sky-600/60 bg-sky-950/20 hover:bg-sky-900/40 text-sky-400 font-semibold px-6 py-2 rounded-lg transition-colors"
-            >
-              Explorar todas las propiedades →
-            </Link>
-          </div>
-        )}
+        <article className="text-center mt-12">
+          <Link
+            href="/buscar"
+            className="inline-flex items-center gap-2 border border-sky-500/40 bg-sky-950/30 hover:bg-sky-900/50 text-sky-300 hover:text-white font-bold px-7 py-3 rounded-xl transition-all duration-200 shadow-md hover:scale-105"
+          >
+            <span>Explorar todas las propiedades</span>
+            <span>→</span>
+          </Link>
+        </article>
       </div>
 
       {openReporteModal && (
