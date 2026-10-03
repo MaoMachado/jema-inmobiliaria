@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { isAxiosError } from "axios";
 import Link from "next/link";
 import api from "../lib/api";
-import Button from "./Button";
-import { isAxiosError } from "axios";
 
 type Mensaje = { role: "user" | "assistant"; content: string; hora: string };
 
@@ -57,7 +56,7 @@ export default function ChatIA() {
     const pregunta = texto.trim();
     if (!pregunta || loading) return;
 
-    const ahora = new Date().toLocaleDateString([], {
+    const ahora = new Date().toLocaleTimeString([], {
       hour: "2-digit",
       minute: "2-digit",
     });
@@ -72,7 +71,7 @@ export default function ChatIA() {
     setMensaje("");
 
     try {
-      const res = await api.post<string>("/ai/chat", { mensaje: pregunta });
+      const res = await api.post<string>("/ia/chat", { mensaje: pregunta });
       const horaRespuesta = new Date().toLocaleTimeString([], {
         hour: "2-digit",
         minute: "2-digit",
@@ -263,7 +262,7 @@ export default function ChatIA() {
                   <button
                     type="submit"
                     disabled={loading || !mensaje.trim()}
-                    className="px-4 py-2 bg-sky-500  hover:bg-sky-400 disabled:opacity-40 font-bold text-xs rounded-xl shadow-md transition cursor-pointer"
+                    className="px-4 py-2 bg-sky-500 hover:bg-sky-400 disabled:opacity-40 text-gray-950 font-bold text-xs rounded-xl shadow-md transition cursor-pointer"
                   >
                     Enviar
                   </button>
