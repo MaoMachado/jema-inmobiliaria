@@ -1,16 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import api from "../lib/api";
 import { Reporte } from "../lib/types";
+import api from "../lib/api";
+import { isAxiosError } from "axios";
 
 export const useReporteFraude = () => {
-  const [reportes, setReportes] = useState<Reporte[]>([]);
-  const [filtro, setFiltro] = useState<string>("ABIERTO");
   const [propiedadId, setPropiedadId] = useState("");
   const [openReporteModal, setOpenReporteModal] = useState<boolean>(false);
   const [message, setMessage] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
+
+  const [reportes, setReportes] = useState<Reporte[]>([]);
+  const [filtro, setFiltro] = useState<string>("ABIERTO");
 
   const openModalReport = (id: string) => {
     setPropiedadId(id);
@@ -47,10 +49,18 @@ export const useReporteFraude = () => {
         descripcion,
         propiedadId: id,
       });
-      setMessage("Reporte Enviado");
-      setOpenReporteModal(false);
-    } catch {
-      setMessage("Error al enviar el reporte");
+      setMessage("Reporte enviado exitosamente. Nuestro equipo lo revisará.");
+      setTimeout(() => {
+        setOpenReporteModal(false);
+      }, 1200);
+    } catch (error: unknown) {
+      if (isAxiosError(error)) {
+        setMessage(
+          error.response?.data?.message ?? "Error al enviar el reporte",
+        );
+      } else {
+        setMessage("Error inesperado al enviar el reporte");
+      }
     } finally {
       setLoading(false);
     }
