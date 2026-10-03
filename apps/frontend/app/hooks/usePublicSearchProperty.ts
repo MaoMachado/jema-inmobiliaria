@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { isAxiosError } from "axios";
 import { Propiedad } from "@/app/lib/types";
 import api from "@/app/lib/api";
 
@@ -14,14 +15,6 @@ type Pagination = {
   totalPages: number;
 };
 
-type ErrorBody = { message?: string | string[] };
-
-const formatError = (body: ErrorBody | undefined): string => {
-  const msg = body?.message;
-  if (!msg) return "Error al buscar propiedades";
-  return Array.isArray(msg) ? msg.join(", ") : msg;
-};
-
 export const usePublicSearchProperty = () => {
   const [ciudad, setCiudad] = useState<Ciudad>("");
   const [tipo, setTipo] = useState<Tipo>("");
@@ -29,7 +22,7 @@ export const usePublicSearchProperty = () => {
   const [precioMin, setPrecioMin] = useState<number | "">("");
   const [precioMax, setPrecioMax] = useState<number | "">("");
   const [orderBy, setOrderBy] = useState<"precio" | "createdAt" | "puntaje">(
-    "puntaje",
+    "createdAt",
   );
   const [order, setOrder] = useState<"asc" | "desc">("desc");
 
@@ -41,57 +34,71 @@ export const usePublicSearchProperty = () => {
   const [error, setError] = useState<string>("");
   const [hasSearched, setHasSearched] = useState<boolean>(false);
 
-  const buscar = async (overrides?: { page?: number }) => {
-    setLoading(true);
-    setError("");
+  const buscar = useCallback(
+    async (targetPage = page) => {
+      setLoading(true);
+      setError("");
 
-    const precioMinNum = precioMin === "" ? undefined : Number(precioMin);
-    const precioMaxNum = precioMax === "" ? undefined : Number(precioMax);
+      const precioMinNum = precioMin === "" ? undefined : Number(precioMin);
+      const precioMaxNum = precioMax === "" ? undefined : Number(precioMax);
 
-    try {
-      const res = await api.get("/propiedades", {
-        params: {
-          ciudad: ciudad || undefined,
-          tipo: tipo || undefined,
-          precioMin:
-            precioMinNum !== undefined && precioMinNum > 0
-              ? precioMinNum
-              : undefined,
-          precioMax:
-            precioMaxNum !== undefined && precioMaxNum > 0
-              ? precioMaxNum
-              : undefined,
-          habitaciones:
-            habitaciones === "" || habitaciones === 0
-              ? undefined
-              : Number(habitaciones),
-          page: overrides?.page ?? page,
-          limit: 10,
-          orderBy,
-          order,
-        },
-      });
+      try {
+        const res = await api.get("/propiedades", {
+          params: {
+            ciudad: ciudad || undefined,
+            tipo: tipo || undefined,
+            precioMin:
+              precioMinNum !== undefined && precioMinNum > 0
+                ? precioMinNum
+                : undefined,
+            precioMax:
+              precioMaxNum !== undefined && precioMaxNum > 0
+                ? precioMaxNum
+                : undefined,
+            habitaciones:
+              habitaciones === "" || habitaciones === 0
+                ? undefined
+                : Number(habitaciones),
+            page: targetPage,
+            limit: 10,
+            orderBy,
+            order,
+          },
+        });
 
-      setResultados(res.data.data);
-      setPagination(res.data.pagination);
-      setHasSearched(true);
-    } catch (error: any) {
-      console.error("Error al buscar propiedades", error);
-      setError(formatError(error.response?.data));
-    } finally {
-      setLoading(false);
-    }
-  };
+        setResultados(res.data.data ?? []);
+        setPagination(res.data.pagination ?? null);
+        setHasSearched(true);
+      } catch (error: unknown) {
+        if (isAxiosError(error)) {
+          setError(
+            error.response?.data?.message ?? "Error al consultar propiedades.",
+          );
+        } else {
+          setError("Error inesperado al buscar inmuebles.");
+        }
+      } finally {
+        setLoading(false);
+      }
+    },
+    [ciudad, tipo, precioMin, precioMax, habitaciones, orderBy, order, page],
+  );
+
+  useEffect(() => {
+    buscar(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleSearch = (e?: React.FormEvent) => {
     e?.preventDefault();
     setPage(1);
-    buscar({ page: 1 });
+    buscar(1);
   };
 
-  const changePage = (nueva: number) => {
-    setPage(nueva);
-    buscar({ page: nueva });
+  const changePage = (nuevaPagina: number) => {
+    setPage(nuevaPagina);
+    buscar(nuevaPagina);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleClear = () => {
@@ -102,11 +109,7 @@ export const usePublicSearchProperty = () => {
     setPrecioMax("");
     setOrderBy("puntaje");
     setOrder("desc");
-    setResultados([]);
-    setPagination(null);
     setPage(1);
-    setError("");
-    setHasSearched(false);
   };
 
   const hasActiveFiltros =
