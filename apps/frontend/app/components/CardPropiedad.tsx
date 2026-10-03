@@ -32,9 +32,8 @@ export function CardPropiedad({
     maximumFractionDigits: 0,
   }).format(propiedad.precio);
 
-  const [showModalDocumento, setShowModalDocumento] = useState<boolean>(false);
-  const [showModalDocumentoImg, setShowModalDocumentoImg] =
-    useState<boolean>(false);
+  const [showModalDocumento, setShowModalDocumento] = useState(false);
+  const [showModalDocumentoImg, setShowModalDocumentoImg] = useState(false);
 
   const handleShowDocumentoModal = () => {
     if (propiedad.documentos && propiedad.documentos.length > 0) {
@@ -47,31 +46,13 @@ export function CardPropiedad({
   const esNavegable = !onEdit || propiedad.estado === "APROBADA";
 
   return (
-    <article
-      className={`relative bg-gray-800/30 p-3 border  rounded-lg shadow-xs ${
-        propiedad.destacada ? "border-2 border-sky-700/50" : "border-gray-600"
+    <section
+      className={`relative flex flex-col justify-between bg-gray-900/60 border rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 backdrop-blur-sm ${
+        propiedad.destacada
+          ? "border-2 border-sky-500/50 ring-sky-500/30"
+          : "border-gray-800 hover:border-gray-700"
       }`}
     >
-      {onEdit && (
-        <span>
-          <p
-            className={
-              propiedad.estado === "RECHAZADA"
-                ? "text-red-400 text-center text-sm"
-                : propiedad.estado === "PENDIENTE"
-                  ? "text-yellow-400 text-center text-sm"
-                  : "text-green-400 text-center text-sm"
-            }
-          >
-            {propiedad.estado === "RECHAZADA"
-              ? "Publicación Rechazada"
-              : propiedad.estado === "PENDIENTE"
-                ? "Publicación Pendiente"
-                : "Publicación Aprobada"}
-          </p>
-        </span>
-      )}
-
       {onDestacar && (
         <button
           disabled={propiedad.estado !== "APROBADA"}
@@ -83,10 +64,10 @@ export function CardPropiedad({
                 ? "Quitar de destacadas"
                 : "Destacar en landing"
           }
-          className={`absolute -top-2 -left-2 cursor-pointer transition-all duration-200 ease-in-out ${
+          className={`absolute top-3 left-3 z-10 p-1.5 rounded-full bg-gray-900/80 backdrop-blur-md border border-gray-700 cursor-  pointer transition ${
             propiedad.estado !== "APROBADA"
               ? "opacity-30 cursor-not-allowed grayscale"
-              : "hover:scale-125"
+              : "hover:scale-110 cursor-pointer"
           }`}
           aria-label="Destacar Propiedad"
         >
@@ -94,20 +75,40 @@ export function CardPropiedad({
         </button>
       )}
 
-      <header className="relative mt-3">
+      {onEdit && (
+        <p
+          className={
+            propiedad.estado === "RECHAZADA"
+              ? "text-red-400 text-center text-sm"
+              : propiedad.estado === "PENDIENTE"
+                ? "text-yellow-400 text-center text-sm"
+                : "text-green-400 text-center text-sm"
+          }
+        >
+          <span>
+            {propiedad.estado === "RECHAZADA"
+              ? "Publicación Rechazada"
+              : propiedad.estado === "PENDIENTE"
+                ? "Publicación Pendiente"
+                : "Publicación Aprobada"}
+          </span>
+        </p>
+      )}
+
+      <header className="relative">
         {esNavegable ? (
           <Link
             href={`/propiedades/${propiedad.id}`}
-            className="block overflow-hidden rounded-lg group"
+            className="block overflow-hidden group aspect-video w-full bg-gray-950"
           >
             {propiedad.fotografias?.[0] ? (
               <img
                 src={propiedad.fotografias[0]}
                 alt={propiedad.titulo}
-                className="rounded-lg w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               />
             ) : (
-              <div className="w-full h-48 bg-gray-700/50 rounded-lg flex flex-col items-center justify-center text-gray-400 group-hover:bg-gray-700/70 transition-colors">
+              <div className="w-full h-full flex flex-col items-center justify-center text-gray-500 bg-gray-900">
                 <span className="text-3xl mb-1">🏠</span>
                 <span className="text-xs">Sin fotografías</span>
               </div>
@@ -119,10 +120,10 @@ export function CardPropiedad({
               <img
                 src={propiedad.fotografias[0]}
                 alt={propiedad.titulo}
-                className="rounded-lg w-full h-48 object-cover"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               />
             ) : (
-              <div className="w-full h-48 bg-gray-700/50 rounded-lg flex flex-col items-center justify-center text-gray-400">
+              <div className="w-full h-full flex flex-col items-center justify-center text-gray-500 bg-gray-900">
                 <span className="text-3xl mb-1">🏠</span>
                 <span className="text-xs">Sin fotografías</span>
               </div>
@@ -130,45 +131,133 @@ export function CardPropiedad({
           </div>
         )}
 
-        {propiedad.puntaje !== undefined && propiedad.puntaje !== null && (
-          <p className="absolute -translate-y-8 translate-x-4 opacity-80">
-            Calificación:{" "}
-            <span className="bg-blue-700/80 rounded-full px-3 py-1.5 font-semibold">
-              {propiedad.puntaje}
-            </span>
-          </p>
-        )}
+        <span className="absolute bottom-3 left-3 bg-gray-950/85 backdrop-blur-md border border-gray-700 text-gray-200 text-xs px-2.5 py-1 rounded-md font-medium">
+          📍{propiedad.ciudad}
+        </span>
 
-        <h3 className="text-xl font-semibold tracking-wider text-center mt-2">
-          {esNavegable ? (
-            <Link
-              href={`/propiedades/${propiedad.id}`}
-              className="hover:text-sky-400 transition-colors line-clamp-1"
-            >
-              {propiedad.titulo}
-            </Link>
-          ) : (
-            <span className="line-clamp-1 cursor-default">
-              {propiedad.titulo}
-            </span>
-          )}
-        </h3>
+        {propiedad.puntaje !== undefined && propiedad.puntaje !== null && (
+          <span className="absolute bottom-3 right-3 bg-sky-950/90 border border-sky-500/50 text-sky-300 text-xs px-2.5 py-1 rounded-md font-bold">
+            Calificación: {propiedad.puntaje}
+          </span>
+        )}
       </header>
 
-      <section className="flex flex-col justify-between md:p-4 leading-normal">
-        <p className="text-lg">
-          Precio:{" "}
-          <span className="font-semibold text-green-400 tracking-wider">
+      <article className="p-4 flex flex-col grow justify-between gap-3">
+        <div>
+          <span className="text-2xl font-black text-emerald-400 tracking-tight block">
             {precioFormateado}
           </span>
-        </p>
-        <p className="text-lg">
-          Ciudad:{" "}
-          <span className="font-semibold text-blue-400 tracking-wider">
-            {propiedad.ciudad}
-          </span>
-        </p>
-      </section>
+
+          <h3 className="cursor-pointer text-base font-bold mt-1 line-clamp-1 hover:text-sky-400 transition-colors duration-200">
+            {esNavegable ? (
+              <Link href={`/propiedades/${propiedad.id}`}>
+                {propiedad.titulo}
+              </Link>
+            ) : (
+              propiedad.titulo
+            )}
+          </h3>
+
+          <p className="text-xs text-gray-400 line-clamp-1 mt-0.5">
+            {propiedad.barrio ? `${propiedad.barrio}, ` : ""}
+            {propiedad.direccion}
+          </p>
+        </div>
+
+        <div className="flex items-center justify-between py-2 border-y border-gray-800 text-xs text-gray-300 font-medium">
+          <span title="Habitaciones">🛏️ {propiedad.habitaciones ?? 0} Hab</span>
+          <span title="Baños">🚿 {propiedad.banos ?? 0} Baños</span>
+          <span title="Área">📐 {propiedad.area ?? 0} m²</span>
+          <span title="Estrato">🏛️ Est. {propiedad.estrato ?? "-"}</span>
+        </div>
+
+        <div className="flex items-center justify-between text-xs pt-1">
+          <div className="flex items-center gap-1.5">
+            {propiedad.publicadoPor?.celularVerificado ? (
+              <span className="text-emerald-400 bg-emerald-950/60 border border-emerald-500/30 px-1.5 py-0.5 rounded text-[11px] font-semibold">
+                ✓ Verificado
+              </span>
+            ) : (
+              <span className="text-gray-400 bg-gray-800/80 px-1.5 py-0.5 rounded text-[11px]">
+                Sin Verificar
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <span className="text-gray-400">Docs:</span>
+            {propiedad.documentos &&
+            propiedad.documentos.length > 0 &&
+            propiedad.documentos.every((d) => d.verificado) ? (
+              <span className="text-emerald-400 bg-emerald-950/60 border border-emerald-500/30 px-1.5 py-0.5 rounded text-[11px] font-semibold">
+                ✓ Auditados
+              </span>
+            ) : (
+              <span className="text-amber-400 bg-amber-950/60 border border-amber-500/30 px-1.5 py-0.5 rounded text-[11px]">
+                Pendiente
+              </span>
+            )}
+          </div>
+        </div>
+
+        {(onEdit ||
+          onDelete ||
+          onProbabilidad ||
+          onReportar ||
+          onDocumento) && (
+          <article className="flex justify-end items-center gap-2 pt-2 border-t border-gray-800">
+            {onDocumento && (
+              <Button
+                title="📄"
+                placeHolder="Subir Documento"
+                onClick={handleShowDocumentoModal}
+                variant="secondary"
+                ariaLabel="Subir Documento"
+              />
+            )}
+
+            {onProbabilidad && (
+              <Button
+                title="📊"
+                placeHolder="Ver Probabilidad"
+                onClick={() => onProbabilidad(propiedad.id)}
+                variant="secondary"
+                ariaLabel="Ver Probabilidad"
+              />
+            )}
+
+            {onEdit && (
+              <Button
+                title="✏️"
+                placeHolder="Editar Propiedad"
+                onClick={() => onEdit(propiedad)}
+                variant="secondary"
+                ariaLabel="Editar Propiedad"
+              />
+            )}
+
+            {onDelete && (
+              <Button
+                title="🗑️"
+                placeHolder="Eliminar Propiedad"
+                onClick={() => onDelete(propiedad.id)}
+                variant="danger"
+                ariaLabel="Eliminar Propiedad"
+              />
+            )}
+
+            {onReportar && (
+              <Button
+                title="⚠️"
+                placeHolder="Reportar Propiedad"
+                onClick={() => onReportar(propiedad.id)}
+                variant="secondary"
+                ariaLabel="Reportar Propiedad"
+              />
+            )}
+          </article>
+        )}
+      </article>
 
       {onDocumento && (
         <section className="flex flex-col gap-1 md:p-4">
@@ -191,79 +280,7 @@ export function CardPropiedad({
         </section>
       )}
 
-      <section className="flex flex-col justify-between md:p-4 leading-normal">
-        <p className="flex items-center justify-between">
-          Celular Verificado:{" "}
-          <span className="font-semibold text-yellow-400 tracking-wider text-xl">
-            {propiedad.publicadoPor?.celularVerificado ? "🆗" : "😒"}
-          </span>
-        </p>
-
-        <p className="flex items-center justify-between">
-          Documento Verificado:{" "}
-          <span className="font-semibold text-green-400 tracking-wider text-xl">
-            {propiedad.documentos && propiedad.documentos.length > 0
-              ? propiedad.documentos.every((doc) => doc.verificado)
-                ? "🆗"
-                : "⏳"
-              : "😒"}
-          </span>
-        </p>
-      </section>
-
-      <section className="flex justify-between items-center md:p-4 leading-normal">
-        {onDocumento && (
-          <Button
-            title="📄"
-            placeHolder="Subir Documento"
-            onClick={handleShowDocumentoModal}
-            variant="secondary"
-            ariaLabel="Subir Documento"
-          />
-        )}
-        <div className="flex justify-end gap-3">
-          {onEdit && (
-            <Button
-              title="✏️"
-              placeHolder="Editar Propiedad"
-              onClick={() => onEdit(propiedad)}
-              variant="secondary"
-              ariaLabel="Editar Propiedad"
-            />
-          )}
-
-          {onDelete && (
-            <Button
-              title="🗑️"
-              placeHolder="Eliminar Propiedad"
-              onClick={() => onDelete(propiedad.id)}
-              variant="danger"
-              ariaLabel="Eliminar Propiedad"
-            />
-          )}
-
-          {onProbabilidad && (
-            <Button
-              title="📊"
-              placeHolder="Ver Probabilidad"
-              onClick={() => onProbabilidad(propiedad.id)}
-              variant="secondary"
-              ariaLabel="Ver Probabilidad"
-            />
-          )}
-          {onReportar && (
-            <Button
-              title="⚠️"
-              placeHolder="Reportar Propiedad"
-              onClick={() => onReportar(propiedad.id)}
-              variant="secondary"
-              ariaLabel="Reportar Propiedad"
-            />
-          )}
-        </div>
-      </section>
-
-      <span className="absolute -bottom-2.5 left-12 px-3 bg-gray-500 rounded-md opacity-80">
+      <span className="absolute bottom-5 left-4 px-3 bg-gray-500 rounded-md opacity-80">
         {!propiedad.documentos || propiedad.documentos.length === 0 ? (
           <p className="text-red-400 text-center text-sm">
             &#9734; Publicación No Verificada
@@ -290,6 +307,6 @@ export function CardPropiedad({
           onClose={() => setShowModalDocumentoImg(false)}
         />
       )}
-    </article>
+    </section>
   );
 }
