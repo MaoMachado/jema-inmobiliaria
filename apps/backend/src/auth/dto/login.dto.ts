@@ -1,10 +1,15 @@
-import { IsEmail, IsString, MinLength } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
 
 export class LoginDto {
-  @IsEmail()
+  @IsEmail({}, { message: 'El correo electrónico no es válido' })
+  @IsNotEmpty({ message: 'El correo electrónico es obligatorio' })
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim().toLowerCase() : value,
+  )
   email: string;
 
   @IsString()
-  @MinLength(3)
+  @IsNotEmpty({ message: 'La contraseña es obligatoria' })
   password: string;
 }

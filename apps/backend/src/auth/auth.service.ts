@@ -28,15 +28,20 @@ export class AuthService {
       throw new BadRequestException('Faltan campos obligatorios');
     }
 
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanNombre = nombres.trim();
+    const cleanApellido = apellidos.trim();
+    const cleanCelular = celular.trim();
+
     try {
       const hashedPassword = await bcrypt.hash(password, 10);
 
       const user = await this.prisma.usuario.create({
         data: {
-          nombres,
-          apellidos,
-          celular,
-          email,
+          nombres: cleanNombre,
+          apellidos: cleanApellido,
+          celular: cleanCelular,
+          email: cleanEmail,
           password: hashedPassword,
           foto,
         },
@@ -48,6 +53,7 @@ export class AuthService {
         role: user.role,
       });
 
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password: _, ...userPublic } = user;
 
       return {
@@ -70,9 +76,11 @@ export class AuthService {
       throw new BadRequestException('Email y contraseña son obligatorios');
     }
 
+    const cleanEmail = email.trim().toLowerCase();
+
     const user = await this.prisma.usuario.findUnique({
       where: {
-        email,
+        email: cleanEmail,
       },
     });
 
@@ -91,6 +99,7 @@ export class AuthService {
       role: user.role,
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password: _, ...userPublic } = user;
 
     return {
