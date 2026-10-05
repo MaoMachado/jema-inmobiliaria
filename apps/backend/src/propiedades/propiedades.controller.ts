@@ -20,8 +20,11 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import {
   CreatePropiedadDto,
+  FiltroPropiedadesDto,
   RechazarPropiedadDto,
+  SubirDocumentoDto,
   ToggleDestacadaDto,
+  UpdatePropiedadDto,
 } from './dto/propiedades.dto';
 import type { RequestWithUser } from '../common/types/request-with-user';
 import { VerificarDto } from '../usuarios/dto/verificar.dto';
@@ -42,60 +45,18 @@ export class PropiedadesController {
   }
 
   @Get()
-  findAll(
-    @Query('ciudad') ciudad?: string,
-    @Query('tipo') tipo?: string,
-    @Query('precioMin') precioMin?: string,
-    @Query('precioMax') precioMax?: string,
-    @Query('habitaciones') habitaciones?: string,
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
-    @Query('orderBy') orderBy?: 'precio' | 'createdAt' | 'puntaje',
-    @Query('order') order?: 'asc' | 'desc',
-  ) {
-    const toNumber = (v?: string) => {
-      if (v === undefined || v === '') return undefined;
-      const n = Number(v);
-      return Number.isFinite(n) ? n : undefined;
-    };
-
-    const min = toNumber(precioMin);
-    const max = toNumber(precioMax);
-    const habs = toNumber(habitaciones);
-
+  findAll(@Query() query: FiltroPropiedadesDto) {
     if (
-      (min !== undefined && min < 0) ||
-      (max !== undefined && max < 0) ||
-      (habs !== undefined && habs < 1)
+      query.precioMin !== undefined &&
+      query.precioMax !== undefined &&
+      query.precioMin > query.precioMax
     ) {
-      throw new BadRequestException('Filtros numéricos inválidos');
-    }
-
-    if (min !== undefined && max !== undefined && min > max) {
       throw new BadRequestException(
         'El precio mínimo no puede ser mayor al precio máximo',
       );
     }
 
-    const allowedOrderBy = ['precio', 'createdAt', 'puntaje'];
-    const allowedOrder = ['asc', 'desc'];
-
-    const safeOrderBy =
-      orderBy && allowedOrderBy.includes(orderBy) ? orderBy : 'createdAt';
-
-    const safeOrder = order && allowedOrder.includes(order) ? order : 'desc';
-
-    return this.propiedadesService.findAll({
-      ciudad,
-      tipo,
-      precioMin: min,
-      precioMax: max,
-      habitaciones: habs,
-      page: toNumber(page),
-      limit: toNumber(limit),
-      orderBy: safeOrderBy,
-      order: safeOrder,
-    });
+    return this.propiedadesService.findAll(query);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -159,7 +120,7 @@ export class PropiedadesController {
   @Patch(':id')
   update(
     @Param('id') id: string,
-    @Body() body: Partial<CreatePropiedadDto>,
+    @Body() body: UpdatePropiedadDto,
     @Req() req: RequestWithUser,
   ) {
     return this.propiedadesService.update(id, body, req.user.id);
@@ -178,14 +139,18 @@ export class PropiedadesController {
   subirDocumentos(
     @Param('id') id: string,
     @UploadedFiles() files: Express.Multer.File[],
-    @Body('tipo') tipo: string,
+    @Body() body: SubirDocumentoDto,
     @Req() req: RequestWithUser,
   ) {
+    if (!files || files.length === 0) {
+      throw new BadRequestException('Debes adjuntar al menos un documento');
+    }
+
     return this.propiedadesService.subirDocumentos(
       id,
       req.user.id,
       files,
-      tipo,
+      body.tipo,
     );
   }
 
@@ -197,7 +162,10 @@ export class PropiedadesController {
 
   @UseGuards(JwtAuthGuard)
   @Delete(':id/documentos/:docId')
-  eliminarDocumento(@Param('id') docId: string, @Req() req: RequestWithUser) {
+  eliminarDocumento(
+    @Param('docId') docId: string,
+    @Req() req: RequestWithUser,
+  ) {
     return this.propiedadesService.eliminarDocumento(docId, req.user.id);
   }
 

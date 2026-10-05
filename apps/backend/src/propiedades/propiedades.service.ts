@@ -10,7 +10,9 @@ import { StorageService } from '../storage/storage.service';
 import { calcularPuntaje } from './calcular-puntaje';
 import {
   CreatePropiedadDto,
+  FiltroPropiedadesDto,
   RechazarPropiedadDto,
+  UpdatePropiedadDto,
 } from './dto/propiedades.dto';
 import { PLANES } from '../pagos/planes';
 
@@ -22,22 +24,6 @@ export class PropiedadesService {
   ) {}
 
   private readonly LIMITE_DESTACADAS_PREMIUM = 3;
-
-  private validate(propiedad: CreatePropiedadDto) {
-    if (
-      !propiedad.titulo?.trim() ||
-      !propiedad.descripcion?.trim() ||
-      propiedad.precio <= 0 ||
-      !propiedad.ciudad?.trim() ||
-      !propiedad.barrio?.trim() ||
-      !propiedad.tipo?.trim() ||
-      propiedad.habitaciones <= 0 ||
-      propiedad.banos <= 0 ||
-      propiedad.area <= 0
-    ) {
-      throw new BadRequestException('Todos los campos son obligatorios');
-    }
-  }
 
   async create(
     propiedad: CreatePropiedadDto,
@@ -66,51 +52,44 @@ export class PropiedadesService {
       );
     }
 
-    if (files.length > PLANES[usuario.plan].fotos) {
+    const limiteFotos = PLANES[usuario.plan]?.fotos ?? 5;
+    if (files.length > limiteFotos) {
       throw new ForbiddenException(
-        `Tu plan permite máximo ${PLANES[usuario.plan].fotos} fotos por propiedad.`,
+        `Tu plan permite máximo ${limiteFotos} fotos por propiedad.`,
       );
     }
 
-    const data: CreatePropiedadDto = {
-      ...propiedad,
-      precio: Number(propiedad.precio),
-      habitaciones: Number(propiedad.habitaciones),
-      banos: Number(propiedad.banos),
-      area: Number(propiedad.area),
-      antiguedad: Number(propiedad.antiguedad),
-      estrato: Number(propiedad.estrato),
-      parqueaderos: Number(propiedad.parqueaderos ?? 0),
-    };
-
-    this.validate(data);
-
-    data.fotografias =
+    const fotosUrls =
       files.length > 0 ? await this.storage.subirFotos(files) : [];
 
-    const puntaje = calcularPuntaje(data);
+    const propiedadParaPuntaje: CreatePropiedadDto = {
+      ...propiedad,
+      fotografias: fotosUrls,
+    };
+
+    const puntaje = calcularPuntaje(propiedadParaPuntaje);
 
     const prop = await this.prisma.propiedad.create({
       data: {
-        titulo: data.titulo,
-        descripcion: data.descripcion,
-        precio: data.precio,
-        ciudad: data.ciudad,
-        barrio: data.barrio,
-        tipo: data.tipo,
-        habitaciones: data.habitaciones,
-        banos: data.banos,
-        area: data.area,
-        publicadoPorId: userId,
-        antiguedad: data.antiguedad,
-        direccion: data.direccion,
-        estrato: data.estrato,
-        fotografias: data.fotografias,
-        parqueaderos: data.parqueaderos,
-        ubicacionLat: data.ubicacionLat ? Number(data.ubicacionLat) : null,
-        ubicacionLong: data.ubicacionLong ? Number(data.ubicacionLong) : null,
-        video: data.video ?? null,
+        titulo: propiedad.titulo,
+        descripcion: propiedad.descripcion,
+        precio: propiedad.precio,
+        ciudad: propiedad.ciudad,
+        barrio: propiedad.barrio,
+        direccion: propiedad.direccion,
+        estrato: propiedad.estrato,
+        tipo: propiedad.tipo,
+        habitaciones: propiedad.habitaciones,
+        banos: propiedad.banos,
+        parqueaderos: propiedad.parqueaderos ?? 0,
+        area: propiedad.area,
+        antiguedad: propiedad.antiguedad,
+        fotografias: fotosUrls,
+        video: propiedad.video ?? null,
+        ubicacionLat: propiedad.ubicacionLat ?? null,
+        ubicacionLong: propiedad.ubicacionLong ?? null,
         puntaje,
+        publicadoPorId: userId,
         estado: 'PENDIENTE',
       },
     });
@@ -120,17 +99,7 @@ export class PropiedadesService {
     return result;
   }
 
-  async findAll(filtros: {
-    ciudad?: string;
-    tipo?: string;
-    precioMin?: number;
-    precioMax?: number;
-    habitaciones?: number;
-    page?: number;
-    limit?: number;
-    orderBy?: 'precio' | 'createdAt' | 'puntaje';
-    order?: 'asc' | 'desc';
-  }) {
+  async findAll(filtros: FiltroPropiedadesDto) {
     const page = Math.max(1, filtros.page ?? 1);
     const limit = Math.min(100, Math.max(1, filtros.limit ?? 10));
 
@@ -171,7 +140,6 @@ export class PropiedadesService {
               documentoVerificado: true,
             },
           },
-
           documentos: {
             select: { tipo: true, verificado: true },
           },
@@ -240,17 +208,18 @@ export class PropiedadesService {
     if (!propiedad) {
       throw new NotFoundException('Propiedad no encontrada');
     }
+
     return {
       email: propiedad.publicadoPor?.email,
       celular: propiedad.publicadoPor?.celular,
     };
   }
 
-  async update(id: string, data: Partial<CreatePropiedadDto>, userId: string) {
+  async update(id: string, data: UpdatePropiedadDto, userId: string) {
     const propiedad = await this.findOne(id, { id: userId });
     if (propiedad.publicadoPorId !== userId) {
       throw new ForbiddenException(
-        'No tenes permiso para editar esta propiedad',
+        'No tienes permiso para editar esta propiedad',
       );
     }
 
@@ -260,7 +229,7 @@ export class PropiedadesService {
         select: { plan: true },
       });
 
-      const fotosLimite = PLANES[dueno?.plan ?? 'GRATIS'].fotos;
+      const fotosLimite = PLANES[dueno?.plan ?? 'GRATIS']?.fotos ?? 5;
       if (data.fotografias.length > fotosLimite) {
         throw new ForbiddenException(
           `Tu plan actual permite máximo ${fotosLimite} fotos por propiedad`,
@@ -269,18 +238,18 @@ export class PropiedadesService {
     }
 
     const cambios: CreatePropiedadDto = {
-      titulo: data.titulo ?? propiedad.titulo ?? '',
-      descripcion: data.descripcion ?? propiedad.descripcion ?? '',
-      precio: data.precio ?? propiedad.precio ?? 0,
-      ciudad: data.ciudad ?? propiedad.ciudad ?? '',
-      barrio: data.barrio ?? propiedad.barrio ?? '',
-      tipo: data.tipo ?? propiedad.tipo ?? '',
-      habitaciones: data.habitaciones ?? propiedad.habitaciones ?? 0,
-      banos: data.banos ?? propiedad.banos ?? 0,
-      area: data.area ?? propiedad.area ?? 0,
-      antiguedad: data.antiguedad ?? propiedad.antiguedad ?? 0,
-      direccion: data.direccion ?? propiedad.direccion ?? '',
-      estrato: data.estrato ?? propiedad.estrato ?? 0,
+      titulo: data.titulo ?? propiedad.titulo,
+      descripcion: data.descripcion ?? propiedad.descripcion,
+      precio: data.precio ?? propiedad.precio,
+      ciudad: data.ciudad ?? propiedad.ciudad,
+      barrio: data.barrio ?? propiedad.barrio,
+      direccion: data.direccion ?? propiedad.direccion,
+      estrato: data.estrato ?? propiedad.estrato,
+      tipo: data.tipo ?? propiedad.tipo,
+      habitaciones: data.habitaciones ?? propiedad.habitaciones,
+      banos: data.banos ?? propiedad.banos,
+      area: data.area ?? propiedad.area,
+      antiguedad: data.antiguedad ?? propiedad.antiguedad,
       fotografias: data.fotografias ?? propiedad.fotografias ?? [],
       parqueaderos: data.parqueaderos ?? propiedad.parqueaderos ?? 0,
       ubicacionLat: data.ubicacionLat ?? propiedad.ubicacionLat ?? null,
@@ -300,6 +269,8 @@ export class PropiedadesService {
         ...(data.precio !== undefined && { precio: data.precio }),
         ...(data.ciudad !== undefined && { ciudad: data.ciudad }),
         ...(data.barrio !== undefined && { barrio: data.barrio }),
+        ...(data.direccion !== undefined && { direccion: data.direccion }),
+        ...(data.estrato !== undefined && { estrato: data.estrato }),
         ...(data.tipo !== undefined && { tipo: data.tipo }),
         ...(data.habitaciones !== undefined && {
           habitaciones: data.habitaciones,
@@ -307,8 +278,6 @@ export class PropiedadesService {
         ...(data.banos !== undefined && { banos: data.banos }),
         ...(data.area !== undefined && { area: data.area }),
         ...(data.antiguedad !== undefined && { antiguedad: data.antiguedad }),
-        ...(data.direccion !== undefined && { direccion: data.direccion }),
-        ...(data.estrato !== undefined && { estrato: data.estrato }),
         ...(data.fotografias !== undefined && {
           fotografias: data.fotografias,
         }),
@@ -332,7 +301,7 @@ export class PropiedadesService {
     const propiedad = await this.findOne(id, { id: userId });
     if (propiedad.publicadoPorId !== userId) {
       throw new ForbiddenException(
-        'No tenes permiso para eliminar esta propiedad',
+        'No tienes permiso para eliminar esta propiedad',
       );
     }
 
@@ -350,7 +319,7 @@ export class PropiedadesService {
     const propiedad = await this.findOne(propiedadId, { id: userId });
     if (propiedad.publicadoPorId !== userId) {
       throw new ForbiddenException(
-        'No tenes permiso para subir documentos a esta propiedad',
+        'No tienes permiso para subir documentos a esta propiedad',
       );
     }
 
@@ -388,7 +357,7 @@ export class PropiedadesService {
 
     if (!(esDueno || esAdmin)) {
       throw new ForbiddenException(
-        'No tenes permiso para ver los documentos de esta propiedad',
+        'No tienes permiso para ver los documentos de esta propiedad',
       );
     }
 
@@ -397,14 +366,12 @@ export class PropiedadesService {
       orderBy: { createdAt: 'desc' },
     });
 
-    const documentosConUrl = await Promise.all(
+    return Promise.all(
       documentos.map(async (doc) => ({
         ...doc,
         url: await this.storage.getUrlDocumentoPropiedad(doc.url),
       })),
     );
-
-    return documentosConUrl;
   }
 
   async eliminarDocumento(docId: string, userId: string) {
@@ -439,9 +406,8 @@ export class PropiedadesService {
     return { verificado };
   }
 
-  //! Estados de las propiedades
   async findMisPropiedades(usuarioId: string) {
-    const propiedad = await this.prisma.propiedad.findMany({
+    return this.prisma.propiedad.findMany({
       where: { publicadoPorId: usuarioId },
       include: {
         publicadoPor: {
@@ -454,8 +420,6 @@ export class PropiedadesService {
         },
       },
     });
-
-    return propiedad;
   }
 
   async findPendientes() {
@@ -496,8 +460,7 @@ export class PropiedadesService {
     return { message: 'Propiedad rechazada' };
   }
 
-  //! Propiedades Destacadas
-  async findDestacadas(limit: number = 6) {
+  async findDestacadas(limit = 6) {
     const ahora = new Date();
 
     const selectFields = {
