@@ -7,8 +7,9 @@ import { Role } from '../../generated/prisma';
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor() {
     const secret = process.env.JWT_SECRET;
+
     if (!secret) {
-      throw new UnauthorizedException('JWT_SECRET no esta definido');
+      throw new Error('JWT_SECRET no esta definido');
     }
 
     super({
@@ -19,6 +20,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   validate(payload: { id: string; email: string; role: Role }) {
+    if (!payload.id || !payload.email || !payload.role) {
+      throw new UnauthorizedException('Payload inválido');
+    }
+
     return { id: payload.id, email: payload.email, role: payload.role };
   }
 }
