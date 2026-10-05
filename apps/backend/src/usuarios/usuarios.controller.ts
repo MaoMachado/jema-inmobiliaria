@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -17,8 +18,8 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import type { RequestWithUser } from '../common/types/request-with-user';
 import { VerificarDto } from './dto/verificar.dto';
-
-type MulterFile = Express.Multer.File;
+import { ActualizarPerfilDto } from './dto/actualizar-perfil.dto';
+import { CambiarPasswordDto } from './dto/cambiar-password.dto';
 
 @Controller('usuarios')
 export class UsuariosController {
@@ -50,9 +51,13 @@ export class UsuariosController {
   @Post('documento')
   @UseInterceptors(FileInterceptor('documento'))
   subirDocumento(
-    @UploadedFile() file: MulterFile,
+    @UploadedFile() file: Express.Multer.File,
     @Req() req: RequestWithUser,
   ) {
+    if (!file) {
+      throw new BadRequestException('Debes adjuntar un archivo de documento');
+    }
+
     return this.usuariosService.subirDocumento(req.user.id, file);
   }
 
@@ -81,7 +86,7 @@ export class UsuariosController {
   @Patch('perfil')
   async actualizarPerfil(
     @Req() req: RequestWithUser,
-    @Body() body: { nombres?: string; apellidos?: string; celular?: string },
+    @Body() body: ActualizarPerfilDto,
   ) {
     return this.usuariosService.actualizarPerfil(req.user.id, body);
   }
@@ -93,6 +98,10 @@ export class UsuariosController {
     @Req() req: RequestWithUser,
     @UploadedFile() file: Express.Multer.File,
   ) {
+    if (!file) {
+      throw new BadRequestException('Debes adjuntar una imagen de perfil');
+    }
+
     return this.usuariosService.subirFoto(req.user.id, file);
   }
 
@@ -100,7 +109,7 @@ export class UsuariosController {
   @Patch('password')
   async cambiarPassword(
     @Req() req: RequestWithUser,
-    @Body() body: { actual: string; nueva: string },
+    @Body() body: CambiarPasswordDto,
   ) {
     return this.usuariosService.cambiarPassword(req.user.id, body);
   }

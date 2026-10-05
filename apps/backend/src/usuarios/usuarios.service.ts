@@ -6,6 +6,8 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
+import { ActualizarPerfilDto } from './dto/actualizar-perfil.dto';
+import { CambiarPasswordDto } from './dto/cambiar-password.dto';
 
 @Injectable()
 export class UsuariosService {
@@ -56,6 +58,10 @@ export class UsuariosService {
   }
 
   async subirDocumento(userId: string, file: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException('No se adjunto ningun archivo');
+    }
+
     const usuario = await this.prisma.usuario.findUnique({
       where: { id: userId },
     });
@@ -108,14 +114,12 @@ export class UsuariosService {
       p.documentos.map((d) => ({ ...d, propiedadTitulo: p.titulo })),
     );
 
-    const documentosConUrl = await Promise.all(
+    return await Promise.all(
       todosLosDocumentos.map(async (doc) => ({
         ...doc,
         url: await this.storage.getUrlDocumentoPropiedad(doc.url),
       })),
     );
-
-    return documentosConUrl;
   }
 
   async verificarTelefono(userId: string, verificado: boolean) {
@@ -168,10 +172,7 @@ export class UsuariosService {
     return usuario;
   }
 
-  async actualizarPerfil(
-    userId: string,
-    data: { nombres?: string; apellidos?: string; celular?: string },
-  ) {
+  async actualizarPerfil(userId: string, data: ActualizarPerfilDto) {
     const usuario = await this.prisma.usuario.findUnique({
       where: { id: userId },
     });
@@ -180,17 +181,22 @@ export class UsuariosService {
       throw new NotFoundException('Usuario no encontrado');
     }
 
+    const cleanNombres = data.nombres?.trim();
+    const cleanApellidos = data.apellidos?.trim();
+    const cleanCelular = data.celular?.trim();
+
     return this.prisma.usuario.update({
       where: { id: userId },
       data: {
-        ...(data.nombres !== undefined && { nombres: data.nombres }),
-        ...(data.apellidos !== undefined && { apellidos: data.apellidos }),
-        ...(data.celular !== undefined && { celular: data.celular }),
+        ...(cleanNombres !== undefined && { nombres: cleanNombres }),
+        ...(cleanApellidos !== undefined && { apellidos: cleanApellidos }),
+        ...(cleanCelular !== undefined && { celular: cleanCelular }),
         celularVerificado:
-          data.celular !== undefined && data.celular !== usuario.celular
+          cleanCelular !== undefined && cleanCelular !== usuario.celular
             ? false
             : undefined,
       },
+
       select: {
         id: true,
         nombres: true,
@@ -205,6 +211,10 @@ export class UsuariosService {
   }
 
   async subirFoto(userId: string, file: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException('Debes adjuntar una foto');
+    }
+
     const usuario = await this.prisma.usuario.findUnique({
       where: { id: userId },
     });
@@ -225,10 +235,7 @@ export class UsuariosService {
     return { fotoUrl: fotoPath };
   }
 
-  async cambiarPassword(
-    userId: string,
-    data: { actual: string; nueva: string },
-  ) {
+  async cambiarPassword(userId: string, data: CambiarPasswordDto) {
     const usuario = await this.prisma.usuario.findUnique({
       where: { id: userId },
     });
@@ -242,6 +249,12 @@ export class UsuariosService {
       throw new BadRequestException(
         'La contraseña debe tener al menos 6 caracteres',
       );
+
+    if (data.actual === data.nueva) {
+      throw new BadRequestException(
+        'La nueva contraseña no puede ser igual a la anterior',
+      );
+    }
 
     const isValid = await bcrypt.compare(data.actual, usuario.password);
     if (!isValid)
