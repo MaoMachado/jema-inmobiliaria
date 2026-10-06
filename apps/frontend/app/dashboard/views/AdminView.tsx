@@ -47,11 +47,6 @@ export default function AdminView() {
     { id: "reports" as const, label: "Métricas y Análisis", icon: "📊" },
   ];
 
-  const tituloBtn =
-    pendientes.length === 0
-      ? "Sin solicitudes"
-      : `Tiene ${pendientes.length} solicitud(es) de publicación`;
-
   return (
     <article className="space-y-6">
       <header className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-gray-900/60 border border-gray-800/80 p-4 rounded-2xl backdrop-blur-sm">

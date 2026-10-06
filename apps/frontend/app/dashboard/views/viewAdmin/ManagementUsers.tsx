@@ -52,7 +52,7 @@ export default function ManagementUsers() {
 
   return (
     <article className="space-y-6">
-      <div className="flex justify-between items-center">
+      <header className="flex justify-between items-center">
         <div>
           <h2 className="text-3xl font-bold">Gestión De Usuarios</h2>
           <p className="text-xs text-gray-400">
@@ -62,7 +62,7 @@ export default function ManagementUsers() {
         <span className="text-xs text-gray-400 bg-gray-900 border border-gray-800 px-3 py-1 rounded-full font-semibold">
           Total: {users.length}
         </span>
-      </div>
+      </header>
 
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">

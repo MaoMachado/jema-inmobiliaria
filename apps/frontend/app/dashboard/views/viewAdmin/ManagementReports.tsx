@@ -38,7 +38,7 @@ export default function ManagementReports() {
   }
 
   return (
-    <main className="space-y-6">
+    <article className="space-y-6">
       <header>
         <h2 className="text-xl font-bold">Métricas y Analítica Global</h2>
         <p className="text-xs text-gray-400">
@@ -150,6 +150,6 @@ export default function ManagementReports() {
           </div>
         </div>
       </section>
-    </main>
+    </article>
   );
 }
