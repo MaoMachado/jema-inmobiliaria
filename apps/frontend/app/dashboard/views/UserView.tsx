@@ -10,9 +10,14 @@ import ChatIA from "@/app/components/ChatIA";
 import PlanSuscripcion from "./viewUser/PlanSuscripcion";
 import { EstimacionPropiedad } from "../Modal/EstimacionPropiedad";
 
+type FiltroEstadoPropiedad = "TODAS" | "APROBADA" | "PENDIENTE" | "RECHAZADA";
+type TabActiva = "propiedades" | "plan";
+
 export default function UserView() {
   const [probabilidadId, setProbabilidadId] = useState<string | null>(null);
-  const [showPlan, setShowPlan] = useState(false);
+  const [tabActiva, setTabActiva] = useState<TabActiva>("propiedades");
+  const [filtroEstado, setFiltroEstado] =
+    useState<FiltroEstadoPropiedad>("TODAS");
 
   const { planInfo } = usePagos();
   const esPremium = planInfo?.plan === "PREMIUM";
@@ -42,60 +47,115 @@ export default function UserView() {
     loadInitial();
   }, []);
 
+  const propiedadesFiltradas = initialData.filter((p) => {
+    if (filtroEstado === "TODAS") return true;
+    return p.estado === filtroEstado;
+  });
+
+  const destacadasCount = initialData.filter(
+    (p) => p.destacada && p.estado === "APROBADA",
+  ).length;
+
   return (
-    <article>
-      <header className="flex justify-between items-center mb-3">
-        <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold flex flex-col gap-2">
-          Propiedades
-          {esPremium && (
-            <div className="inline-flex items-center gap-2 bg-amber-500/50 border border-amber-500/30 text-amber-300 text-sm px-3 py-1.5 rounded-lg">
-              <span>⭐ Propiedades Destacadas:</span>
-              <span>
-                {
-                  initialData.filter(
-                    (p) => p.destacada && p.estado === "APROBADA",
-                  ).length
-                }{" "}
-                / 3
+    <article className="space-y-6">
+      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-800 pb-5">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white flex items-center gap-3">
+            <span>Panel de Propietario</span>
+            {esPremium && (
+              <span className="inline-flex items-center gap-1.5 bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs px-2.5 py-1 rounded-full font-semibold">
+                ⭐ Destacadas: {destacadasCount} / 3
               </span>
-            </div>
-          )}
-        </h2>
+            )}
+          </h1>
+          <p className="text-sm text-gray-400 mt-1">
+            Gestiona tus propiedades inmobiliarias, suscripciones y analíticas
+            de valor.
+          </p>
+        </div>
 
-        <div className="flex gap-3">
-          <button
-            onClick={() => setShowPlan((v) => !v)}
-            className="bg-sky-700/40 hover:bg-sky-500/50 rounded-md cursor-pointer px-4 py-2.5 text-sm"
-          >
-            {showPlan ? "Mis Propiedades" : "Mi Plan"}
-          </button>
+        <div className="flex items-center gap-3">
+          <div className="inline-flex bg-gray-900 border border-gray-800 p-1 rounded-xl">
+            <button
+              onClick={() => setTabActiva("propiedades")}
+              className={`px-4 py-2 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                tabActiva === "propiedades"
+                  ? "bg-sky-600 text-white shadow"
+                  : "text-gray-400 hover:text-white"
+              }`}
+            >
+              Mis Propiedades
+            </button>
 
-          {!showPlan && (
+            <button
+              onClick={() => setTabActiva("plan")}
+              className={`px-4 py-2 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                tabActiva === "plan"
+                  ? "bg-sky-600 text-white shadow"
+                  : "text-gray-400 hover:text-white"
+              }`}
+            >
+              Mi Suscripción
+            </button>
+          </div>
+
+          {tabActiva === "propiedades" && (
             <button
               onClick={openCreate}
-              className="text-white bg-blue-700/40 hover:bg-blue-500/50 rounded-md box-border border border-transparent hover:bg-brand-strong  shadow-xs font-medium leading-5 rounded-base text-sm px-4 py-2.5 focus:outline-none cursor-pointer"
+              className="bg-linear-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-lg shadow-sky-500/20 transition flex items-center gap-1.5 cursor-pointer"
             >
-              Nueva Propiedad
+              <span>➕</span>
+              <span>Nueva Propiedad</span>
             </button>
           )}
         </div>
       </header>
 
-      {showPlan ? (
+      {tabActiva === "plan" ? (
         <PlanSuscripcion />
       ) : (
         <>
-          <SearchProperty
-            onResult={handleSearchResult}
-            onClear={handleSearchClear}
-          />
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              {(["TODAS", "APROBADA", "PENDIENTE", "RECHAZADA"] as const).map(
+                (estado) => (
+                  <button
+                    key={estado}
+                    onClick={() => setFiltroEstado(estado)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition cursor-pointer ${
+                      filtroEstado === estado
+                        ? "bg-gray-800 border-sky-500/60 text-sky-400"
+                        : "bg-gray-900/50 border-gray-800 text-gray-400 hover:text-gray-200"
+                    }`}
+                  >
+                    {estado === "TODAS"
+                      ? `Todas (${initialData.length})`
+                      : estado === "APROBADA"
+                        ? `Aprobadas (${initialData.filter((p) => p.estado === "APROBADA").length})`
+                        : estado === "PENDIENTE"
+                          ? `Pendientes (${initialData.filter((p) => p.estado === "PENDIENTE").length})`
+                          : `Rechazadas (${initialData.filter((p) => p.estado === "RECHAZADA").length})`}
+                  </button>
+                ),
+              )}
+            </div>
 
-          <section>
+            <SearchProperty
+              onResult={handleSearchResult}
+              onClear={handleSearchClear}
+            />
+          </div>
+
+          <section className="min-h-75">
             {!isSearching && loading ? (
-              <p>Cargando...</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">
+                <div className="h-72 bg-gray-800/40 rounded-2xl" />
+                <div className="h-72 bg-gray-800/40 rounded-2xl" />
+                <div className="h-72 bg-gray-800/40 rounded-2xl" />
+              </div>
             ) : !isSearching ? (
-              <article className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-6">
-                {initialData.map((propiedad) => (
+              <article className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {propiedadesFiltradas.map((propiedad) => (
                   <CardPropiedad
                     key={propiedad.id}
                     propiedad={propiedad}
@@ -107,26 +167,39 @@ export default function UserView() {
                   />
                 ))}
 
-                {initialData.length === 0 && (
-                  <p className="text-center col-span-full text-2xl mt-10 ">
-                    No hay propiedades 🧹
-                  </p>
+                {propiedadesFiltradas.length === 0 && (
+                  <div className="col-span-full py-16 text-center bg-gray-900/30 border border-dashed border-gray-800 rounded-2xl">
+                    <span className="text-4xl block mb-3">🏡</span>
+                    <h3 className="text-lg font-semibold text-gray-200">
+                      No hay propiedades en esta sección
+                    </h3>
+                    <p className="text-sm text-gray-400 mt-1 max-w-sm mx-auto">
+                      Crea una nueva publicación para empezar a ofertar
+                      inmuebles en la plataforma.
+                    </p>
+                    <button
+                      onClick={openCreate}
+                      className="mt-4 bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition cursor-pointer"
+                    >
+                      Publicar Inmueble
+                    </button>
+                  </div>
                 )}
               </article>
             ) : null}
-
-            {message && (
-              <div className="fixed bottom-4 right-4 z-50 bg-green-500/80 text-white px-4 py-2 rounded-md font-semibold shadow-lg">
-                <p>{message}</p>
-              </div>
-            )}
-
-            {error && (
-              <div className="fixed bottom-4 right-4 z-50 bg-red-500/80 text-white px-4 py-2 rounded-md font-semibold shadow-lg">
-                <p>{error}</p>
-              </div>
-            )}
           </section>
+
+          {message && (
+            <div className="fixed bottom-6 right-6 z-50 bg-emerald-900/90 border border-emerald-500 text-emerald-200 px-4 py-3 rounded-xl font-medium shadow-2xl backdrop-blur">
+              {message}
+            </div>
+          )}
+
+          {error && (
+            <div className="fixed bottom-6 right-6 z-50 bg-red-900/90 border border-red-500 text-red-200 px-4 py-3 rounded-xl font-medium shadow-2xl backdrop-blur">
+              {error}
+            </div>
+          )}
         </>
       )}
 
