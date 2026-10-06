@@ -82,25 +82,6 @@ export default function AdminView() {
               : `${pendientes.length} solicitud(es) de publicación`}
           </span>
         </button>
-
-        {viewPublicationRequest && (
-          <PublicationRequest
-            onClick={() => setViewPublicationRequest(false)}
-            initialData={pendientes}
-            onRefresh={refresh}
-            handleAprobar={handleAprobar}
-            confirmarRechazo={confirmarRechazo}
-            loading={loading}
-            pendingId={pendingId}
-            motivoModal={motivoModal}
-            setMotivoModal={setMotivoModal}
-            motivo={motivo}
-            setMotivo={setMotivo}
-            motivoError={motivoError}
-            setMotivoError={setMotivoError}
-            message={message}
-          />
-        )}
       </header>
 
       <section className="min-h-125">
@@ -109,6 +90,25 @@ export default function AdminView() {
         {view === "frauds" && <ManagementFrauds />}
         {view === "reports" && <ManagementReports />}
       </section>
+
+      {viewPublicationRequest && (
+        <PublicationRequest
+          onClick={() => setViewPublicationRequest(false)}
+          initialData={pendientes}
+          onRefresh={refresh}
+          handleAprobar={handleAprobar}
+          confirmarRechazo={confirmarRechazo}
+          loading={loading}
+          pendingId={pendingId}
+          motivoModal={motivoModal}
+          setMotivoModal={setMotivoModal}
+          motivo={motivo}
+          setMotivo={setMotivo}
+          motivoError={motivoError}
+          setMotivoError={setMotivoError}
+          message={message}
+        />
+      )}
 
       <ChatIA />
     </article>
