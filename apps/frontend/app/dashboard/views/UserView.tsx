@@ -144,6 +144,26 @@ export default function UserView() {
               onResult={handleSearchResult}
               onClear={handleSearchClear}
             />
+
+            {isSearching && (
+              <div className="flex gap-6 items-center justify-between bg-sky-950/40 border border-sky-500/30 px-4 py-2.5 rounded-xl text-xs text-sky-200">
+                <span className="flex items-center gap-2">
+                  <span>🔍</span>
+                  <span>
+                    Mostrando <strong>{propiedadesFiltradas.length}</strong>{" "}
+                    {propiedadesFiltradas.length === 1
+                      ? "propiedad encontrada"
+                      : "propiedades encontradas"}
+                  </span>
+                </span>
+                <button
+                  onClick={handleSearchClear}
+                  className="text-sky-400 hover:text-sky-300 font-semibold underline cursor-pointer"
+                >
+                  Limpiar búsqueda y ver todas
+                </button>
+              </div>
+            )}
           </div>
 
           <section className="min-h-75">

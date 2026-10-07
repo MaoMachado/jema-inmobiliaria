@@ -1,18 +1,32 @@
 "use client";
 
-import Button from "@/app/components/Button";
+import { useState } from "react";
 import { Propiedad } from "@/app/lib/types";
 import { Ciudad, Tipo, useSearchProperty } from "../hooks/useSearchProperty";
+import Button from "@/app/components/Button";
+import { CardPropiedad } from "@/app/components/CardPropiedad";
 
 interface SearchPropertyProps {
   onResult: (data: Propiedad[]) => void;
   onClear: () => void;
+  onEdit?: (propiedad: Propiedad) => void;
+  onDelete?: (id: string) => void;
+  onProbabilidad?: (id: string) => void;
+  onDocumento?: (id: string, file: File, tipo: string) => void;
+  onDestacar?: (id: string, nuevoEstado: boolean) => void;
 }
 
 export default function SearchProperty({
   onResult,
   onClear,
+  onEdit,
+  onDelete,
+  onProbabilidad,
+  onDocumento,
+  onDestacar,
 }: SearchPropertyProps) {
+  const [mostrarAvanzados, setMostrarAvanzados] = useState(false);
+
   const {
     ciudad,
     setCiudad,
@@ -29,205 +43,211 @@ export default function SearchProperty({
     order,
     setOrder,
     resultados,
-    pagination,
-    page,
     loading,
     error,
     hasSearched,
     hasActiveFiltros,
     handleSearch,
-    changePage,
     handleClear,
   } = useSearchProperty({ onResult, onClear });
 
   return (
-    <article className="space-y-4 my-6">
-      <form
-        onSubmit={handleSearch}
-        className="flex flex-wrap items-center justify-center gap-3"
-      >
-        <section className="flex items-center gap-3">
-          <label htmlFor="ciudad">Ciudad</label>
-          <select
-            id="ciudad"
-            value={ciudad}
-            onChange={(e) => setCiudad(e.target.value as Ciudad)}
-            className="border border-blue-500/50 rounded-md p-1.5"
-          >
-            <option value="" className="bg-cyan-800/50 text-black">
-              Todos
-            </option>
-            <option value="Medellin" className="bg-cyan-800/50 text-black">
-              Medellin
-            </option>
-            <option value="Ibague" className="bg-cyan-800/50 text-black">
-              Ibague
-            </option>
-            <option value="Bogota" className="bg-cyan-800/50 text-black">
-              Bogota
-            </option>
-          </select>
-        </section>
+    <article className="w-full bg-gray-900/60 border border-gray-800 p-4 rounded-2xl shadow-lg backdrop-blur-sm space-x-3">
+      <form onSubmit={handleSearch} className="space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 items-end">
+          <div className="flex flex-col gap-1">
+            <label
+              htmlFor="ciudad"
+              className="text-xs font-medium text-gray-400"
+            >
+              Ciudad
+            </label>
+            <select
+              id="ciudad"
+              value={ciudad}
+              onChange={(e) => setCiudad(e.target.value as Ciudad)}
+              className="bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs text-gray-200 focus:outline-none focus:border-sky-500 transition"
+            >
+              <option value="">Todas las ciudades</option>
+              <option value="Medellin">Medellín</option>
+              <option value="Ibague">Ibagué</option>
+              <option value="Bogota">Bogotá</option>
+            </select>
+          </div>
 
-        <section className="flex items-center gap-3">
-          <label htmlFor="tipo">Tipo</label>
-          <select
-            id="tipo"
-            value={tipo}
-            onChange={(e) => setTipo(e.target.value as Tipo)}
-            className="border border-blue-500/50 rounded-md p-1.5"
-          >
-            <option value="" className="bg-cyan-800/50 text-black">
-              Todos
-            </option>
-            <option value="Casa" className="bg-cyan-800/50 text-black">
-              Casa
-            </option>
-            <option value="Apartamento" className="bg-cyan-800/50 text-black">
-              Apartamento
-            </option>
-            <option value="Local" className="bg-cyan-800/50 text-black">
-              Local
-            </option>
-            <option value="Oficina" className="bg-cyan-800/50 text-black">
-              Oficina
-            </option>
-            <option value="Lote" className="bg-cyan-800/50 text-black">
-              Lote
-            </option>
-          </select>
-        </section>
+          <div className="flex flex-col gap-1">
+            <label htmlFor="tipo" className="text-xs font-medium text-gray-400">
+              Tipo de Inmueble
+            </label>
+            <select
+              id="tipo"
+              value={tipo}
+              onChange={(e) => setTipo(e.target.value as Tipo)}
+              className="bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs text-gray-200 focus:outline-none focus:border-sky-500 transition"
+            >
+              <option value="">Todos los tipos</option>
+              <option value="Casa">Casa</option>
+              <option value="Apartamento">Apartamento</option>
+              <option value="Local">Local</option>
+              <option value="Oficina">Oficina</option>
+              <option value="Lote">Lote</option>
+            </select>
+          </div>
 
-        {/* <section className="flex items-center gap-3">
-          <label htmlFor="habitaciones">Habitaciones</label>
-          <input
-            type="number"
-            id="habitaciones"
-            min={1}
-            value={habitaciones}
-            onChange={(e) =>
-              setHabitaciones(
-                e.target.value === "" ? "" : Number(e.target.value),
-              )
-            }
-            className="border border-blue-500/50 rounded-md p-1.5 w-15"
-          />
-        </section>
+          <div className="flex flex-col gap-1">
+            <label
+              htmlFor="ordenar"
+              className="text-xs font-medium text-gray-400"
+            >
+              Ordenar por
+            </label>
+            <select
+              id="ordenar"
+              value={`${orderBy}_${order}`}
+              onChange={(e) => {
+                const [newOrderBy, newOrder] = e.target.value.split("_") as [
+                  "precio" | "createdAt" | "puntaje",
+                  "asc" | "desc",
+                ];
+                setOrderBy(newOrderBy);
+                setOrder(newOrder);
+              }}
+              className="bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs text-gray-200 focus:outline-none focus:border-sky-500 transition"
+            >
+              <option value="puntaje_desc">Mayor Puntaje</option>
+              <option value="createdAt_desc">Más recientes</option>
+              <option value="precio_asc">Precio: Menor a Mayor</option>
+              <option value="precio_desc">Precio: Mayor a Menor</option>
+            </select>
+          </div>
 
-        <section className="flex items-center gap-3">
-          <label htmlFor="precioMin">Precio Mínimo</label>
-          <input
-            type="number"
-            id="precioMin"
-            min={0}
-            value={precioMin}
-            onChange={(e) =>
-              setPrecioMin(e.target.value === "" ? "" : Number(e.target.value))
-            }
-            className="border border-blue-500/50 rounded-md p-1.5 w-20"
-          />
-        </section>
+          <div className="flex items-center gap-2 sm:col-span-2 lg:col-span-2">
+            <Button
+              title={loading ? "Buscando..." : "Buscar"}
+              type="submit"
+              disabled={loading}
+              className="flex-1 text-xs py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl font-semibold transition cursor-pointer"
+            />
 
-        <section className="flex items-center gap-3">
-          <label htmlFor="precioMax">Precio Máximo</label>
-          <input
-            type="number"
-            id="precioMax"
-            min={0}
-            value={precioMax}
-            onChange={(e) =>
-              setPrecioMax(e.target.value === "" ? "" : Number(e.target.value))
-            }
-            className="border border-blue-500/50 rounded-md p-1.5 w-20"
-          />
-        </section>
+            {hasActiveFiltros && (
+              <Button
+                title="Limpiar"
+                type="button"
+                variant="secondary"
+                onClick={handleClear}
+                className="text-xs py-2 rounded-xl"
+              />
+            )}
 
-        <section className="flex items-center gap-3">
-          <label htmlFor="orderBy">Ordenar</label>
-          <select
-            id="orderBy"
-            value={orderBy}
-            onChange={(e) =>
-              setOrderBy(e.target.value as "precio" | "createdAt" | "puntaje")
-            }
-            className="border border-blue-500/50 rounded-md p-1.5"
-          >
-            <option value="createdAt" className="bg-cyan-800/50 text-black">
-              Fecha
-            </option>
-            <option value="precio" className="bg-cyan-800/50 text-black">
-              Precio
-            </option>
-            <option value="puntaje" className="bg-cyan-800/50 text-black">
-              Puntaje
-            </option>
-          </select>
-        </section>
+            <button
+              type="button"
+              onClick={() => setMostrarAvanzados(!mostrarAvanzados)}
+              className="p-2 text-xs text-gray-400 hover:text-sky-400 transition"
+              title="Filtros avanzados"
+            >
+              ⚙️ {mostrarAvanzados ? "Menos" : "Más"}
+            </button>
+          </div>
+        </div>
 
-        <select
-          value={order}
-          onChange={(e) => setOrder(e.target.value as "asc" | "desc")}
-          className="border border-blue-500/50 rounded-md p-1.5"
-        >
-          <option value="desc" className="bg-cyan-800/50 text-black">
-            Descendente
-          </option>
-          <option value="asc" className="bg-cyan-800/50 text-black">
-            Ascendente
-          </option>
-        </select> */}
+        {mostrarAvanzados && (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-gray-800/60 animate-fade-in">
+            <div className="flex flex-col gap-1">
+              <label
+                htmlFor="habitaciones"
+                className="text-xs font-medium text-gray-400"
+              >
+                Habitaciones mínimas
+              </label>
+              <input
+                type="number"
+                id="habitaciones"
+                min={1}
+                placeholder="Ej. 2"
+                value={habitaciones}
+                onChange={(e) =>
+                  setHabitaciones(
+                    e.target.value === "" ? "" : Number(e.target.value),
+                  )
+                }
+                className="bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs text-gray-200 focus:outline-none focus:border-sky-500 transition"
+              />
+            </div>
 
-        <Button title={loading ? "Buscando..." : "Buscar"} type="submit" />
+            <div className="flex flex-col gap-1">
+              <label
+                htmlFor="precioMin"
+                className="text-xs font-medium text-gray-400"
+              >
+                Precio Mínimo (COP)
+              </label>
+              <input
+                type="number"
+                id="precioMin"
+                min={0}
+                placeholder="$ 0"
+                value={precioMin}
+                onChange={(e) =>
+                  setPrecioMin(
+                    e.target.value === "" ? "" : Number(e.target.value),
+                  )
+                }
+                className="bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs text-gray-200 focus:outline-none focus:border-sky-500 transition"
+              />
+            </div>
 
-        {hasActiveFiltros && (
-          <Button
-            title="Limpiar"
-            type="button"
-            onClick={handleClear}
-            variant="secondary"
-          />
+            <div className="flex flex-col gap-1">
+              <label
+                htmlFor="precioMax"
+                className="text-xs font-medium text-gray-400"
+              >
+                Precio Máximo (COP)
+              </label>
+              <input
+                type="number"
+                id="precioMax"
+                min={0}
+                placeholder="$ Sin límite"
+                value={precioMax}
+                onChange={(e) =>
+                  setPrecioMax(
+                    e.target.value === "" ? "" : Number(e.target.value),
+                  )
+                }
+                className="bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs text-gray-200 focus:outline-none focus:border-sky-500 transition"
+              />
+            </div>
+          </div>
         )}
       </form>
 
-      {error && <p className="text-red-500">{error}</p>}
-
-      {hasSearched && (
-        <ul className="space-y-2">
-          {resultados?.map((p) => (
-            <li key={p.id} className="border p-3 rounded">
-              <h3 className="font-semibold">{p.titulo}</h3>
-              <p>
-                {p.ciudad} - {p.barrio} - {p.tipo}
-              </p>
-              <p>
-                ${p.precio.toLocaleString()} - {p.habitaciones} habitaciones -{" "}
-                {p.banos} baños - {p.area} m²
-              </p>
-            </li>
-          ))}
-          {!loading && resultados?.length === 0 && !error && (
-            <p className="text-gray-500">Sin Resultados.</p>
-          )}
-        </ul>
+      {error && (
+        <p className="text-xs text-red-400 bg-red-950/30 border border-red-500/20 p-2 rounded-lg">
+          ⚠️ {error}
+        </p>
       )}
 
-      {hasSearched && pagination && pagination.totalPages > 1 && (
-        <div>
-          <Button
-            title="Anterior"
-            type="button"
-            onClick={() => changePage(Math.max(1, page - 1))}
-          />
-          <span>
-            Página {pagination.page} de {pagination.totalPages}
-          </span>
-          <Button
-            title="Siguiente"
-            type="button"
-            onClick={() =>
-              changePage(Math.min(pagination.totalPages, page + 1))
-            }
-          />
+      {loading && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-pulse pt-4">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <div key={index} className="h-72 bg-gray-800/40 rounded-2xl" />
+          ))}
+        </div>
+      )}
+
+      {hasSearched && !loading && resultados.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-6">
+          {resultados.map((propiedad) => (
+            <CardPropiedad
+              key={propiedad.id}
+              propiedad={propiedad}
+              onDocumento={onDocumento}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              onProbabilidad={onProbabilidad}
+              onDestacar={onDestacar}
+            />
+          ))}
         </div>
       )}
     </article>

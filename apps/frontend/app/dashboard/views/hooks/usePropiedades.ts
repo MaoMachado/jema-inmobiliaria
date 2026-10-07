@@ -1,13 +1,19 @@
 "use client";
 
-import api from "@/app/lib/api";
+import { useCallback, useState } from "react";
+import { isAxiosError } from "axios";
 import { borrarEstimacionCache } from "@/app/lib/estimacionesCache";
 import { Propiedad } from "@/app/lib/types";
-import { useState } from "react";
+import api from "@/app/lib/api";
 
-const getErrorMessage = (error: unknown, fallback: string) => {
-  const e = error as { response?: { data?: { message?: string } } };
-  return e?.response?.data?.message ?? fallback;
+const getErrorMessage = (error: unknown, fallback: string): string => {
+  if (isAxiosError(error)) {
+    const msg = error.response?.data?.message;
+    if (Array.isArray(msg)) return msg.join(", ");
+    if (typeof msg === "string") return msg;
+  }
+
+  return fallback;
 };
 
 export function usePropiedades(onCreated?: (id: string) => void) {
@@ -22,7 +28,12 @@ export function usePropiedades(onCreated?: (id: string) => void) {
   const [saving, setSaving] = useState<boolean>(false);
   const [message, setMessage] = useState<"" | string>("");
 
-  const loadInitial = async () => {
+  const showTempMessage = (text: string) => {
+    setMessage(text);
+    setTimeout(() => setMessage(""), 4000);
+  };
+
+  const loadInitial = useCallback(async () => {
     setLoading(true);
     setError("");
 
@@ -37,7 +48,7 @@ export function usePropiedades(onCreated?: (id: string) => void) {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const handleSubmitPropiedad = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -47,26 +58,28 @@ export function usePropiedades(onCreated?: (id: string) => void) {
 
     const formData = new FormData(e.currentTarget);
 
-    const isEmpty = (v: FormDataEntryValue | null) =>
-      v === "" || v === null || v === undefined;
+    const camposRequeridos = [
+      "titulo",
+      "descripcion",
+      "precio",
+      "ciudad",
+      "barrio",
+      "tipo",
+      "habitaciones",
+      "banos",
+      "area",
+      "antiguedad",
+      "direccion",
+      "estrato",
+    ];
 
-    if (
-      isEmpty(formData.get("titulo")) ||
-      isEmpty(formData.get("descripcion")) ||
-      isEmpty(formData.get("precio")) ||
-      isEmpty(formData.get("ciudad")) ||
-      isEmpty(formData.get("barrio")) ||
-      isEmpty(formData.get("tipo")) ||
-      isEmpty(formData.get("habitaciones")) ||
-      isEmpty(formData.get("banos")) ||
-      isEmpty(formData.get("area")) ||
-      isEmpty(formData.get("antiguedad")) ||
-      isEmpty(formData.get("direccion")) ||
-      isEmpty(formData.get("estrato"))
-    ) {
-      setError("Todos los campos son obligatorios");
-      setSaving(false);
-      return;
+    for (const campo of camposRequeridos) {
+      const val = formData.get(campo);
+      if (!val || String(val).trim() === "") {
+        setError(`El campo ${campo} es obligatorio`);
+        setSaving(false);
+        return;
+      }
     }
 
     try {
@@ -85,23 +98,17 @@ export function usePropiedades(onCreated?: (id: string) => void) {
           direccion: String(formData.get("direccion")),
           estrato: Number(formData.get("estrato")),
         };
+
         await api.patch(`/propiedades/${editingPropiedad.id}`, body);
+        showTempMessage("Propiedad actualizada correctamente");
       } else {
         const res = await api.post("/propiedades", formData);
         onCreated?.(res.data.id);
+        showTempMessage("Propiedad creada correctamente y enviada a revisión");
       }
 
       closeModal();
-      loadInitial();
-      setMessage(
-        editingPropiedad
-          ? "Propiedad actualizada correctamente"
-          : "Propiedad creada correctamente",
-      );
-
-      setTimeout(() => {
-        setMessage("");
-      }, 5000);
+      await loadInitial();
     } catch (error) {
       const fallback = editingPropiedad
         ? "Error al actualizar la propiedad"
@@ -125,8 +132,8 @@ export function usePropiedades(onCreated?: (id: string) => void) {
     try {
       await api.delete(`/propiedades/${id}`);
       borrarEstimacionCache(id);
-      loadInitial();
-      setMessage("Propiedad eliminada correctamente");
+      setInitialData((prev) => prev.filter((p) => p.id !== id));
+      showTempMessage("Propiedad eliminada correctamente");
     } catch (error) {
       const fallback = "Error al eliminar la propiedad";
       console.error(fallback, error);
@@ -146,9 +153,8 @@ export function usePropiedades(onCreated?: (id: string) => void) {
 
     try {
       await api.post(`/propiedades/${id}/documentos`, formData);
-      setMessage("Documento cargado correctamente");
-      loadInitial();
-      setTimeout(() => setMessage(""), 5000);
+      showTempMessage("Documento cargado correctamente");
+      await loadInitial();
     } catch (error) {
       const fallback = "Error al cargar el documento";
       console.error(fallback, error);
@@ -173,18 +179,15 @@ export function usePropiedades(onCreated?: (id: string) => void) {
         ),
       );
 
-      setMessage(
+      showTempMessage(
         nuevoEstado
           ? "Propiedad destacada correctamente ⭐"
           : "Propiedad retirada de destacadas",
       );
-      setTimeout(() => setMessage(""), 5000);
     } catch (error) {
       const fallback = "Error al actualizar propiedad destacada";
       console.error(fallback, error);
-      const errorMsg = getErrorMessage(error, fallback);
-      setError(errorMsg);
-      setTimeout(() => setError(""), 5000);
+      setError(getErrorMessage(error, fallback));
     } finally {
       setLoading(false);
     }

@@ -1,22 +1,30 @@
 "use client";
 
-import api from "@/app/lib/api";
+import { isAxiosError } from "axios";
 import { useState } from "react";
 import { Propiedad } from "@/app/lib/types";
+import api from "@/app/lib/api";
 
-const getErrorMessage = (error: any, fallback: string) =>
-  error?.response?.data?.message ?? fallback;
+const getErrorMessage = (error: unknown, fallback: string): string => {
+  if (isAxiosError(error)) {
+    const msg = error.response?.data?.message;
+    if (Array.isArray(msg)) return msg.join(", ");
+    if (typeof msg === "string") return msg;
+  }
+
+  return fallback;
+};
 
 export function usePublicationReq() {
   const [pendientes, setPendientes] = useState<Propiedad[]>([]);
   const [motivoModal, setMotivoModal] = useState<string | null>(null);
-  const [motivo, setMotivo] = useState("");
-  const [motivoError, setMotivoError] = useState(false);
+  const [motivo, setMotivo] = useState<string>("");
+  const [motivoError, setMotivoError] = useState<boolean>(false);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [message, setMessage] = useState<{
-    tipo: "ok" | "error";
-    texto: string;
+    type: "ok" | "error";
+    text: string;
   } | null>(null);
 
   const fetchPendientes = async () => {
@@ -27,8 +35,8 @@ export function usePublicationReq() {
       setPendientes(res.data);
     } catch (error) {
       setMessage({
-        tipo: "error",
-        texto: getErrorMessage(error, "Error al cargar las solicitudes"),
+        type: "error",
+        text: getErrorMessage(error, "Error al cargar las solicitudes"),
       });
     } finally {
       setLoading(false);
@@ -43,13 +51,13 @@ export function usePublicationReq() {
       await api.patch(`/propiedades/${id}/aprobar`);
       setPendientes((prev) => prev.filter((p) => p.id !== id));
       setMessage({
-        tipo: "ok",
-        texto: "Propiedad aprobada",
+        type: "ok",
+        text: "Propiedad aprobada",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       setMessage({
-        tipo: "error",
-        texto: getErrorMessage(error, "Error al aprobar la propiedad"),
+        type: "error",
+        text: getErrorMessage(error, "Error al aprobar la propiedad"),
       });
     } finally {
       setLoading(false);
@@ -70,32 +78,30 @@ export function usePublicationReq() {
       await api.patch(`/propiedades/${motivoModal}/rechazar`, {
         motivoRechazo: motivo.trim(),
       });
-      setPendientes((prev) => prev.filter((p) => p.id !== motivoModal));
 
+      setPendientes((prev) => prev.filter((p) => p.id !== motivoModal));
       setMotivoModal(null);
       setMotivo("");
       setMotivoError(false);
       setMessage({
-        tipo: "ok",
-        texto: "Propiedad rechazada",
+        type: "ok",
+        text: "Propiedad rechazada",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       setMessage({
-        tipo: "error",
-        texto: getErrorMessage(error, "Error al rechazar la propiedad"),
+        type: "error",
+        text: getErrorMessage(error, "Error al rechazar la propiedad"),
       });
     } finally {
       setLoading(false);
     }
   };
 
-  const refresh = () => fetchPendientes();
-
   return {
     pendientes,
     loading,
     message,
-    refresh,
+    refresh: fetchPendientes,
     handleAprobar,
     confirmarRechazo,
     motivoError,

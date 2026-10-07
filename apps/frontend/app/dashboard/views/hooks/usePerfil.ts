@@ -1,11 +1,17 @@
 "use client";
 
-import api from "@/app/lib/api";
 import { useCallback, useEffect, useState } from "react";
+import { isAxiosError } from "axios";
+import api from "@/app/lib/api";
 
-const getErrorMessage = (error: unknown, fallback: string) => {
-  const e = error as { response?: { data?: { message?: string } } };
-  return e?.response?.data?.message ?? fallback;
+const getErrorMessage = (error: unknown, fallback: string): string => {
+  if (isAxiosError(error)) {
+    const msg = error.response?.data?.message;
+    if (Array.isArray(msg)) return msg.join(", ");
+    if (typeof msg === "string") return msg;
+  }
+
+  return fallback;
 };
 
 interface PerfilData {
@@ -21,19 +27,25 @@ interface PerfilData {
 
 export function usePerfil() {
   const [perfil, setPerfil] = useState<PerfilData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [loading, setLoading] = useState<boolean>(true);
+  const [saving, setSaving] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
+  const [success, setSuccess] = useState<string>("");
+
+  const showTempMessage = (text: string) => {
+    setSuccess(text);
+    setTimeout(() => setSuccess(""), 4000);
+  };
 
   const cargarPerfil = useCallback(async () => {
     setLoading(true);
+    setError("");
 
     try {
-      const res = await api.get("/usuarios/perfil");
+      const res = await api.get<PerfilData>("/usuarios/perfil");
       setPerfil(res.data);
-    } catch {
-      setError("Error al cargar perfil");
+    } catch (error) {
+      setError(getErrorMessage(error, "Error al cargar perfil"));
     } finally {
       setLoading(false);
     }
@@ -46,15 +58,13 @@ export function usePerfil() {
   }) => {
     setSaving(true);
     setError("");
-    setSuccess("");
 
     try {
-      const res = await api.patch("/usuarios/perfil", data);
+      const res = await api.patch<PerfilData>("/usuarios/perfil", data);
       setPerfil(res.data);
-      setSuccess("Perfil actualizado");
+      showTempMessage("Perfil actualizado correctamente");
     } catch (error) {
-      const fallback = getErrorMessage(error, "Error al actualizar");
-      setError(fallback);
+      setError(getErrorMessage(error, "Error al actualizar perfil"));
     } finally {
       setSaving(false);
     }
@@ -68,15 +78,18 @@ export function usePerfil() {
       const formData = new FormData();
       formData.append("foto", file);
 
-      const res = await api.post("/usuarios/foto", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      const res = await api.post<{ fotoUrl: string }>(
+        "/usuarios/foto",
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        },
+      );
 
       setPerfil((prev) => (prev ? { ...prev, foto: res.data.fotoUrl } : null));
-      setSuccess("Foto actualizada");
+      showTempMessage("Foto actualizada correctamente");
     } catch (error) {
-      const fallback = getErrorMessage(error, "Error al subir foto");
-      setError(fallback);
+      setError(getErrorMessage(error, "Error al subir foto"));
     } finally {
       setSaving(false);
     }
@@ -85,50 +98,46 @@ export function usePerfil() {
   const cambiarPassword = async (actual: string, nueva: string) => {
     setSaving(true);
     setError("");
-    setSuccess("");
 
     try {
       await api.patch("/usuarios/password", { actual, nueva });
-      setSuccess("Contraseña actualizada");
+      showTempMessage("Contraseña actualizada correctamente");
     } catch (error) {
-      const fallback = getErrorMessage(error, "Error al cambiar contraseña");
-      setError(fallback);
+      setError(getErrorMessage(error, "Error al cambiar contraseña"));
     } finally {
       setSaving(false);
     }
   };
 
-  const solicitarOtp = async () => {
+  const solicitarOtp = async (): Promise<boolean> => {
     setSaving(true);
     setError("");
-    setSuccess("");
 
     try {
-      const res = await api.post("/otp/solicitar");
-      setSuccess(res.data.message);
+      const res = await api.post<{ message: string }>("/otp/solicitar");
+      showTempMessage(res.data.message || "Código OTP enviado correctamente");
       return true;
     } catch (error) {
-      const fallback = getErrorMessage(error, "Error al solicitar OTP");
-      setError(fallback);
+      setError(getErrorMessage(error, "Error al solicitar OTP"));
       return false;
     } finally {
       setSaving(false);
     }
   };
 
-  const verificarOtp = async (codigo: string) => {
+  const verificarOtp = async (codigo: string): Promise<boolean> => {
     setSaving(true);
     setError("");
-    setSuccess("");
 
     try {
-      const res = await api.post("/otp/verificar", { codigo });
+      const res = await api.post<{ message: string }>("/otp/verificar", {
+        codigo,
+      });
       setPerfil((prev) => (prev ? { ...prev, celularVerificado: true } : prev));
-      setSuccess(res.data.message);
+      showTempMessage(res.data.message || "Celular verificado exitosamente");
       return true;
     } catch (error) {
-      const fallback = getErrorMessage(error, "Error al verificar OTP");
-      setError(fallback);
+      setError(getErrorMessage(error, "Error al verificar OTP"));
       return false;
     } finally {
       setSaving(false);
@@ -137,7 +146,7 @@ export function usePerfil() {
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    void cargarPerfil();
+    cargarPerfil();
   }, [cargarPerfil]);
 
   return {

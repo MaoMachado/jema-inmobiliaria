@@ -1,7 +1,8 @@
 "use client";
 
-import api from "@/app/lib/api";
 import { useCallback, useEffect, useState } from "react";
+import { isAxiosError } from "axios";
+import api from "@/app/lib/api";
 
 export interface PlanInfo {
   plan: "GRATIS" | "BASICO" | "PREMIUM";
@@ -26,23 +27,31 @@ export interface Pago {
   createAt: string;
 }
 
-const getErrorMessage = (error: any, fallback: string) => {
-  return error?.response?.data?.message ?? fallback;
+const getErrorMessage = (error: unknown, fallback: string): string => {
+  if (isAxiosError(error)) {
+    const msg = error.response?.data?.message;
+    if (Array.isArray(msg)) return msg.join(", ");
+    if (typeof msg === "string") return msg;
+  }
+
+  return fallback;
 };
 
 export function usePagos() {
   const [planInfo, setPlanInfo] = useState<PlanInfo | null>(null);
   const [historial, setHistorial] = useState<Pago[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [subiendo, setSubiendo] = useState(false);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [subiendo, setSubiendo] = useState<boolean>(false);
   const [comprobantePath, setComprobantePath] = useState<string | null>(null);
   const [planSeleccionado, setPlanSeleccionado] = useState<
     "BASICO" | "PREMIUM" | null
   >(null);
-  const [message, setMessage] = useState<{
-    tipo: "ok" | "error";
-    texto: string;
-  } | null>(null);
+  const [message, setMessage] = useState<string>("");
+
+  const showTempMessage = (text: string) => {
+    setMessage(text);
+    setTimeout(() => setMessage(""), 4000);
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -55,27 +64,21 @@ export function usePagos() {
 
       setPlanInfo(planRes.data);
       setHistorial(hitRes.data);
+      showTempMessage("Información cargada correctamente");
     } catch (error) {
-      console.error("Error al cargar la información", error);
-      setMessage({
-        tipo: "error",
-        texto: getErrorMessage(
-          error,
-          "Error al cargar la información del plan",
-        ),
-      });
+      showTempMessage(getErrorMessage(error, "Error al cargar la información"));
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
   }, [load]);
 
   const handleSubirComprobante = async (file: File) => {
     setSubiendo(true);
-    setMessage(null);
 
     try {
       const formData = new FormData();
@@ -90,11 +93,9 @@ export function usePagos() {
       );
 
       setComprobantePath(res.data.path);
+      showTempMessage("Comprobante cargado correctamente");
     } catch (error) {
-      setMessage({
-        tipo: "error",
-        texto: getErrorMessage(error, "Error al subir el comprobante"),
-      });
+      showTempMessage(getErrorMessage(error, "Error al subir el comprobante"));
       setComprobantePath(null);
     } finally {
       setSubiendo(false);
@@ -105,7 +106,6 @@ export function usePagos() {
     if (!planSeleccionado || !comprobantePath) return;
 
     setLoading(true);
-    setMessage(null);
 
     try {
       const precio = planSeleccionado === "BASICO" ? 15000 : 30000;
@@ -116,18 +116,12 @@ export function usePagos() {
         comprobante: comprobantePath,
       });
 
-      setMessage({
-        tipo: "ok",
-        texto: "Pago enviado, pendiente de verificación",
-      });
+      showTempMessage("Pago enviado, pendiente de verificación");
 
       setPlanSeleccionado(null);
       setComprobantePath(null);
     } catch (error) {
-      setMessage({
-        tipo: "error",
-        texto: getErrorMessage(error, "Error al solicitar el pago"),
-      });
+      showTempMessage(getErrorMessage(error, "Error al registrar el pago"));
     } finally {
       setLoading(false);
     }

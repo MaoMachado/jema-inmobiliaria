@@ -85,8 +85,8 @@ export const usePublicSearchProperty = () => {
   );
 
   useEffect(() => {
-    buscar(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
+    buscar(1);
   }, []);
 
   const handleSearch = (e?: React.FormEvent) => {
