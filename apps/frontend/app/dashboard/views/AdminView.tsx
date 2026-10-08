@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import { usePublicationReq } from "./hooks/usePublicationRequests";
-import Button from "@/app/components/Button";
 import ManagementUsers from "./viewAdmin/ManagementUsers";
 import ManagementPayment from "./viewAdmin/ManagementPayment";
 import ManagementFrauds from "./viewAdmin/ManagementFrauds";
@@ -10,10 +9,10 @@ import ManagementReports from "./viewAdmin/ManagementReports";
 import PublicationRequest from "./viewAdmin/PublicationRequest";
 import ChatIA from "@/app/components/ChatIA";
 
+type View = "users" | "payments" | "frauds" | "reports";
+
 export default function AdminView() {
-  const [view, setView] = useState<"users" | "payments" | "frauds" | "reports">(
-    "users",
-  );
+  const [view, setView] = useState<View>("users");
   const [viewPublicationRequest, setViewPublicationRequest] = useState(false);
 
   const {
@@ -41,79 +40,75 @@ export default function AdminView() {
     }
   }, [refresh]);
 
-  const tituloBtn =
-    pendientes.length === 0
-      ? "Sin solicitudes"
-      : `Tiene ${pendientes.length} solicitud(es) de publicación`;
+  const navItems = [
+    { id: "users" as const, label: "Usuarios", icon: "👥" },
+    { id: "payments" as const, label: "Pagos y Planes", icon: "💳" },
+    { id: "frauds" as const, label: "Reportes de Fraude", icon: "🛡️" },
+    { id: "reports" as const, label: "Métricas y Análisis", icon: "📊" },
+  ];
 
   return (
-    <article>
-      <header className="flex items-center justify-between md:justify-start gap-16 mb-10">
-        <img
-          src="https://placehold.co/600x400?text=Foto"
-          alt="Foto"
-          width={100}
-          height={100}
-          className="rounded-full"
-        />
-
-        <nav className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <Button title="Gestionar Usuarios" onClick={() => setView("users")} />
-
-          <Button title="Gestionar Pagos" onClick={() => setView("payments")} />
-
-          <Button
-            title="Reportes de Fraude"
-            onClick={() => setView("frauds")}
-          />
-
-          <Button title="Generar Reportes" onClick={() => setView("reports")} />
+    <article className="space-y-6">
+      <header className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-gray-900/60 border border-gray-800/80 p-4 rounded-2xl backdrop-blur-sm">
+        <nav className="flex flex-wrap gap-2">
+          {navItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => setView(item.id)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition cursor-pointer ${
+                view === item.id
+                  ? "bg-sky-600 text-white shadow-lg shadow-sky-600/30"
+                  : "bg-gray-800/60 hover:bg-gray-800 text-gray-300 hover:text-white border border-gray-700/50"
+              }`}
+            >
+              <span>{item.icon}</span>
+              <span>{item.label}</span>
+            </button>
+          ))}
         </nav>
 
-        <Button
-          title={tituloBtn}
-          variant="secondary"
+        <button
           onClick={() => setViewPublicationRequest(true)}
-          className="ml-auto"
-        />
-
-        {viewPublicationRequest && (
-          <PublicationRequest
-            onClick={() => setViewPublicationRequest(false)}
-            initialData={pendientes}
-            onRefresh={refresh}
-            handleAprobar={handleAprobar}
-            confirmarRechazo={confirmarRechazo}
-            loading={loading}
-            pendingId={pendingId}
-            motivoModal={motivoModal}
-            setMotivoModal={setMotivoModal}
-            motivo={motivo}
-            setMotivo={setMotivo}
-            motivoError={motivoError}
-            setMotivoError={setMotivoError}
-            message={message}
-          />
-        )}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border transition cursor-pointer ${
+            pendientes.length > 0
+              ? "bg-amber-500/20 text-amber-300 border-amber-500/50 hover:bg-amber-500/30 animate-pulse"
+              : "bg-gray-800/60 text-gray-400 border-gray-700/50 hover:bg-gray-800"
+          }`}
+        >
+          <span>📬</span>
+          <span>
+            {pendientes.length === 0
+              ? "Sin solicitudes pendientes"
+              : `${pendientes.length} solicitud(es) de publicación`}
+          </span>
+        </button>
       </header>
 
-      <section>
-        <div className={view === "users" ? "" : "hidden"}>
-          <ManagementUsers />
-        </div>
-
-        <div className={view === "payments" ? "" : "hidden"}>
-          <ManagementPayment />
-        </div>
-
-        <div className={view === "frauds" ? "" : "hidden"}>
-          <ManagementFrauds />
-        </div>
-
-        <div className={view === "reports" ? "" : "hidden"}>
-          <ManagementReports />
-        </div>
+      <section className="min-h-125">
+        {view === "users" && <ManagementUsers />}
+        {view === "payments" && <ManagementPayment />}
+        {view === "frauds" && <ManagementFrauds />}
+        {view === "reports" && <ManagementReports />}
       </section>
+
+      {viewPublicationRequest && (
+        <PublicationRequest
+          onClick={() => setViewPublicationRequest(false)}
+          initialData={pendientes}
+          onRefresh={refresh}
+          handleAprobar={handleAprobar}
+          confirmarRechazo={confirmarRechazo}
+          loading={loading}
+          pendingId={pendingId}
+          motivoModal={motivoModal}
+          setMotivoModal={setMotivoModal}
+          motivo={motivo}
+          setMotivo={setMotivo}
+          motivoError={motivoError}
+          setMotivoError={setMotivoError}
+          message={message}
+        />
+      )}
 
       <ChatIA />
     </article>

@@ -49,7 +49,7 @@ export function VerificacionCelular({
       setSolicitado(false);
       setCodigo("");
     }
-    
+
     setEnviando(false);
   };
 

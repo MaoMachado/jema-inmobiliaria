@@ -1,7 +1,8 @@
 "use client";
 
-import api from "@/app/lib/api";
 import { useCallback, useEffect, useState } from "react";
+import { isAxiosError } from "axios";
+import api from "@/app/lib/api";
 
 export interface PagoAdmin {
   id: string;
@@ -17,8 +18,15 @@ export interface PagoAdmin {
   };
 }
 
-const getErrorMessage = (error: any, fallback: string) =>
-  error?.response?.data?.message ?? fallback;
+const getErrorMessage = (error: unknown, fallback: string): string => {
+  if (isAxiosError(error)) {
+    const msg = error.response?.data?.message;
+    if (Array.isArray(msg)) return msg.join(", ");
+    if (typeof msg === "string") return msg;
+  }
+
+  return fallback;
+};
 
 export function useManagementPayments() {
   const [pagos, setPagos] = useState<PagoAdmin[]>([]);
@@ -46,6 +54,7 @@ export function useManagementPayments() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     refresh();
   }, [refresh]);
 

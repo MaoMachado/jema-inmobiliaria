@@ -12,7 +12,7 @@ export const useReporteFraude = () => {
   const [loading, setLoading] = useState<boolean>(false);
 
   const [reportes, setReportes] = useState<Reporte[]>([]);
-  const [filtro, setFiltro] = useState<string>("ABIERTO");
+  const [filtro, setFiltro] = useState<string>("TODOS");
 
   const openModalReport = (id: string) => {
     setPropiedadId(id);
