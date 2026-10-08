@@ -8,13 +8,6 @@ import { isAxiosError } from "axios";
 export type Ciudad = "" | "Medellin" | "Ibague" | "Bogota";
 export type Tipo = "" | "Casa" | "Apartamento" | "Local" | "Oficina" | "Lote";
 
-type Pagination = {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-};
-
 interface useSearchPropertyProps {
   onResult: (data: Propiedad[]) => void;
   onClear: () => void;
