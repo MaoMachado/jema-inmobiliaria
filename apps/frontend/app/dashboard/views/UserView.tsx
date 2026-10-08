@@ -227,8 +227,8 @@ export default function UserView() {
         <NewPropertyModal
           handleSubmit={handleSubmitPropiedad}
           onClose={closeModal}
-          error={error}
           saving={saving}
+          error={error}
           mode={editingPropiedad ? "edit" : "create"}
           propiedad={editingPropiedad ?? undefined}
         />

@@ -6,6 +6,23 @@ import { borrarEstimacionCache } from "@/app/lib/estimacionesCache";
 import { Propiedad } from "@/app/lib/types";
 import api from "@/app/lib/api";
 
+export interface PropertyFormState {
+  titulo: string;
+  descripcion: string;
+  precio: string;
+  tipo: string;
+  ciudad: string;
+  barrio: string;
+  direccion: string;
+  estrato: string;
+  habitaciones: string;
+  banos: string;
+  area: string;
+  antiguedad: string;
+  parqueaderos: string;
+  video: string;
+}
+
 const getErrorMessage = (error: unknown, fallback: string): string => {
   if (isAxiosError(error)) {
     const msg = error.response?.data?.message;
@@ -50,15 +67,15 @@ export function usePropiedades(onCreated?: (id: string) => void) {
     }
   }, []);
 
-  const handleSubmitPropiedad = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleSubmitPropiedad = async (
+    data: PropertyFormState,
+    files: File[],
+  ) => {
     setSaving(true);
     setMessage("");
     setError("");
 
-    const formData = new FormData(e.currentTarget);
-
-    const camposRequeridos = [
+    const camposRequeridos: (keyof PropertyFormState)[] = [
       "titulo",
       "descripcion",
       "precio",
@@ -74,9 +91,8 @@ export function usePropiedades(onCreated?: (id: string) => void) {
     ];
 
     for (const campo of camposRequeridos) {
-      const val = formData.get(campo);
-      if (!val || String(val).trim() === "") {
-        setError(`El campo ${campo} es obligatorio`);
+      if (!data[campo] || String(data[campo]).trim() === "") {
+        setError(`El campo "${campo}" es obligatorio`);
         setSaving(false);
         return;
       }
@@ -85,24 +101,32 @@ export function usePropiedades(onCreated?: (id: string) => void) {
     try {
       if (editingPropiedad) {
         const body = {
-          titulo: String(formData.get("titulo")),
-          descripcion: String(formData.get("descripcion")),
-          precio: Number(formData.get("precio")),
-          ciudad: String(formData.get("ciudad")),
-          barrio: String(formData.get("barrio")),
-          tipo: String(formData.get("tipo")),
-          habitaciones: Number(formData.get("habitaciones")),
-          banos: Number(formData.get("banos")),
-          area: Number(formData.get("area")),
-          antiguedad: Number(formData.get("antiguedad")),
-          direccion: String(formData.get("direccion")),
-          estrato: Number(formData.get("estrato")),
+          titulo: data.titulo,
+          descripcion: data.descripcion,
+          precio: Number(data.precio),
+          ciudad: data.ciudad,
+          barrio: data.barrio,
+          tipo: data.tipo,
+          habitaciones: Number(data.habitaciones),
+          banos: Number(data.banos),
+          area: Number(data.area),
+          antiguedad: Number(data.antiguedad),
+          direccion: data.direccion,
+          estrato: Number(data.estrato),
+          parqueaderos: Number(data.parqueaderos),
+          video: data.video || null,
         };
 
         await api.patch(`/propiedades/${editingPropiedad.id}`, body);
         showTempMessage("Propiedad actualizada correctamente");
       } else {
-        const res = await api.post("/propiedades", formData);
+        const fd = new FormData();
+        Object.entries(data).forEach(([k, v]) => {
+          if (v !== "") fd.append(k, v);
+        });
+        files.forEach((f) => fd.append("fotografias", f));
+
+        const res = await api.post("/propiedades", fd);
         onCreated?.(res.data.id);
         showTempMessage("Propiedad creada correctamente y enviada a revisión");
       }
