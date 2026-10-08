@@ -17,7 +17,7 @@ interface Props {
   setMotivo: (v: string) => void;
   motivoError: boolean;
   setMotivoError: (v: boolean) => void;
-  message: { tipo: "ok" | "error"; texto: string } | null;
+  message: { type: "ok" | "error"; text: string } | null;
 }
 
 const MOTIVOS_SUGERIDOS = [
@@ -72,12 +72,12 @@ export default function PublicationRequest({
         {message && (
           <div
             className={`mx-6 mt-4 p-3 rounded-xl text-xs font-medium border ${
-              message.tipo === "ok"
+              message.type === "ok"
                 ? "bg-emerald-950/60 border-emerald-500/40 text-emerald-300"
                 : "bg-red-950/60 border-red-500/40 text-red-300"
             }`}
           >
-            {message.texto}
+            {message.text}
           </div>
         )}
 

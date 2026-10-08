@@ -241,14 +241,8 @@ export default function PlanSuscripcion() {
       )}
 
       {message && (
-        <div
-          className={`max-w-xl mx-auto p-4 rounded-xl text-xs font-medium text-center border ${
-            message.tipo === "ok"
-              ? "bg-emerald-950/50 border-emerald-500/50 text-emerald-300"
-              : "bg-red-950/50 border-red-500/50 text-red-300"
-          }`}
-        >
-          {message.texto}
+        <div className="max-w-xl mx-auto p-4 rounded-xl text-xs font-medium text-center border bg-sky-950/50 border-sky-500/50 text-sky-300">
+          {message}
         </div>
       )}
 
