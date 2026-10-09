@@ -71,7 +71,7 @@ const DOCUMENTOS: Record<
       {
         encabezado: "4. Seguridad de la Información",
         contenido:
-          "Aplicamos medidas de seguridad de nivel bancario: contraseñas cifradas con bcrypt, hashes SHA-256 con pepper para códigos OTP y almacenamiento en la nube con Supabase Storage bajo políticas de control de acceso estricto.",
+          "Aplicamos medidas de seguridad reforzadas: contraseñas cifradas con bcrypt, hashes SHA-256 con pepper para códigos OTP y almacenamiento en la nube con Supabase Storage, sirviendo los documentos privados con URLs firmadas de acceso temporal.",
       },
     ],
   },
