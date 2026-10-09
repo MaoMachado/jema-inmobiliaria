@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { isAxiosError } from "axios";
 import { Reporte } from "../lib/types";
 import api from "../lib/api";
-import { isAxiosError } from "axios";
 
 export const useReporteFraude = () => {
   const [propiedadId, setPropiedadId] = useState("");
@@ -35,15 +35,11 @@ export const useReporteFraude = () => {
       return;
     }
 
-    if (!localStorage.getItem("access_token")) {
-      setMessage("Inicia sesión para enviar un reporte");
-      return;
-    }
-
     setLoading(true);
     setMessage("");
 
     try {
+      await api.get("/auth/me");
       await api.post("/reportes-fraude", {
         motivo,
         descripcion,
@@ -53,6 +49,7 @@ export const useReporteFraude = () => {
       setTimeout(() => {
         setOpenReporteModal(false);
       }, 1200);
+      return;
     } catch (error: unknown) {
       if (isAxiosError(error)) {
         setMessage(

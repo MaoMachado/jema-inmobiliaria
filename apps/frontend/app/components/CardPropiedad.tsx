@@ -7,6 +7,7 @@ import { SubirDocumentoModal } from "../dashboard/Modal/SubirDocumentoModal";
 import { DocumentoImgModal } from "../dashboard/Modal/DocumentoImgModal";
 import Button from "./Button";
 import Link from "next/link";
+import api from "../lib/api";
 
 interface CardPropiedadProps {
   propiedad: Propiedad;
@@ -47,16 +48,13 @@ export function CardPropiedad({
     }
   };
 
-  const handleVerDetalle = (e: React.MouseEvent) => {
+  const handleVerDetalle = async (e: React.MouseEvent) => {
     e.preventDefault();
-    const token =
-      typeof window !== "undefined"
-        ? localStorage.getItem("access_token")
-        : null;
 
-    if (token) {
+    try {
+      await api.get("/auth/me");
       router.push(`/propiedades/${propiedad.id}`);
-    } else {
+    } catch {
       router.push(`/login?redirect=/propiedades/${propiedad.id}`);
     }
   };

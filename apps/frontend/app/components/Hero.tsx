@@ -1,14 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useSession } from "../hooks/useSession";
 
 export default function Hero() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  useEffect(() => {
-    setIsLoggedIn(!!localStorage.getItem("access_token"));
-  }, []);
+  const sesion = useSession();
+  const isLoggedIn = Boolean(sesion);
 
   return (
     <section className="relative overflow-hidden py-6 md:py-10 px-4 sm:px-6">

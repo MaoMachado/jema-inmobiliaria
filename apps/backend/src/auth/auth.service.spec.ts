@@ -9,10 +9,12 @@ import bcrypt from 'bcryptjs';
 import { Prisma, Role } from '../generated/prisma';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthService } from './auth.service';
+import { TokenService } from './token.service';
 
 describe('AuthService', () => {
   let service: AuthService;
   let jwtService: { sign: jest.Mock };
+  let tokens: { emitir: jest.Mock; rotar: jest.Mock; revocar: jest.Mock };
   let prisma: {
     usuario: {
       create: jest.Mock;
@@ -29,6 +31,7 @@ describe('AuthService', () => {
     password: 'hashed-password-123',
     foto: null,
     role: Role.USER,
+    tokenVersion: 0,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -36,6 +39,12 @@ describe('AuthService', () => {
   beforeEach(async () => {
     jwtService = {
       sign: jest.fn().mockReturnValue('mocked-jwt-token'),
+    };
+
+    tokens = {
+      emitir: jest.fn().mockResolvedValue('refresh-token-xyz'),
+      rotar: jest.fn(),
+      revocar: jest.fn(),
     };
 
     prisma = {
@@ -50,6 +59,7 @@ describe('AuthService', () => {
         AuthService,
         { provide: JwtService, useValue: jwtService },
         { provide: PrismaService, useValue: prisma },
+        { provide: TokenService, useValue: tokens },
       ],
     }).compile();
 
@@ -63,7 +73,9 @@ describe('AuthService', () => {
 
   describe('register', () => {
     it('debe registrar un usuario exitosamente, hashear contraseña y generar JWT', async () => {
-      jest.spyOn(bcrypt, 'hash').mockImplementation(async () => 'hashed-password-123');
+      jest
+        .spyOn(bcrypt, 'hash')
+        .mockImplementation(async () => 'hashed-password-123');
       prisma.usuario.create.mockResolvedValue(mockUser);
 
       const result = await service.register(
@@ -90,9 +102,12 @@ describe('AuthService', () => {
         id: mockUser.id,
         email: mockUser.email,
         role: mockUser.role,
+        tokenVersion: mockUser.tokenVersion,
       });
+      expect(tokens.emitir).toHaveBeenCalledWith(mockUser.id);
       expect(result).toEqual({
-        token: 'mocked-jwt-token',
+        accessToken: 'mocked-jwt-token',
+        refreshToken: 'refresh-token-xyz',
         user: {
           id: mockUser.id,
           nombres: mockUser.nombres,
@@ -101,6 +116,7 @@ describe('AuthService', () => {
           email: mockUser.email,
           foto: mockUser.foto,
           role: mockUser.role,
+          tokenVersion: mockUser.tokenVersion,
           createdAt: mockUser.createdAt,
           updatedAt: mockUser.updatedAt,
         },
@@ -131,7 +147,9 @@ describe('AuthService', () => {
     });
 
     it('debe lanzar ConflictException si el email ya existe (código Prisma P2002)', async () => {
-      jest.spyOn(bcrypt, 'hash').mockImplementation(async () => 'hashed-password-123');
+      jest
+        .spyOn(bcrypt, 'hash')
+        .mockImplementation(async () => 'hashed-password-123');
       const prismaError = new Prisma.PrismaClientKnownRequestError(
         'Unique constraint failed',
         {
@@ -153,7 +171,9 @@ describe('AuthService', () => {
     });
 
     it('debe propagar otros errores no controlados', async () => {
-      jest.spyOn(bcrypt, 'hash').mockImplementation(async () => 'hashed-password-123');
+      jest
+        .spyOn(bcrypt, 'hash')
+        .mockImplementation(async () => 'hashed-password-123');
       prisma.usuario.create.mockRejectedValue(new Error('Database error'));
 
       await expect(
@@ -178,14 +198,20 @@ describe('AuthService', () => {
       expect(prisma.usuario.findUnique).toHaveBeenCalledWith({
         where: { email: 'juan@test.com' },
       });
-      expect(bcrypt.compare).toHaveBeenCalledWith('password123', mockUser.password);
+      expect(bcrypt.compare).toHaveBeenCalledWith(
+        'password123',
+        mockUser.password,
+      );
       expect(jwtService.sign).toHaveBeenCalledWith({
         id: mockUser.id,
         email: mockUser.email,
         role: mockUser.role,
+        tokenVersion: mockUser.tokenVersion,
       });
+      expect(tokens.emitir).toHaveBeenCalledWith(mockUser.id);
       expect(result).toEqual({
-        token: 'mocked-jwt-token',
+        accessToken: 'mocked-jwt-token',
+        refreshToken: 'refresh-token-xyz',
         user: {
           id: mockUser.id,
           nombres: mockUser.nombres,
@@ -194,6 +220,7 @@ describe('AuthService', () => {
           email: mockUser.email,
           foto: mockUser.foto,
           role: mockUser.role,
+          tokenVersion: mockUser.tokenVersion,
           createdAt: mockUser.createdAt,
           updatedAt: mockUser.updatedAt,
         },
