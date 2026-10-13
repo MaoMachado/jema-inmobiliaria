@@ -9,6 +9,7 @@ export interface PagoAdmin {
   plan: "GRATIS" | "BASICO" | "PREMIUM";
   monto: number;
   comprobante?: string | null;
+  referencia?: string | null;
   estado: "PENDIENTE" | "APROBADO" | "RECHAZADO";
   createAt: string;
   usuario: {

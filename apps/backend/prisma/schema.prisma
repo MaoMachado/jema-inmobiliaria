@@ -60,6 +60,7 @@ model Pago {
   monto       Float
   plan        Plan
   comprobante String?
+  referencia  String?
   estado      EstadoPago @default(PENDIENTE)
   createAt    DateTime   @default(now())
   updateAt    DateTime   @updatedAt
@@ -87,6 +88,7 @@ model Usuario {
   chatIaLimite      Int       @default(10)
   chatUsados        Int       @default(0)
   chatFecha         DateTime?
+  planVence         DateTime?
   pagos             Pago[]
 
   propiedades    Propiedad[]

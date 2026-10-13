@@ -7,7 +7,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { SolicitudPagoDto } from './dto/pagos.dto';
 import { EstadoPago } from '../generated/prisma';
 import { StorageService } from '../storage/storage.service';
-import { PlanActual, PLANES } from './planes';
+import { PlanActual, PLANES, DIAS_PLAN } from './planes';
 
 @Injectable()
 export class PagosService {
@@ -23,6 +23,7 @@ export class PagosService {
         plan: true,
         propiedadesLimite: true,
         chatIaLimite: true,
+        planVence: true,
       },
     });
 
@@ -35,6 +36,7 @@ export class PagosService {
       propiedadesLimite: usuario.propiedadesLimite,
       chatIaLimite: usuario.chatIaLimite,
       beneficios: PLANES[usuario.plan],
+      planVence: usuario.planVence,
     };
   }
 
@@ -72,12 +74,22 @@ export class PagosService {
       throw new BadRequestException('Ya tienes un pago pendiente de verificar');
     }
 
+    const referencia = dto.referencia?.trim() || null;
+    const comprobante = dto.comprobante?.trim() || null;
+
+    if (!referencia && !comprobante) {
+      throw new BadRequestException(
+        'Ingresa la referencia del pago o adjunta el comprobante',
+      );
+    }
+
     return this.prisma.pago.create({
       data: {
         usuarioId: userId,
         monto: dto.monto,
         plan: dto.plan,
-        comprobante: dto.comprobante,
+        comprobante,
+        referencia,
         estado: EstadoPago.PENDIENTE,
       },
     });
@@ -121,10 +133,20 @@ export class PagosService {
       );
     }
 
-    if (estado === EstadoPago.APROBADO) {
-      const beneficios = PLANES[pago.plan];
+    if (estado === EstadoPago.RECHAZADO) {
+      return this.prisma.pago.update({
+        where: { id },
+        data: { estado },
+      });
+    }
 
-      await this.prisma.usuario.update({
+    const beneficios = PLANES[pago.plan];
+    const planVence = new Date(Date.now() + DIAS_PLAN * 86_400_000);
+
+    // El plan y el pago se confirman juntos: si algo falla, la suscripción
+    // del usuario queda exactamente donde estaba.
+    const [, pagoActualizado] = await this.prisma.$transaction([
+      this.prisma.usuario.update({
         where: { id: pago.usuarioId },
         data: {
           plan: pago.plan,
@@ -132,13 +154,16 @@ export class PagosService {
           chatIaLimite: beneficios.chatDiario,
           chatUsados: 0,
           chatFecha: new Date(),
+          planVence,
         },
-      });
-    }
+      }),
 
-    return this.prisma.pago.update({
-      where: { id },
-      data: { estado },
-    });
+      this.prisma.pago.update({
+        where: { id },
+        data: { estado },
+      }),
+    ]);
+
+    return pagoActualizado;
   }
 }

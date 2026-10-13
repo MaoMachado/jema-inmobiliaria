@@ -94,6 +94,14 @@ export default function ManagementPayment() {
                   </span>
                   <span>•</span>
                   <span>{formatearPrecio(p.monto)}</span>
+                  {p.referencia && (
+                    <>
+                      <span>•</span>
+                      <span className="text-gray-500 font-mono">
+                        Ref: {p.referencia}
+                      </span>
+                    </>
+                  )}
                   <span>•</span>
                   <span className="text-gray-500 font-mono">
                     {new Date(p.createAt).toLocaleDateString("es-CO", {

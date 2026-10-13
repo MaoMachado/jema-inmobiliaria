@@ -8,6 +8,7 @@ export interface PlanInfo {
   plan: "GRATIS" | "BASICO" | "PREMIUM";
   propiedadesLimite: number;
   chatIaLimite: number;
+  planVence: string | null;
   beneficios: {
     precio: number;
     propiedades: number;
@@ -23,6 +24,7 @@ export interface Pago {
   plan: "GRATIS" | "BASICO" | "PREMIUM";
   monto: number;
   comprobante?: string | null;
+  referencia?: string | null;
   estado: "PENDIENTE" | "APROBADO" | "RECHAZADO";
   createAt: string;
 }
@@ -43,6 +45,7 @@ export function usePagos() {
   const [loading, setLoading] = useState<boolean>(false);
   const [subiendo, setSubiendo] = useState<boolean>(false);
   const [comprobantePath, setComprobantePath] = useState<string | null>(null);
+  const [referencia, setReferencia] = useState<string>("");
   const [planSeleccionado, setPlanSeleccionado] = useState<
     "BASICO" | "PREMIUM" | null
   >(null);
@@ -103,7 +106,15 @@ export function usePagos() {
   };
 
   const handleSolicitar = async () => {
-    if (!planSeleccionado || !comprobantePath) return;
+    if (!planSeleccionado) return;
+
+    const referenciaLimpia = referencia.trim();
+    if (!comprobantePath && !referenciaLimpia) {
+      showTempMessage(
+        "Pega la referencia del pago de Nequi o adjunta el comprobante",
+      );
+      return;
+    }
 
     setLoading(true);
 
@@ -114,12 +125,14 @@ export function usePagos() {
         monto: precio,
         plan: planSeleccionado,
         comprobante: comprobantePath,
+        referencia: referenciaLimpia || undefined,
       });
 
       showTempMessage("Pago enviado, pendiente de verificación");
 
       setPlanSeleccionado(null);
       setComprobantePath(null);
+      setReferencia("");
     } catch (error) {
       showTempMessage(getErrorMessage(error, "Error al registrar el pago"));
     } finally {
@@ -133,6 +146,8 @@ export function usePagos() {
     loading,
     subiendo,
     comprobantePath,
+    referencia,
+    setReferencia,
     planSeleccionado,
     setPlanSeleccionado,
     handleSubirComprobante,

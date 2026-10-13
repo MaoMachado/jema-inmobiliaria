@@ -47,6 +47,8 @@ export default function PlanSuscripcion() {
     loading,
     subiendo,
     comprobantePath,
+    referencia,
+    setReferencia,
     planSeleccionado,
     setPlanSeleccionado,
     handleSubirComprobante,
@@ -76,6 +78,17 @@ export default function PlanSuscripcion() {
               <span className="bg-sky-950/80 border border-sky-500/40 text-sky-300 text-xs px-2.5 py-0.5 rounded-full font-semibold">
                 Activo
               </span>
+
+              {planInfo?.planVence && planInfo.plan !== "GRATIS" && (
+                <span className="text-xs text-gray-400">
+                  Vence el{" "}
+                  {new Date(planInfo.planVence).toLocaleDateString("es-CO", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                </span>
+              )}
             </div>
           </div>
 
@@ -199,9 +212,16 @@ export default function PlanSuscripcion() {
 
           <div className="space-y-3">
             <label className="text-md font-semibold text-gray-300 block">
-              Adjunta el comprobante de transferencia bancaria o pago (PDF, PNG,
-              JPG)
+              Paga con Nequi a nuestra llave y pega el número de aprobación, o
+              adjunta una captura del comprobante (PDF, PNG, JPG)
             </label>
+            <input
+              type="text"
+              value={referencia}
+              onChange={(e) => setReferencia(e.target.value)}
+              placeholder="Referencia o número de aprobación de Nequi"
+              className="w-full bg-gray-950/60 border border-gray-800 rounded-xl px-3 py-2 text-[15px] text-white placeholder:text-gray-500 focus:border-sky-500 outline-none transition"
+            />
             <input
               ref={fileRef}
               type="file"
@@ -233,7 +253,7 @@ export default function PlanSuscripcion() {
                 : "Confirmar y Enviar Solicitud de Pago"
             }
             loading={loading}
-            disabled={!comprobantePath || loading}
+            disabled={(!comprobantePath && !referencia.trim()) || loading}
             onClick={handleSolicitar}
             className="w-full text-[15px] font-bold py-2.5"
           />

@@ -14,6 +14,7 @@ export interface PlanActual {
   propiedadesLimite: number;
   chatIaLimite: number;
   beneficios: BeneficiosPlan;
+  planVence: Date | null;
 }
 
 export const PLANES: Record<Plan, BeneficiosPlan> = {
@@ -44,3 +45,6 @@ export const PLANES: Record<Plan, BeneficiosPlan> = {
     analytics: true,
   },
 };
+
+/** Duración de un plan pagado (pago único mensual). */
+export const DIAS_PLAN = 30;
