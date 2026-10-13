@@ -64,6 +64,12 @@ export class PagosController {
     return this.pagosService.comprobanteUrl(id);
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Get(':id')
+  estado(@Param('id') id: string, @Req() req: RequestWithUser) {
+    return this.pagosService.estadoPago(id, req.user.id);
+  }
+
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Patch(':id')

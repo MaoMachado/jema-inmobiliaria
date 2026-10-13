@@ -1,5 +1,6 @@
 {
   "cSpell.words": [
+    "Aceptacion",
     "antiguedad",
     "banos",
     "BASICO",
@@ -22,6 +23,8 @@
     "jema",
     "Jema",
     "metricas",
+    "Nequi",
+    "NEQUI",
     "nestjs",
     "Ocupacion",
     "OCUPACION",
@@ -36,9 +39,12 @@
     "Supabase",
     "SUPABASE",
     "telefono",
+    "Transaccion",
     "twilio",
     "ubicacion",
-    "Verificacion"
+    "Verificacion",
+    "wompi",
+    "Wompi"
   ],
 
   "editor.codeActionsOnSave": {

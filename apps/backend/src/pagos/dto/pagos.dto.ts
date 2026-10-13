@@ -34,3 +34,14 @@ export class ChangeEstadoPagoDto {
   @IsEnum(EstadoPago)
   estado: EstadoPago;
 }
+
+export class PagoNequiDto {
+  @IsEnum(Plan)
+  plan: Plan;
+
+  @IsString()
+  @Matches(/^3\d{9}$/, {
+    message: 'El celular debe ser Nequi: 10 dígitos iniciando en 3',
+  })
+  telefono: string;
+}

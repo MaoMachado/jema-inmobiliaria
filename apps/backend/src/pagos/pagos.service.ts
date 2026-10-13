@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SolicitudPagoDto } from './dto/pagos.dto';
-import { EstadoPago } from '../generated/prisma';
+import { EstadoPago, Plan } from '../generated/prisma';
 import { StorageService } from '../storage/storage.service';
 import { PlanActual, PLANES, DIAS_PLAN } from './planes';
 
@@ -93,6 +93,58 @@ export class PagosService {
         estado: EstadoPago.PENDIENTE,
       },
     });
+  }
+
+  async crearPagoPasarela(userId: string, plan: Plan) {
+    const precio = PLANES[plan]?.precio;
+
+    if (precio === undefined || precio <= 0) {
+      throw new BadRequestException('Ese plan no se puede pagar en línea');
+    }
+
+    const pendiente = await this.prisma.pago.findFirst({
+      where: { usuarioId: userId, estado: EstadoPago.PENDIENTE },
+    });
+
+    if (pendiente) {
+      throw new BadRequestException('Ya tienes un pago pendiente de verificar');
+    }
+
+    return this.prisma.pago.create({
+      data: {
+        usuarioId: userId,
+        monto: precio,
+        plan,
+        estado: EstadoPago.PENDIENTE,
+      },
+    });
+  }
+
+  async guardarTransaccion(pagoId: string, transaccionId: string) {
+    return this.prisma.pago.update({
+      where: { id: pagoId },
+      data: { transaccionId },
+    });
+  }
+
+  async marcarFallida(pagoId: string) {
+    return this.prisma.pago.update({
+      where: { id: pagoId },
+      data: { estado: EstadoPago.RECHAZADO },
+    });
+  }
+
+  async estadoPago(pagoId: string, userId: string) {
+    const pago = await this.prisma.pago.findUnique({
+      where: { id: pagoId },
+      select: { id: true, usuarioId: true, estado: true, plan: true },
+    });
+
+    if (!pago || pago.usuarioId !== userId) {
+      throw new NotFoundException('Pago no encontrado');
+    }
+
+    return pago;
   }
 
   async pagosUsuario(userId: string) {

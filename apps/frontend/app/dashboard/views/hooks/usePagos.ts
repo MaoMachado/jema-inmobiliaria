@@ -44,6 +44,8 @@ export function usePagos() {
   const [historial, setHistorial] = useState<Pago[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [subiendo, setSubiendo] = useState<boolean>(false);
+  const [pagando, setPagando] = useState<boolean>(false);
+  const [telefono, setTelefono] = useState<string>("");
   const [comprobantePath, setComprobantePath] = useState<string | null>(null);
   const [referencia, setReferencia] = useState<string>("");
   const [planSeleccionado, setPlanSeleccionado] = useState<
@@ -140,11 +142,65 @@ export function usePagos() {
     }
   };
 
+  /**
+   * Flujo automático: crea el pago en el backend, Wompi envía el push de Nequi
+   * al celular del usuario y el backend activa el plan con el webhook.
+   * Como Nequi es asíncrono, preguntamos el estado del pago hasta resolver.
+   */
+  const pagarConNequi = async (numero: string): Promise<boolean> => {
+    if (!planSeleccionado) return false;
+
+    setPagando(true);
+
+    try {
+      const { data } = await api.post<{ pagoId: string }>(
+        "/pagos/wompi/nequi",
+        { plan: planSeleccionado, telefono: numero },
+      );
+
+      showTempMessage("Acepta el pago en la app de Nequi de tu celular");
+
+      for (let intento = 0; intento < 20; intento++) {
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+
+        const { data: pago } = await api.get<{ estado: string }>(
+          `/pagos/${data.pagoId}`,
+        );
+
+        if (pago.estado !== "PENDIENTE") {
+          showTempMessage(
+            pago.estado === "APROBADO"
+              ? "¡Pago aprobado! Tu plan ya está activo"
+              : "El pago fue rechazado. Intenta de nuevo",
+          );
+
+          setPlanSeleccionado(null);
+          await load();
+          return pago.estado === "APROBADO";
+        }
+      }
+
+      showTempMessage(
+        "Seguimos esperando la confirmación de Nequi. Revisa tu historial en unos minutos.",
+      );
+      return false;
+    } catch (error) {
+      showTempMessage(getErrorMessage(error, "Error al iniciar el pago"));
+      return false;
+    } finally {
+      setPagando(false);
+    }
+  };
+
   return {
     planInfo,
     historial,
     loading,
     subiendo,
+    pagando,
+    telefono,
+    setTelefono,
+    pagarConNequi,
     comprobantePath,
     referencia,
     setReferencia,

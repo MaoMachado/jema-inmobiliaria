@@ -129,6 +129,11 @@ Usa **exactamente** estos términos. La columna "Evitar" lista sinónimos que NO
 - El `monto` **debe coincidir** con `PLANES[plan].precio` (si no, error).
 - La solicitud acepta **referencia del pago de Nequi** o el archivo comprobante; al menos uno de los dos.
 - Solo **un `Pago` `PENDIENTE`** por usuario a la vez.
+- **Flujo automático (Wompi)**: `POST /pagos/wompi/nequi` crea el `Pago` (monto desde `PLANES`, nunca del
+  cliente) y la transacción Nequi en Wompi; el usuario acepta el push en su app y Wompi llama al webhook
+  `POST /pagos/wompi/evento` (firma validada por checksum, transacción **re-consultada**, monto y referencia
+  verificados, idempotente). El front consulta `GET /pagos/:id` hasta que el estado deje de ser `PENDIENTE`.
+- El **flujo manual** (comprobante o referencia + aprobación del admin) se mantiene como red de seguridad.
 - Aprobar un `Pago`: en **una sola transacción** actualiza `plan` + `propiedadesLimite` + `chatIaLimite`,
   resetea el uso diario de chat y fija `planVence` = hoy + **30 días** (`DIAS_PLAN`). Si algo falla, la
   suscripción del usuario queda como estaba.

@@ -46,6 +46,10 @@ export default function PlanSuscripcion() {
     historial,
     loading,
     subiendo,
+    pagando,
+    telefono,
+    setTelefono,
+    pagarConNequi,
     comprobantePath,
     referencia,
     setReferencia,
@@ -212,8 +216,43 @@ export default function PlanSuscripcion() {
 
           <div className="space-y-3">
             <label className="text-md font-semibold text-gray-300 block">
-              Paga con Nequi a nuestra llave y pega el número de aprobación, o
-              adjunta una captura del comprobante (PDF, PNG, JPG)
+              Paga con Nequi y se activa solo (sin esperar verificación)
+            </label>
+            <input
+              type="tel"
+              value={telefono}
+              onChange={(e) => setTelefono(e.target.value)}
+              placeholder="Celular Nequi: 3001234567"
+              maxLength={10}
+              className="w-full bg-gray-950/60 border border-gray-800 rounded-xl px-3 py-2 text-[15px] text-white placeholder:text-gray-500 focus:border-sky-500 outline-none transition"
+            />
+            <Button
+              title={
+                pagando
+                  ? "Esperando confirmación en tu app de Nequi..."
+                  : "Pagar con Nequi"
+              }
+              loading={pagando}
+              disabled={pagando || !/^3\d{9}$/.test(telefono)}
+              onClick={() => pagarConNequi(telefono)}
+              className="w-full text-[15px] font-bold py-2.5"
+            />
+            <p className="text-[13px] text-gray-500">
+              Te llega una notificación a tu app de Nequi para aprobar el pago.
+              El plan se activa automáticamente.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span className="h-px flex-1 bg-gray-800" />
+            <span className="text-xs text-gray-500">o paga manual</span>
+            <span className="h-px flex-1 bg-gray-800" />
+          </div>
+
+          <div className="space-y-3">
+            <label className="text-md font-semibold text-gray-300 block">
+              Pago manual: pega la referencia de Nequi o adjunta una captura
+              del comprobante (PDF, PNG, JPG)
             </label>
             <input
               type="text"

@@ -61,6 +61,7 @@ model Pago {
   plan        Plan
   comprobante String?
   referencia  String?
+  transaccionId String?  @unique
   estado      EstadoPago @default(PENDIENTE)
   createAt    DateTime   @default(now())
   updateAt    DateTime   @updatedAt
