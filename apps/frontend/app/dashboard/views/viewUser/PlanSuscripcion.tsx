@@ -46,7 +46,13 @@ export default function PlanSuscripcion() {
     historial,
     loading,
     subiendo,
+    pagando,
+    telefono,
+    setTelefono,
+    pagarConNequi,
     comprobantePath,
+    referencia,
+    setReferencia,
     planSeleccionado,
     setPlanSeleccionado,
     handleSubirComprobante,
@@ -76,6 +82,17 @@ export default function PlanSuscripcion() {
               <span className="bg-sky-950/80 border border-sky-500/40 text-sky-300 text-xs px-2.5 py-0.5 rounded-full font-semibold">
                 Activo
               </span>
+
+              {planInfo?.planVence && planInfo.plan !== "GRATIS" && (
+                <span className="text-xs text-gray-400">
+                  Vence el{" "}
+                  {new Date(planInfo.planVence).toLocaleDateString("es-CO", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                </span>
+              )}
             </div>
           </div>
 
@@ -199,9 +216,51 @@ export default function PlanSuscripcion() {
 
           <div className="space-y-3">
             <label className="text-md font-semibold text-gray-300 block">
-              Adjunta el comprobante de transferencia bancaria o pago (PDF, PNG,
-              JPG)
+              Paga con Nequi y se activa solo (sin esperar verificación)
             </label>
+            <input
+              type="tel"
+              value={telefono}
+              onChange={(e) => setTelefono(e.target.value)}
+              placeholder="Celular Nequi: 3001234567"
+              maxLength={10}
+              className="w-full bg-gray-950/60 border border-gray-800 rounded-xl px-3 py-2 text-[15px] text-white placeholder:text-gray-500 focus:border-sky-500 outline-none transition"
+            />
+            <Button
+              title={
+                pagando
+                  ? "Esperando confirmación en tu app de Nequi..."
+                  : "Pagar con Nequi"
+              }
+              loading={pagando}
+              disabled={pagando || !/^3\d{9}$/.test(telefono)}
+              onClick={() => pagarConNequi(telefono)}
+              className="w-full text-[15px] font-bold py-2.5"
+            />
+            <p className="text-[13px] text-gray-500">
+              Te llega una notificación a tu app de Nequi para aprobar el pago.
+              El plan se activa automáticamente.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span className="h-px flex-1 bg-gray-800" />
+            <span className="text-xs text-gray-500">o paga manual</span>
+            <span className="h-px flex-1 bg-gray-800" />
+          </div>
+
+          <div className="space-y-3">
+            <label className="text-md font-semibold text-gray-300 block">
+              Pago manual: pega la referencia de Nequi o adjunta una captura
+              del comprobante (PDF, PNG, JPG)
+            </label>
+            <input
+              type="text"
+              value={referencia}
+              onChange={(e) => setReferencia(e.target.value)}
+              placeholder="Referencia o número de aprobación de Nequi"
+              className="w-full bg-gray-950/60 border border-gray-800 rounded-xl px-3 py-2 text-[15px] text-white placeholder:text-gray-500 focus:border-sky-500 outline-none transition"
+            />
             <input
               ref={fileRef}
               type="file"
@@ -233,7 +292,7 @@ export default function PlanSuscripcion() {
                 : "Confirmar y Enviar Solicitud de Pago"
             }
             loading={loading}
-            disabled={!comprobantePath || loading}
+            disabled={(!comprobantePath && !referencia.trim()) || loading}
             onClick={handleSolicitar}
             className="w-full text-[15px] font-bold py-2.5"
           />

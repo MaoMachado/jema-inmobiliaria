@@ -2,7 +2,7 @@
 
 > Documento vivo. Fuente de verdad del **lenguaje ubicuo** de Jema Inmobiliaria.
 > Si un término no está aquí, se define aquí antes de usarlo en código, tickets o ADRs.
-> Última revisión: 2026-10-09 · Deriva del código en `apps/backend` y `apps/frontend`, no de suposiciones.
+> Última revisión: 2026-10-10 · Deriva del código en `apps/backend` y `apps/frontend`, no de suposiciones.
 
 ---
 
@@ -106,6 +106,8 @@ Usa **exactamente** estos términos. La columna "Evitar" lista sinónimos que NO
 
 - Los límites viven **duplicados** en `Usuario` (`propiedadesLimite`, `chatIaLimite`) y en `PLANES`.
   Al aprobar un `Pago` se sincronizan desde `PLANES`. → ver §9 (riesgo).
+- El plan pagado **vence 30 días** después de aprobarse (`Usuario.planVence`); `PlanExpiraService` lo
+  devuelve a `GRATIS` cuando vence.
 
 ### Puntaje (completitud)
 - `calcularPuntaje()` suma reglas ponderadas (título, descripción, precio, ubicación, fotos, etc.) y
@@ -125,8 +127,18 @@ Usa **exactamente** estos términos. La columna "Evitar" lista sinónimos que NO
 
 ### Pagos
 - El `monto` **debe coincidir** con `PLANES[plan].precio` (si no, error).
+- La solicitud acepta **referencia del pago de Nequi** o el archivo comprobante; al menos uno de los dos.
 - Solo **un `Pago` `PENDIENTE`** por usuario a la vez.
-- Aprobar un `Pago`: actualiza `plan` + `propiedadesLimite` + `chatIaLimite`, y **resetea** el uso diario de chat.
+- **Flujo automático (Wompi)**: `POST /pagos/wompi/nequi` crea el `Pago` (monto desde `PLANES`, nunca del
+  cliente) y la transacción Nequi en Wompi; el usuario acepta el push en su app y Wompi llama al webhook
+  `POST /pagos/wompi/evento` (firma validada por checksum, transacción **re-consultada**, monto y referencia
+  verificados, idempotente). El front consulta `GET /pagos/:id` hasta que el estado deje de ser `PENDIENTE`.
+- El **flujo manual** (comprobante o referencia + aprobación del admin) se mantiene como red de seguridad.
+- Aprobar un `Pago`: en **una sola transacción** actualiza `plan` + `propiedadesLimite` + `chatIaLimite`,
+  resetea el uso diario de chat y fija `planVence` = hoy + **30 días** (`DIAS_PLAN`). Si algo falla, la
+  suscripción del usuario queda como estaba.
+- El plan es de **pago único con vencimiento**: `PlanExpiraService` (tick de 1 h) devuelve a `GRATIS` a los
+  usuarios con `planVence` vencido, con los límites de `PLANES.GRATIS`.
 - Un `Pago` ya resuelto no puede volver a cambiar de estado.
 
 ### Verificación e identidad
@@ -192,8 +204,11 @@ Usa **exactamente** estos términos. La columna "Evitar" lista sinónimos que NO
 
 ## 9. Decisiones de arquitectura vigentes
 
-- **Auth**: JWT propio (NestJS + `@nestjs/jwt` + bcrypt). **Decidido**: no se adopta Supabase Auth por
-  ahora. Ver ADR (pendiente).
+- **Auth**: JWT propio (NestJS + `@nestjs/jwt` + bcrypt). **Decidido**: no se adopta Supabase Auth.
+  Sesión = access token **15 min** + refresh token opaco **rotativo de 30 días** (guardado hasheado en
+  `RefreshToken`), ambos en cookies `httpOnly` (`SameSite=Lax`, `Secure` en prod), **revocación global**
+  vía `Usuario.tokenVersion` (invalidada al detectar reuso de refresh) y CSRF por verificación de `Origin`
+  en métodos mutadores. Ver [ADR 0001](adr/0001-modelo-de-sesion.md).
 - **Acceso a datos**: Prisma directo a PostgreSQL (`DATABASE_URL`). Sin PostgREST.
 - **Autorización**: en la aplicación (guards + verificación de propiedad del recurso). **Decidido**: no se
   usa RLS.

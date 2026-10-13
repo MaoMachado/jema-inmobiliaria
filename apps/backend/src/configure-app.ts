@@ -1,7 +1,6 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import type { NextFunction, Request, Response } from 'express';
 
-/** Configuración HTTP compartida por main.ts y los tests e2e. */
 export function configureApp(app: INestApplication): void {
   app.useGlobalPipes(
     new ValidationPipe({
@@ -19,8 +18,13 @@ export function configureApp(app: INestApplication): void {
   app.enableCors({ origin: origenes, credentials: true });
 
   // CSRF: las cookies van con SameSite=Lax; rechazamos mutaciones desde un Origin ajeno.
+  // El webhook de Wompi es server-to-server y no lleva Origin: se excluye explícitamente.
+  const RUTAS_PUBLICAS = ['/pagos/wompi/evento'];
+
+  // CSRF
   app.use((req: Request, res: Response, next: NextFunction) => {
     if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
+    if (RUTAS_PUBLICAS.includes(req.path)) return next();
 
     const origin = req.headers.origin;
     if (origin && !origenes.includes(origin)) {
