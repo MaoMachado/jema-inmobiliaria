@@ -13,7 +13,8 @@ describe('AuthController', () => {
   };
 
   const mockAuthResponse = {
-    token: 'jwt-token-xyz',
+    accessToken: 'jwt-token-xyz',
+    refreshToken: 'refresh-token-xyz',
     user: {
       id: 'usr-1',
       nombres: 'Carlos',
@@ -25,6 +26,11 @@ describe('AuthController', () => {
       createdAt: new Date(),
       updatedAt: new Date(),
     },
+  };
+
+  const mockRes = {
+    cookie: jest.fn(),
+    clearCookie: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -62,7 +68,7 @@ describe('AuthController', () => {
         foto: 'http://foto.png',
       };
 
-      const result = await controller.register(dto);
+      const result = await controller.register(dto, mockRes as any);
 
       expect(authService.register).toHaveBeenCalledWith(
         dto.nombres,
@@ -72,7 +78,12 @@ describe('AuthController', () => {
         dto.password,
         dto.foto,
       );
-      expect(result).toEqual(mockAuthResponse);
+      expect(mockRes.cookie).toHaveBeenCalledWith(
+        'access_token',
+        mockAuthResponse.accessToken,
+        expect.any(Object),
+      );
+      expect(result).toEqual({ user: mockAuthResponse.user });
     });
   });
 
@@ -83,10 +94,15 @@ describe('AuthController', () => {
         password: 'password123',
       };
 
-      const result = await controller.login(dto);
+      const result = await controller.login(dto, mockRes as any);
 
       expect(authService.login).toHaveBeenCalledWith(dto.email, dto.password);
-      expect(result).toEqual(mockAuthResponse);
+      expect(mockRes.cookie).toHaveBeenCalledWith(
+        'access_token',
+        mockAuthResponse.accessToken,
+        expect.any(Object),
+      );
+      expect(result).toEqual({ user: mockAuthResponse.user });
     });
   });
 

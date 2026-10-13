@@ -10,7 +10,10 @@ No haces "vibe coding". Prefieres alinear requisitos, modelar el dominio y escri
 
 - **Frontend**: Next.js (App Router), React, TypeScript
 - **Backend**: NestJS, Node.js, TypeScript
-- **Database / Auth / Storage**: Supabase (Postgres + Auth + RLS + Storage)
+- **Database**: PostgreSQL gestionado en Supabase, accedido con **Prisma ORM** (conexión directa vía `DATABASE_URL`)
+- **Auth**: JWT propio (NestJS + `@nestjs/jwt` + bcrypt). **No** se usa Supabase Auth
+- **Storage**: Supabase Storage (el `service_role` solo en el backend)
+- **RLS**: no se usa. La autorización vive en la aplicación (guards + verificación de propiedad del recurso)
 - **Scripts / Data / tooling**: Python cuando tenga sentido
 - **Monorepo o multi-paquete**: asume TypeScript estricto en todo el código TS/JS
 
@@ -19,16 +22,16 @@ No haces "vibe coding". Prefieres alinear requisitos, modelar el dominio y escri
 ### context7
 
 - Usa **siempre** `context7` cuando necesites documentación de:
-  - Next.js, React, NestJS, TypeScript, Supabase JS/SSR, Node.js, Python
+  - Next.js, React, NestJS, TypeScript, Prisma, Supabase JS (Storage), Node.js, Python
   - Nunca inventes APIs. Si no estás seguro de una firma, llama a context7 primero.
 
 ### supabase
 
 - Usa `supabase` para:
-  - Consultar schema, tablas, columnas, RLS policies
-  - Revisar auth, storage buckets, edge functions
-  - Ejecutar queries de solo lectura cuando sea necesario
+  - Revisar Storage buckets (fotos, documentos, comprobantes)
+  - Ejecutar queries de solo lectura sobre el schema cuando sea necesario
   - No hagas escrituras destructivas en producción sin confirmación explícita del usuario.
+- Nota: este proyecto **no usa Supabase Auth ni RLS**; la auth es JWT propio y el acceso a datos es por Prisma.
 
 ### playwright
 
@@ -76,15 +79,16 @@ Cuando el usuario invoque o el contexto lo pida, sigue estas skills:
 - Evita `any`. Usa `unknown` + narrowing cuando sea necesario.
 - En NestJS: sigue módulos, providers, DTOs con class-validator/class-transformer.
 - En Next.js App Router: Server Components por defecto, Client Components solo cuando haga falta interactividad.
-- Supabase client:
-  - Server: usa el patrón oficial de `@supabase/ssr`
-  - Client: solo en Client Components cuando sea necesario
+- Supabase:
+  - El cliente de Supabase **solo se usa en el backend** (`StorageModule`) con `SUPABASE_SERVICE_ROLE_KEY`; nunca en el cliente.
+  - No uses `@supabase/ssr` ni Supabase Auth: la sesión es un JWT propio emitido por NestJS.
 
-### Supabase
+### Base de datos y storage
 
-- Respeta RLS. Nunca asumas que el service role está disponible en el cliente.
-- Migrations y schema changes deben ser explícitos y versionados.
-- Auth: usa los helpers actuales de Supabase (no patrones deprecados).
+- **Postgres**: accede siempre a través de Prisma (`PrismaService`). Sin PostgREST ni `@supabase/ssr`.
+- **Schema**: los cambios se versionan como migraciones de Prisma (`prisma/migrations`); no hay RLS policies.
+- **Storage**: subidas/bajadas vía `StorageService`; los documentos privados se sirven con **URLs firmadas** de expiración corta.
+- **Auth**: JWT propio. No introduzcas Supabase Auth ni cambies el modelo de sesión sin un ADR.
 
 ### Python
 
@@ -115,7 +119,8 @@ Cuando el usuario invoque o el contexto lo pida, sigue estas skills:
 
 - No inventar APIs de librerías. Usa context7.
 - No hacer refactors masivos sin acuerdo previo.
-- No desactivar RLS ni usar service role en el cliente.
+- No exponer `SUPABASE_SERVICE_ROLE_KEY` ni claves de Supabase en el frontend.
+- No introducir RLS, PostgREST ni Supabase Auth sin un ADR que lo justifique.
 - No commitear secretos, `.env`, ni keys.
 - No ignorar los tests existentes.
 

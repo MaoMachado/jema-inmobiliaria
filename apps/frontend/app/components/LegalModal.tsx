@@ -66,12 +66,12 @@ const DOCUMENTOS: Record<
       {
         encabezado: "3. Uso de Cookies y Almacenamiento Local",
         contenido:
-          "Utilizamos cookies y almacenamiento local (localStorage) para mantener tu sesión activa con tokens JWT seguros, recordar tus preferencias de búsqueda y consentimiento de privacidad. No vendemos ni comercializamos tus datos con redes de publicidad externas.",
+          "Utilizamos cookies httpOnly para mantener tu sesión activa de forma segura (token de acceso de corta duración y token de refresco), almacenamiento local para recordar tus preferencias de búsqueda y tu consentimiento de privacidad. No vendemos ni comercializamos tus datos con redes de publicidad externas.",
       },
       {
         encabezado: "4. Seguridad de la Información",
         contenido:
-          "Aplicamos medidas de seguridad de nivel bancario: contraseñas cifradas con bcrypt, hashes SHA-256 con pepper para códigos OTP y almacenamiento en la nube con Supabase Storage bajo políticas de control de acceso estricto.",
+          "Aplicamos medidas de seguridad reforzadas: contraseñas cifradas con bcrypt, hashes SHA-256 con pepper para códigos OTP y almacenamiento en la nube con Supabase Storage, sirviendo los documentos privados con URLs firmadas de acceso temporal.",
       },
     ],
   },

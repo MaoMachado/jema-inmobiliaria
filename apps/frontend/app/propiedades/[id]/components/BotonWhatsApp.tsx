@@ -19,17 +19,6 @@ export default function BotonWhatsApp({
 
   const handleContactar = async () => {
     setErrorMsg("");
-
-    const token =
-      typeof window !== "undefined"
-        ? localStorage.getItem("access_token")
-        : null;
-
-    if (!token) {
-      router.push("/login");
-      return;
-    }
-
     setLoading(true);
 
     try {

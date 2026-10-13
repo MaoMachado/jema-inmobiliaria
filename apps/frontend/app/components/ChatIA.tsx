@@ -39,7 +39,12 @@ export default function ChatIA() {
   }, [chats, loading, open]);
 
   useEffect(() => {
-    setIsLoggedIn(!!localStorage.getItem("access_token"));
+    if (!open) return;
+
+    api
+      .get("/auth/me")
+      .then(() => setIsLoggedIn(true))
+      .catch(() => setIsLoggedIn(false));
   }, [open]);
 
   useEffect(() => {

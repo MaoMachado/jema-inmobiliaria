@@ -35,8 +35,8 @@ export default function Dashboard() {
     loadUser();
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem("access_token");
+  const handleLogout = async () => {
+    await api.post("/auth/logout").catch(() => null);
     router.push("/");
   };
 

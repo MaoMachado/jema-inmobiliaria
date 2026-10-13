@@ -1,29 +1,26 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useSession } from "../hooks/useSession";
+import Link from "next/link";
+import api from "../lib/api";
 
 interface HeaderAuthProps {
   onAction?: () => void;
 }
 
 export default function HeaderAuth({ onAction }: HeaderAuthProps) {
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+  const sesion = useSession();
   const router = useRouter();
 
-  useEffect(() => {
-    setIsLoggedIn(!!localStorage.getItem("access_token"));
-  }, []);
-
-  const handleLogout = () => {
-    localStorage.removeItem("access_token");
-    setIsLoggedIn(false);
+  const handleLogout = async () => {
+    await api.post("/auth/logout").catch(() => null);
     if (onAction) onAction();
+
     router.push("/login");
   };
 
-  if (isLoggedIn === null) {
+  if (sesion === undefined) {
     return (
       <div className="flex gap-2 animate-pulse">
         <div className="w-24 h-8 bg-gray-800 rounded-lg" />
@@ -32,7 +29,7 @@ export default function HeaderAuth({ onAction }: HeaderAuthProps) {
     );
   }
 
-  if (isLoggedIn) {
+  if (sesion) {
     return (
       <section className="flex items-center gap-3">
         <Link

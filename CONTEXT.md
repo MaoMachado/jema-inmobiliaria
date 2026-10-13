@@ -190,21 +190,29 @@ Usa **exactamente** estos términos. La columna "Evitar" lista sinónimos que NO
 
 ---
 
-## 9. Decisiones abiertas y discrepancias conocidas
+## 9. Decisiones de arquitectura vigentes
+
+- **Auth**: JWT propio (NestJS + `@nestjs/jwt` + bcrypt). **Decidido**: no se adopta Supabase Auth por
+  ahora. Ver ADR (pendiente).
+- **Acceso a datos**: Prisma directo a PostgreSQL (`DATABASE_URL`). Sin PostgREST.
+- **Autorización**: en la aplicación (guards + verificación de propiedad del recurso). **Decidido**: no se
+  usa RLS.
+- **Storage**: Supabase Storage, `service_role` solo en el backend, documentos privados con **URLs firmadas**.
+
+> Estas decisiones se documentaron alineando `README.md`, `AGENTS.md` y este `CONTEXT.md` con el código.
+> Si alguna cambia, requiere un ADR en `docs/adr/`.
+
+## 9.b Decisiones abiertas (pendientes de ADR)
 
 Estas observaciones deben resolverse mediante ADRs en `docs/adr/` (aún no existen):
 
-1. **Auth propia vs. Supabase Auth.** `README.md`/`AGENTS.md` declaran Supabase Auth, pero el backend
-   implementa JWT + bcrypt. Decidir y alinear docs o código.
-2. **Sin RLS.** La autorización es 100% de aplicación. Confirmar que es intencional (y no exponer el
-   datasource a clientes).
-3. **Límites de plan duplicados** en `Usuario` y `PLANES`. Riesgo de desincronización; considerar una
+1. **Límites de plan duplicados** en `Usuario` y `PLANES`. Riesgo de desincronización; considerar una
    sola fuente de verdad (`Plan` como catálogo).
-4. **`destacadaHasta`** siempre se escribe como `null`; no hay lógica de vencimiento. ¿Se planeó expiración?
-5. **`tipo` de propiedad** es `String` libre (no enum) y **no existe campo de operación** (venta/arriendo).
+2. **`destacadaHasta`** siempre se escribe como `null`; no hay lógica de vencimiento. ¿Se planeó expiración?
+3. **`tipo` de propiedad** es `String` libre (no enum) y **no existe campo de operación** (venta/arriendo).
    El `precio` se usa tanto para venta como para canon. Definir modelo de operación.
-6. **Moneda:** se asume COP en todo el sistema; no hay soporte multi-moneda.
-7. **Cobertura de tests:** backend tiene specs; el frontend no tiene tests configurados.
+4. **Moneda:** se asume COP en todo el sistema; no hay soporte multi-moneda.
+5. **Cobertura de tests:** backend tiene specs; el frontend no tiene tests configurados.
 
 ---
 

@@ -32,21 +32,7 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const response = await api.post(
-        "/auth/login",
-        { email, password },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        },
-      );
-
-      if (!response.data.token) {
-        throw new Error("Token no proporcionado en la respuesta");
-      }
-
-      localStorage.setItem("access_token", response.data.token);
+      await api.post("/auth/login", { email, password });
       setSuccess("Inicio de sesión exitoso");
 
       setTimeout(() => {
