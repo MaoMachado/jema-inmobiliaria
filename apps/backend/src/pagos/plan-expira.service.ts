@@ -18,7 +18,6 @@ export class PlanExpiraService implements OnModuleInit, OnModuleDestroy {
   constructor(private readonly prisma: PrismaService) {}
 
   onModuleInit() {
-    // Al arrancar también barre, para recuperar planes que vencieron con el backend caído.
     void this.bajarPlanesVencidos();
     this.timer = setInterval(
       () => void this.bajarPlanesVencidos(),
@@ -30,7 +29,6 @@ export class PlanExpiraService implements OnModuleInit, OnModuleDestroy {
     if (this.timer) clearInterval(this.timer);
   }
 
-  /** Devuelve a GRATIS a los usuarios cuyo `planVence` ya pasó. */
   async bajarPlanesVencidos(ahora = new Date()): Promise<number> {
     const { count } = await this.prisma.usuario.updateMany({
       where: {
