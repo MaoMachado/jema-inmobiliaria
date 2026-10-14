@@ -11,6 +11,7 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --animate-fade-in: fade-in 0.2s ease-out;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -26,10 +27,6 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-.slide-in-right {
-  animation: slide-in-right 0.3s ease-in-out;
-}
-
 @keyframes slide-in-right {
   from {
     transform: translateX(100%);
@@ -39,5 +36,37 @@ body {
   to {
     transform: translateX(0);
     opacity: 1;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.animate-fade-in {
+  animation: var(--animate-fade-in);
+}
+
+.slide-in-right {
+  animation: slide-in-right 0.3s ease-in-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in {
+    animation: none;
   }
 }
