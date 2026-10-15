@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Button from "@/app/components/Button";
 
 interface SubirDocumentoModalProps {
@@ -113,7 +114,9 @@ export function SubirDocumentoModal({
 
   const errorVisible = error || message || "";
 
-  return (
+  // Portal al body: la tarjeta tiene backdrop-blur, que crea un contexto de
+  // posicionamiento y atraparía el modal dentro de la card.
+  return createPortal(
     <article
       aria-label="Subir documento"
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -272,6 +275,7 @@ export function SubirDocumentoModal({
           </div>
         </form>
       </div>
-    </article>
+    </article>,
+    document.body,
   );
 }
