@@ -57,6 +57,14 @@ export default function UserView() {
     (p) => p.destacada && p.estado === "APROBADA",
   ).length;
 
+  // Límites del plan: propiedades publicables y fotos por publicación.
+  const limitePropiedades =
+    planInfo?.beneficios.propiedades ?? planInfo?.propiedadesLimite ?? 5;
+  const propiedadesRestantes = Math.max(
+    0,
+    limitePropiedades - initialData.length,
+  );
+
   return (
     <article className="space-y-6">
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-800 pb-5">
@@ -103,10 +111,19 @@ export default function UserView() {
           {tabActiva === "propiedades" && (
             <button
               onClick={openCreate}
-              className="bg-linear-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-lg shadow-sky-500/20 transition flex items-center gap-1.5 cursor-pointer"
+              disabled={propiedadesRestantes === 0}
+              title={
+                propiedadesRestantes === 0
+                  ? `Alcanzaste el límite de ${limitePropiedades} propiedades de tu plan. Mejora tu plan para publicar más.`
+                  : `Puedes publicar ${propiedadesRestantes} propiedad(es) más con tu plan`
+              }
+              className="bg-linear-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-lg shadow-sky-500/20 transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <span>➕</span>
               <span>Nueva Propiedad</span>
+              <span className="font-medium opacity-80">
+                ({initialData.length}/{limitePropiedades})
+              </span>
             </button>
           )}
         </div>
@@ -233,6 +250,8 @@ export default function UserView() {
           error={error}
           mode={editingPropiedad ? "edit" : "create"}
           propiedad={editingPropiedad ?? undefined}
+          fotosPermitidas={planInfo?.beneficios.fotos ?? 20}
+          propiedadesRestantes={propiedadesRestantes}
         />
       )}
 
