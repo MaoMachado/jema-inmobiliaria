@@ -11,6 +11,7 @@ interface Props {
   propiedadId?: string;
   documentos?: DocumentoPropiedad[];
   onVerificar?: (docId: string, current: boolean) => void;
+  onEliminar?: (docId: string) => void | Promise<void>;
   isOpen: boolean;
   onClose: () => void;
 }
@@ -19,6 +20,7 @@ export function DocumentoImgModal({
   propiedadId,
   documentos: documentosProp,
   onVerificar,
+  onEliminar,
   isOpen,
   onClose,
 }: Props) {
@@ -26,13 +28,16 @@ export function DocumentoImgModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
 
+  const [eliminando, setEliminando] = useState<string | null>(null);
+  const [confirmando, setConfirmando] = useState<string | null>(null);
+  const [errorEliminar, setErrorEliminar] = useState<string>("");
+
   const cerrarRef = useRef<HTMLButtonElement>(null);
   const focusPrevioRef = useRef<Element | null>(null);
 
   useEffect(() => {
     if (!isOpen) return;
 
-    /* eslint-disable react-hooks/set-state-in-effect */
     if (documentosProp) {
       setDocumentos(documentosProp);
       return;
@@ -42,7 +47,6 @@ export function DocumentoImgModal({
 
     setLoading(true);
     setError("");
-    /* eslint-enable react-hooks/set-state-in-effect */
 
     api
       .get(`propiedades/${propiedadId}/documentos`)
@@ -104,6 +108,24 @@ export function DocumentoImgModal({
       });
   };
 
+  const eliminarDoc = async (doc: DocumentoPropiedad) => {
+    if (!onEliminar) return;
+
+    setEliminando(doc.id);
+    setErrorEliminar("");
+
+    try {
+      await onEliminar(doc.id);
+      setDocumentos((prev) => prev.filter((d) => d.id !== doc.id));
+      setConfirmando(null);
+    } catch (err) {
+      console.error(err);
+      setErrorEliminar("No se pudo eliminar el documento. Intenta de nuevo.");
+    } finally {
+      setEliminando(null);
+    }
+  };
+
   return createPortal(
     <article className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
@@ -120,10 +142,7 @@ export function DocumentoImgModal({
       >
         <header className="flex items-start justify-between gap-4 border-b border-gray-800 pb-3">
           <div>
-            <h2
-              id="documentos-titulo"
-              className="text-lg font-bold text-white"
-            >
+            <h2 id="documentos-titulo" className="text-lg font-bold text-white">
               Documentos de la propiedad
             </h2>
 
@@ -198,19 +217,69 @@ export function DocumentoImgModal({
                       </span>
                     </div>
 
-                    {onVerificar && (
-                      <Button
-                        title={
-                          doc.verificado
-                            ? "Quitar verificación"
-                            : "Verificar documento"
-                        }
-                        onClick={() => onVerificar(doc.id, doc.verificado)}
-                        variant={doc.verificado ? "secondary" : "primary"}
-                        className="text-xs min-h-11 px-4"
-                      />
-                    )}
+                    <div className="flex flex-wrap items-center gap-2">
+                      {onVerificar && (
+                        <Button
+                          title={
+                            doc.verificado
+                              ? "Quitar verificación"
+                              : "Verificar documento"
+                          }
+                          onClick={() => onVerificar(doc.id, doc.verificado)}
+                          variant={doc.verificado ? "secondary" : "primary"}
+                          className="text-xs min-h-11 px-4"
+                        />
+                      )}
+
+                      {onEliminar &&
+                        (confirmando === doc.id ? (
+                          <>
+                            <span className="text-[11px] text-gray-400">
+                              ¿Eliminar este documento?
+                            </span>
+
+                            <Button
+                              title="Sí, eliminar"
+                              variant="danger"
+                              disabled={eliminando === doc.id}
+                              loading={eliminando === doc.id}
+                              onClick={() => eliminarDoc(doc)}
+                              className="text-xs min-h-11 px-4"
+                            />
+
+                            <Button
+                              title="Cancelar"
+                              variant="secondary"
+                              disabled={eliminando === doc.id}
+                              onClick={() => {
+                                setConfirmando(null);
+                                setErrorEliminar("");
+                              }}
+                              className="text-xs min-h-11 px-4"
+                            />
+                          </>
+                        ) : (
+                          <Button
+                            title="Eliminar"
+                            variant="secondary"
+                            onClick={() => {
+                              setConfirmando(doc.id);
+                              setErrorEliminar("");
+                            }}
+                            className="text-xs min-h-11 px-4 text-red-300"
+                          />
+                        ))}
+                    </div>
                   </div>
+
+                  {confirmando === doc.id && errorEliminar && (
+                    <p
+                      role="alert"
+                      className="text-xs text-red-400 font-medium"
+                    >
+                      {errorEliminar}
+                    </p>
+                  )}
 
                   {isImage(doc.url) ? (
                     <img

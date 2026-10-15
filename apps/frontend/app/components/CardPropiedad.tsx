@@ -15,6 +15,10 @@ interface CardPropiedadProps {
   onDelete?: (id: string) => void;
   onProbabilidad?: (id: string) => void;
   onDocumento?: (id: string, file: File, tipo: string) => void;
+  onEliminarDocumento?: (
+    propiedadId: string,
+    docId: string,
+  ) => void | Promise<void>;
   onReportar?: (propiedadId: string) => void;
   onDestacar?: (propiedadId: string, nuevoEstado: boolean) => void;
   isDashboard?: boolean;
@@ -26,6 +30,7 @@ export function CardPropiedad({
   onDelete,
   onProbabilidad,
   onDocumento,
+  onEliminarDocumento,
   onReportar,
   onDestacar,
   isDashboard: isDashboardProp,
@@ -356,6 +361,11 @@ export function CardPropiedad({
           propiedadId={propiedad.id}
           isOpen={showModalDocumentoImg}
           onClose={() => setShowModalDocumentoImg(false)}
+          onEliminar={
+            onDocumento
+              ? (docId) => onEliminarDocumento?.(propiedad.id, docId)
+              : undefined
+          }
         />
       )}
     </section>

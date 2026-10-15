@@ -40,6 +40,7 @@ export default function UserView() {
     handleSearchResult,
     handleSearchClear,
     handleDocumento,
+    handleEliminarDocumento,
     handleDestacar,
   } = usePropiedades((id) => setProbabilidadId(id));
 
@@ -180,6 +181,7 @@ export default function UserView() {
                     key={propiedad.id}
                     propiedad={propiedad}
                     onDocumento={handleDocumento}
+                    onEliminarDocumento={handleEliminarDocumento}
                     onEdit={openEdit}
                     onDelete={handleDeleteProperty}
                     onProbabilidad={setProbabilidadId}
