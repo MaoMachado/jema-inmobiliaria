@@ -418,6 +418,10 @@ export class PropiedadesService {
             documentoVerificado: true,
           },
         },
+
+        documentos: {
+          select: { id: true, tipo: true, verificado: true },
+        },
       },
     });
   }

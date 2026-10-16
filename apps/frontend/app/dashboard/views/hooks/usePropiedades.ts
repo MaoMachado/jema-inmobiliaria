@@ -188,6 +188,28 @@ export function usePropiedades(onCreated?: (id: string) => void) {
     }
   };
 
+  const handleEliminarDocumento = async (
+    propiedadId: string,
+    docId: string,
+  ) => {
+    setLoading(true);
+    setError("");
+
+    try {
+      await api.delete(`/propiedades/${propiedadId}/documentos/${docId}`);
+      showTempMessage("Documento eliminado correctamente");
+      await loadInitial();
+    } catch (error) {
+      const fallback = "Error al eliminar el documento";
+      console.error(fallback, error);
+      setError(getErrorMessage(error, fallback));
+      // El modal necesita saber que falló para no quitar el documento de la lista.
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleDestacar = async (id: string, nuevoEstado: boolean) => {
     setLoading(true);
     setError("");
@@ -260,6 +282,7 @@ export function usePropiedades(onCreated?: (id: string) => void) {
     handleSearchResult,
     handleSearchClear,
     handleDocumento,
+    handleEliminarDocumento,
     handleDestacar,
   };
 }

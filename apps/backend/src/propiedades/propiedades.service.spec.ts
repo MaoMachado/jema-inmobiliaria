@@ -420,6 +420,29 @@ describe('PropiedadesService', () => {
     });
   });
 
+  describe('findMisPropiedades', () => {
+    it('debe incluir los documentos para que la card los muestre', async () => {
+      prisma.propiedad.findMany.mockResolvedValue([mockPropiedad]);
+
+      await service.findMisPropiedades('usr-1');
+
+      expect(prisma.propiedad.findMany).toHaveBeenCalledWith({
+        where: { publicadoPorId: 'usr-1' },
+        include: {
+          publicadoPor: {
+            select: {
+              nombres: true,
+              apellidos: true,
+              celularVerificado: true,
+              documentoVerificado: true,
+            },
+          },
+          documentos: { select: { id: true, tipo: true, verificado: true } },
+        },
+      });
+    });
+  });
+
   describe('Estados y Destacadas', () => {
     it('aprobar: debe cambiar estado a APROBADA', async () => {
       prisma.propiedad.findUnique.mockResolvedValue(mockPropiedad);
