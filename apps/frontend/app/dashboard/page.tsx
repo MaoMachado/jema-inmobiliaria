@@ -2,14 +2,15 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Usuario } from "../lib/types";
 import Link from "next/link";
 import api from "../lib/api";
+import { type Sesion } from "../hooks/useSession";
 import AdminView from "./views/AdminView";
 import UserView from "./views/UserView";
+import UserMenu from "./UserMenu";
 
 export default function Dashboard() {
-  const [user, setUser] = useState<Usuario | null>(null);
+  const [user, setUser] = useState<Sesion | null>(null);
   const [error, setError] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
 
@@ -58,38 +59,12 @@ export default function Dashboard() {
 
           <div className="flex items-center gap-3">
             {user && (
-              <div className="flex items-center gap-3 bg-gray-900/80 border border-gray-800 px-3 py-1.5 rounded-full">
-                <div className="w-7 h-7 rounded-full bg-linear-to-tr from-sky-600 to-blue-500 flex items-center justify-center text-xs font-bold text-white shadow">
-                  {user.nombres
-                    ? user.nombres.charAt(0).toUpperCase()
-                    : user.email.charAt(0).toUpperCase()}
-                </div>
-                <div className="hidden md:flex flex-col text-left">
-                  <span className="text-xs font-medium text-gray-200 leading-tight">
-                    {user.nombres
-                      ? `${user.nombres} ${user.apellidos}`
-                      : user.email}
-                  </span>
-                  <span className="text-[10px] text-sky-400 font-semibold uppercase">
-                    {user.role}
-                  </span>
-                </div>
-              </div>
+              <UserMenu
+                email={user.email}
+                role={user.role}
+                onLogout={handleLogout}
+              />
             )}
-
-            <Link
-              href="/dashboard/perfil"
-              className="text-xs font-medium text-gray-300 hover:text-white bg-gray-900 hover:bg-gray-800 border border-gray-700/80 px-3 py-2 rounded-lg transition"
-            >
-              Mi Perfil
-            </Link>
-
-            <button
-              onClick={handleLogout}
-              className="text-xs font-medium text-red-400 hover:text-red-300 bg-red-950/30 hover:bg-red-950/60 border border-red-800/40 px-3 py-2 rounded-lg transition cursor-pointer"
-            >
-              Cerrar Sesión
-            </button>
           </div>
         </div>
       </header>

@@ -20,7 +20,10 @@ export type IconName =
   | "star"
   | "check"
   | "clock"
-  | "upload";
+  | "upload"
+  | "user"
+  | "logout"
+  | "chevronDown";
 
 /** Iconos de trazo (24x24, currentColor). Reemplazan los emojis de la UI. */
 const ICONS: Record<IconName, string> = {
@@ -43,6 +46,9 @@ const ICONS: Record<IconName, string> = {
   clock: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18ZM12 7v5l4 2",
   upload:
     "M12 16.5V9.75m0 0 3 3m-3-3-3 3M6.75 19.5a4.5 4.5 0 0 1-.41-8.98 5.25 5.25 0 0 1 10.32-1.98 3.75 3.75 0 0 1 .99 7.4",
+  user: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM4.5 20a7.5 7.5 0 0 1 15 0",
+  logout: "M15 12H4M8 8l-4 4 4 4M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4",
+  chevronDown: "M5 9l7 7 7-7",
 };
 
 export default function Icon({ name, className = "w-4 h-4" }: IconProps) {
