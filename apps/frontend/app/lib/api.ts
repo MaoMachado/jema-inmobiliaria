@@ -10,6 +10,13 @@ const api = axios.create({
 
 let refrescando: Promise<void> | null = null;
 
+// Marca de sesión en localStorage: evita lanzar la sonda /auth/me en visitas
+// anónimas (las cookies son httpOnly, el JS no puede leerlas directamente).
+export const FLAG_SESION = "jema_sesion";
+
+export const hayFlagSesion = (): boolean =>
+  typeof window !== "undefined" && localStorage.getItem(FLAG_SESION) === "1";
+
 const refrescar = () => {
   if (!refrescando) {
     refrescando = api
@@ -31,7 +38,19 @@ api.interceptors.request.use((config) => {
 });
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    const url = response.config?.url ?? "";
+
+    if (typeof window !== "undefined") {
+      if (url === "/auth/logout") {
+        localStorage.removeItem(FLAG_SESION);
+      } else if (/^\/auth\/(login|register|refresh)$/.test(url)) {
+        localStorage.setItem(FLAG_SESION, "1");
+      }
+    }
+
+    return response;
+  },
 
   async (error: AxiosError) => {
     const config = error.config as
@@ -56,9 +75,12 @@ api.interceptors.response.use(
         return api.request(config);
       } catch {
         // /auth/me es la sonda de sesión: 401 aquí = "sin sesión", no "sesión caída".
-        // No forzamos navegación; los endpoints protegidos sí mandan a /login.
-        if (typeof window !== "undefined" && !esSonda) {
-          window.location.assign("/login");
+        // El refresh también falló, así que no hay sesión real: el flag deja de valer.
+        if (typeof window !== "undefined") {
+          localStorage.removeItem(FLAG_SESION);
+          if (!esSonda) {
+            window.location.assign("/login");
+          }
         }
       }
     }
