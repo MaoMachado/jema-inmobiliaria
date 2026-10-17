@@ -57,7 +57,6 @@ export default function UserView() {
     (p) => p.destacada && p.estado === "APROBADA",
   ).length;
 
-  // Límites del plan: propiedades publicables y fotos por publicación.
   const limitePropiedades =
     planInfo?.beneficios.propiedades ?? planInfo?.propiedadesLimite ?? 5;
   const propiedadesRestantes = Math.max(

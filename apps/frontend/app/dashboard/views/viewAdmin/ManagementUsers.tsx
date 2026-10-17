@@ -10,6 +10,8 @@ export default function ManagementUsers() {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
 
+  const [verificandoId, setVerificandoId] = useState<string | null>(null);
+
   const loadUsers = async () => {
     setLoading(true);
     setError("");
@@ -17,7 +19,7 @@ export default function ManagementUsers() {
     try {
       const res = await api.get("/usuarios");
       setUsers(res.data);
-    } catch (error) {
+    } catch {
       setError("Error al cargar los usuarios");
     } finally {
       setLoading(false);
@@ -25,6 +27,8 @@ export default function ManagementUsers() {
   };
 
   const handleVerificar = async (docId: string, current: boolean) => {
+    setVerificandoId(docId);
+
     try {
       await api.patch(`/propiedades/documentos/${docId}/verificar`, {
         verificado: !current,
@@ -41,27 +45,55 @@ export default function ManagementUsers() {
           })),
         })),
       );
-    } catch (error) {
-      console.log(error);
+    } catch {
+      setError("No se pudo actualizar la verificación del documento");
+    } finally {
+      setVerificandoId(null);
     }
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadUsers();
   }, []);
 
+  const pendientes = users.reduce(
+    (acc, u) =>
+      acc +
+      (u.propiedades?.reduce(
+        (a, p) => a + p.documentos.filter((d) => !d.verificado).length,
+        0,
+      ) ?? 0),
+    0,
+  );
+
   return (
     <article className="space-y-6">
-      <header className="flex justify-between items-center">
+      <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
         <div>
           <h2 className="text-3xl font-bold">Gestión De Usuarios</h2>
           <p className="text-xs text-gray-400">
             Audita Perfiles, Roles, Documentación Legal Asociada
           </p>
         </div>
-        <span className="text-xs text-gray-400 bg-gray-900 border border-gray-800 px-3 py-1 rounded-full font-semibold">
-          Total: {users.length}
-        </span>
+
+        <div className="flex gap-2">
+          <span className="text-xs text-gray-400 bg-gray-900 border border-gray-800 px-3 py-1.5 rounded-full font-semibold">
+            {users.length} Usuarios
+          </span>
+
+          <span
+            className={`text-xs px-3 py-1.5 rounded-full font-semibold border ${
+              pendientes > 0
+                ? "text-amber-300 bg-amber-950/60 border-amber-800/50"
+                : "text-emerald-300 bg-emerald-950/60 border-emerald-800/50"
+            }`}
+          >
+            {pendientes > 0
+              ? `${pendientes} documentos por verificar`
+              : "Documentación al día"}
+          </span>
+        </div>
       </header>
 
       {loading ? (
@@ -86,8 +118,9 @@ export default function ManagementUsers() {
               <div>
                 <header className="flex items-center gap-3 mb-4">
                   <img
-                    src={user?.foto ?? "https://placehold.co/100x100?text=👤"}
-                    alt="Foto de perfil"
+                    src={user?.foto ?? "https://placehold.co/100x100?text=U"}
+                    alt={`Foto de ${user.nombres} ${user.apellidos}`}
+                    loading="lazy"
                     className="w-12 h-12 rounded-full object-cover border border-gray-700"
                   />
 
@@ -127,6 +160,7 @@ export default function ManagementUsers() {
                     <PropiedadesTabs
                       propiedades={user.propiedades}
                       onVerificar={handleVerificar}
+                      verificandoId={verificandoId}
                     />
                   ) : (
                     <p className="text-xs text-gray-500 italic">
@@ -141,7 +175,10 @@ export default function ManagementUsers() {
       )}
 
       {error && (
-        <p className="text-red-400 bg-red-950/40 border border-red-800/60 p-3 rounded-xl text-center text-sm">
+        <p
+          role="alert"
+          className="text-red-400 bg-red-950/40 border border-red-800/60 p-3 rounded-xl text-center text-sm"
+        >
           {error}
         </p>
       )}

@@ -8,8 +8,16 @@ import ManagementFrauds from "./viewAdmin/ManagementFrauds";
 import ManagementReports from "./viewAdmin/ManagementReports";
 import PublicationRequest from "./viewAdmin/PublicationRequest";
 import ChatIA from "@/app/components/ChatIA";
+import Icon, { IconName } from "@/app/components/Icons";
 
 type View = "users" | "payments" | "frauds" | "reports";
+
+const NAV_ITEMS: { id: View; label: string; icon: IconName }[] = [
+  { id: "users", label: "Usuarios", icon: "building" },
+  { id: "payments", label: "Pagos y Planes", icon: "star" },
+  { id: "frauds", label: "Reportes de Fraude", icon: "alert" },
+  { id: "reports", label: "Métricas y Análisis", icon: "chart" },
+];
 
 export default function AdminView() {
   const [view, setView] = useState<View>("users");
@@ -40,28 +48,22 @@ export default function AdminView() {
     }
   }, [refresh]);
 
-  const navItems = [
-    { id: "users" as const, label: "Usuarios", icon: "👥" },
-    { id: "payments" as const, label: "Pagos y Planes", icon: "💳" },
-    { id: "frauds" as const, label: "Reportes de Fraude", icon: "🛡️" },
-    { id: "reports" as const, label: "Métricas y Análisis", icon: "📊" },
-  ];
-
   return (
     <article className="space-y-6">
       <header className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-gray-900/60 border border-gray-800/80 p-4 rounded-2xl backdrop-blur-sm">
         <nav className="flex flex-wrap gap-2">
-          {navItems.map((item) => (
+          {NAV_ITEMS.map((item) => (
             <button
               key={item.id}
               onClick={() => setView(item.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition cursor-pointer ${
+              aria-current={view === item.id ? "page" : undefined}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition cursor-pointer focus-visible:ring-2 focus-visible:ring-sky-500 ${
                 view === item.id
                   ? "bg-sky-600 text-white shadow-lg shadow-sky-600/30"
                   : "bg-gray-800/60 hover:bg-gray-800 text-gray-300 hover:text-white border border-gray-700/50"
               }`}
             >
-              <span>{item.icon}</span>
+              <Icon name={item.icon} className="w-4 h-4" />
               <span>{item.label}</span>
             </button>
           ))}
@@ -75,7 +77,7 @@ export default function AdminView() {
               : "bg-gray-800/60 text-gray-400 border-gray-700/50 hover:bg-gray-800"
           }`}
         >
-          <span>📬</span>
+          <Icon name="clock" className="w-4 h-4 shrink-0" />
           <span>
             {pendientes.length === 0
               ? "Sin solicitudes pendientes"
