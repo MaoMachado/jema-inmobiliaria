@@ -10,9 +10,7 @@ const api = axios.create({
 
 let refrescando: Promise<void> | null = null;
 
-// Marca de sesión en localStorage: evita lanzar la sonda /auth/me en visitas
-// anónimas (las cookies son httpOnly, el JS no puede leerlas directamente).
-export const FLAG_SESION = "jema_sesion";
+const FLAG_SESION = "jema_sesion";
 
 export const hayFlagSesion = (): boolean =>
   typeof window !== "undefined" && localStorage.getItem(FLAG_SESION) === "1";
@@ -44,7 +42,7 @@ api.interceptors.response.use(
     if (typeof window !== "undefined") {
       if (url === "/auth/logout") {
         localStorage.removeItem(FLAG_SESION);
-      } else if (/^\/auth\/(login|register|refresh)$/.test(url)) {
+      } else if (/^\/auth\/(login|register|refresh|me)$/.test(url)) {
         localStorage.setItem(FLAG_SESION, "1");
       }
     }
@@ -74,8 +72,6 @@ api.interceptors.response.use(
         await refrescar();
         return api.request(config);
       } catch {
-        // /auth/me es la sonda de sesión: 401 aquí = "sin sesión", no "sesión caída".
-        // El refresh también falló, así que no hay sesión real: el flag deja de valer.
         if (typeof window !== "undefined") {
           localStorage.removeItem(FLAG_SESION);
           if (!esSonda) {

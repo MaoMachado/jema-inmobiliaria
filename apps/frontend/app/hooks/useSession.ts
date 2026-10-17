@@ -9,15 +9,17 @@ export interface Sesion {
   role: string;
 }
 
-// Hero y HeaderAuth montan useSession a la vez: comparten una sola sonda.
 let sondaSesion: Promise<Sesion | null> | null = null;
+
+// Marca por pestaña (sessionStorage): si la sonda ya falló aquí, no insistas
+// en cada navegación — sin flag se sondea una sola vez (migra sesiones válidas).
+const SONDA_FALLIDA = "jema_sonda_no";
 
 export function useSession(): Sesion | null | undefined {
   const [sesion, setSesion] = useState<Sesion | null | undefined>(undefined);
 
   useEffect(() => {
-    // Sin flag de login probable no hay sesión: ni un request al backend.
-    if (!hayFlagSesion()) {
+    if (!hayFlagSesion() && sessionStorage.getItem(SONDA_FALLIDA) === "1") {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setSesion(null);
       return;
@@ -27,7 +29,11 @@ export function useSession(): Sesion | null | undefined {
       sondaSesion = api
         .get<Sesion>("/auth/me")
         .then((res) => res.data)
-        .catch(() => null);
+        .catch(() => {
+          sessionStorage.setItem(SONDA_FALLIDA, "1");
+          return null;
+        });
+
       sondaSesion.finally(() => {
         sondaSesion = null;
       });
