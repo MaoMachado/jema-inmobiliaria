@@ -416,6 +416,48 @@ describe('PropiedadesService', () => {
       );
     });
 
+    it('debe firmar y auditar un solo documento al abrirlo', async () => {
+      prisma.documentoPropiedad.findUnique.mockResolvedValue({
+        id: 'doc-1',
+        url: 'escritura.pdf',
+        propiedad: { publicadoPorId: 'usr-2' },
+      });
+
+      const result = await service.abrirDocumento('doc-1', {
+        id: 'adm-1',
+        role: 'ADMIN',
+      });
+
+      expect(result).toBe('https://signed/escritura.pdf');
+      expect(auditoria.registrarAccesos).toHaveBeenCalledWith(
+        [
+          {
+            accion: 'VER',
+            recursoTipo: 'PROPIEDAD_DOC',
+            recursoId: 'doc-1',
+            documento: 'escritura.pdf',
+            usuarioId: 'adm-1',
+          },
+        ],
+        {},
+      );
+    });
+
+    it('no firma ni audita si el usuario no es dueño ni admin', async () => {
+      prisma.documentoPropiedad.findUnique.mockResolvedValue({
+        id: 'doc-1',
+        url: 'escritura.pdf',
+        propiedad: { publicadoPorId: 'usr-2' },
+      });
+
+      await expect(
+        service.abrirDocumento('doc-1', { id: 'usr-1', role: 'USER' }),
+      ).rejects.toThrow(ForbiddenException);
+
+      expect(storage.getUrlDocumentoPropiedad).not.toHaveBeenCalled();
+      expect(auditoria.registrarAccesos).not.toHaveBeenCalled();
+    });
+
     it('debe eliminar un documento de propiedad', async () => {
       prisma.documentoPropiedad.findUnique.mockResolvedValue({
         id: 'doc-1',

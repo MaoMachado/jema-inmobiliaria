@@ -99,7 +99,6 @@ describe('UsuariosService', () => {
                   id: 'doc-1',
                   tipo: 'ESCRITURA',
                   verificado: true,
-                  url: 'escritura.pdf',
                 },
               ],
             },
@@ -108,27 +107,17 @@ describe('UsuariosService', () => {
       ];
       prisma.usuario.findMany.mockResolvedValue(mockUsuarios);
 
-      const result = await service.getAll('adm-1');
+      const result = await service.getAll();
 
       expect(prisma.usuario.findMany).toHaveBeenCalled();
-      expect(storage.getUrlDocumentoPropiedad).toHaveBeenCalledWith(
-        'escritura.pdf',
-      );
-      expect(result[0].propiedades[0].documentos[0].url).toBe(
-        'https://signed/escritura.pdf',
-      );
-      expect(auditoria.registrarAccesos).toHaveBeenCalledWith(
-        [
-          {
-            accion: 'VER',
-            recursoTipo: 'PROPIEDAD_DOC',
-            recursoId: 'doc-1',
-            documento: 'escritura.pdf',
-            usuarioId: 'adm-1',
-          },
-        ],
-        {},
-      );
+      // El listado no firma nada ni audita: eso ocurre al abrir cada documento.
+      expect(storage.getUrlDocumentoPropiedad).not.toHaveBeenCalled();
+      expect(auditoria.registrarAccesos).not.toHaveBeenCalled();
+      expect(result[0].propiedades[0].documentos[0]).toEqual({
+        id: 'doc-1',
+        tipo: 'ESCRITURA',
+        verificado: true,
+      });
     });
   });
 

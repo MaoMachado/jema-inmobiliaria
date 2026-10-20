@@ -19,7 +19,7 @@ export interface Usuario {
       id: string;
       tipo: string;
       verificado: boolean;
-      url: string;
+      url?: string;
     }[];
   }[];
 }

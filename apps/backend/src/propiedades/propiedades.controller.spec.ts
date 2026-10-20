@@ -29,6 +29,7 @@ describe('PropiedadesController', () => {
     remove: jest.Mock;
     subirDocumentos: jest.Mock;
     getDocumentos: jest.Mock;
+    abrirDocumento: jest.Mock;
     eliminarDocumento: jest.Mock;
     verificarDocumentoPropiedad: jest.Mock;
   };
@@ -57,6 +58,7 @@ describe('PropiedadesController', () => {
       remove: jest.fn().mockResolvedValue({ message: 'Propiedad eliminada' }),
       subirDocumentos: jest.fn().mockResolvedValue([{ id: 'doc-1' }]),
       getDocumentos: jest.fn().mockResolvedValue([]),
+      abrirDocumento: jest.fn().mockResolvedValue('https://signed/doc.pdf'),
       eliminarDocumento: jest
         .fn()
         .mockResolvedValue({ message: 'Documento eliminado' }),
@@ -257,6 +259,20 @@ describe('PropiedadesController', () => {
         mockUserReq.user,
         { ip: '127.0.0.1', userAgent: 'jest' },
       );
+    });
+
+    it('debe abrir un documento firmando y auditando solo ese acceso', async () => {
+      const result = await controller.abrirDocumento(
+        'doc-1',
+        mockUserReq as any,
+      );
+
+      expect(service.abrirDocumento).toHaveBeenCalledWith(
+        'doc-1',
+        mockUserReq.user,
+        { ip: '127.0.0.1', userAgent: 'jest' },
+      );
+      expect(result).toEqual({ url: 'https://signed/doc.pdf' });
     });
 
     it('debe eliminar documento pasando docId correctamente', async () => {

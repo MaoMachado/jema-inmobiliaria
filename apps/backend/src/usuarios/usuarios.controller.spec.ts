@@ -68,11 +68,8 @@ describe('UsuariosController', () => {
 
   describe('findAll', () => {
     it('debe llamar a usuariosService.getAll', async () => {
-      await controller.findAll(mockUserReq as any);
-      expect(usuariosService.getAll).toHaveBeenCalledWith('usr-123', {
-        ip: '127.0.0.1',
-        userAgent: 'jest',
-      });
+      await controller.findAll();
+      expect(usuariosService.getAll).toHaveBeenCalled();
     });
   });
 

@@ -21,6 +21,12 @@ import { VerificarDto } from './dto/verificar.dto';
 import { ActualizarPerfilDto } from './dto/actualizar-perfil.dto';
 import { CambiarPasswordDto } from './dto/cambiar-password.dto';
 import { contextoDe } from '../auditoria/contexto-acceso';
+import {
+  archivosValidos,
+  MAX_BYTES,
+  TIPOS_DOCUMENTO,
+  TIPOS_IMAGEN,
+} from '../common/pipes/archivos';
 
 @Controller('usuarios')
 export class UsuariosController {
@@ -29,8 +35,8 @@ export class UsuariosController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Get()
-  findAll(@Req() req: RequestWithUser) {
-    return this.usuariosService.getAll(req.user.id, contextoDe(req));
+  findAll() {
+    return this.usuariosService.getAll();
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -61,9 +67,11 @@ export class UsuariosController {
 
   @UseGuards(JwtAuthGuard)
   @Post('documento')
-  @UseInterceptors(FileInterceptor('documento'))
+  @UseInterceptors(
+    FileInterceptor('documento', { limits: { fileSize: MAX_BYTES } }),
+  )
   subirDocumento(
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile(archivosValidos(TIPOS_DOCUMENTO)) file: Express.Multer.File,
     @Req() req: RequestWithUser,
   ) {
     if (!file) {
@@ -105,10 +113,10 @@ export class UsuariosController {
 
   @UseGuards(JwtAuthGuard)
   @Post('foto')
-  @UseInterceptors(FileInterceptor('foto'))
+  @UseInterceptors(FileInterceptor('foto', { limits: { fileSize: MAX_BYTES } }))
   async subirFoto(
     @Req() req: RequestWithUser,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile(archivosValidos(TIPOS_IMAGEN)) file: Express.Multer.File,
   ) {
     if (!file) {
       throw new BadRequestException('Debes adjuntar una imagen de perfil');

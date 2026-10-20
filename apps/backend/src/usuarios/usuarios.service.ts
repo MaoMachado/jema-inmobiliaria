@@ -8,10 +8,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
 import { ActualizarPerfilDto } from './dto/actualizar-perfil.dto';
 import { CambiarPasswordDto } from './dto/cambiar-password.dto';
-import {
-  AuditoriaService,
-  RegistroAcceso,
-} from '../auditoria/auditoria.service';
+import { AuditoriaService } from '../auditoria/auditoria.service';
 import { ContextoAcceso } from '../auditoria/contexto-acceso';
 import { AccionDocumento, RecursoDocumento } from '../generated/prisma';
 
@@ -23,8 +20,10 @@ export class UsuariosService {
     private readonly auditoria: AuditoriaService,
   ) {}
 
-  async getAll(adminId: string, contexto: ContextoAcceso = {}) {
-    const usuarios = await this.prisma.usuario.findMany({
+  // Sin URLs firmadas ni rutas de storage: el admin solo recibe metadatos.
+  // Cada documento se firma y se audita al abrirlo (GET /propiedades/documentos/:docId/url).
+  async getAll() {
+    return this.prisma.usuario.findMany({
       select: {
         id: true,
         nombres: true,
@@ -33,7 +32,6 @@ export class UsuariosService {
         celularVerificado: true,
         email: true,
         foto: true,
-        documentoUrl: true,
         documentoVerificado: true,
         role: true,
         createdAt: true,
@@ -42,39 +40,11 @@ export class UsuariosService {
           select: {
             id: true,
             titulo: true,
-            documentos: {
-              select: { id: true, tipo: true, verificado: true, url: true },
-            },
+            documentos: { select: { id: true, tipo: true, verificado: true } },
           },
         },
       },
     });
-
-    const accesos: RegistroAcceso[] = [];
-
-    for (const user of usuarios) {
-      for (const prop of user.propiedades) {
-        prop.documentos = await Promise.all(
-          prop.documentos.map(async (doc) => {
-            accesos.push({
-              accion: AccionDocumento.VER,
-              recursoTipo: RecursoDocumento.PROPIEDAD_DOC,
-              recursoId: doc.id,
-              documento: doc.url,
-              usuarioId: adminId,
-            });
-
-            return {
-              ...doc,
-              url: await this.storage.getUrlDocumentoPropiedad(doc.url),
-            };
-          }),
-        );
-      }
-    }
-
-    await this.auditoria.registrarAccesos(accesos, contexto);
-    return usuarios;
   }
 
   async subirDocumento(userId: string, file: Express.Multer.File) {

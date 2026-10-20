@@ -394,6 +394,43 @@ export class PropiedadesService {
     );
   }
 
+  // Firma un solo documento y audita exactamente ese acceso.
+  async abrirDocumento(
+    docId: string,
+    usuario: { id: string; role: string },
+    contexto: ContextoAcceso = {},
+  ) {
+    const doc = await this.prisma.documentoPropiedad.findUnique({
+      where: { id: docId },
+      include: { propiedad: { select: { publicadoPorId: true } } },
+    });
+
+    if (!doc) throw new NotFoundException('Documento no encontrado');
+
+    const esDueno = doc.propiedad.publicadoPorId === usuario.id;
+    const esAdmin = usuario.role === 'ADMIN';
+
+    if (!(esDueno || esAdmin)) {
+      throw new ForbiddenException('No tienes permiso para ver este documento');
+    }
+
+    //! Se audita la ruta, nunca la URL firmada
+    await this.auditoria.registrarAccesos(
+      [
+        {
+          accion: AccionDocumento.VER,
+          recursoTipo: RecursoDocumento.PROPIEDAD_DOC,
+          recursoId: doc.id,
+          documento: doc.url,
+          usuarioId: usuario.id,
+        },
+      ],
+      contexto,
+    );
+
+    return this.storage.getUrlDocumentoPropiedad(doc.url);
+  }
+
   async eliminarDocumento(docId: string, userId: string) {
     const doc = await this.prisma.documentoPropiedad.findUnique({
       where: { id: docId },

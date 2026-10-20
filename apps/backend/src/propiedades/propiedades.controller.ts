@@ -29,6 +29,12 @@ import {
 import type { RequestWithUser } from '../common/types/request-with-user';
 import { VerificarDto } from '../usuarios/dto/verificar.dto';
 import { contextoDe } from '../auditoria/contexto-acceso';
+import {
+  archivosValidos,
+  MAX_BYTES,
+  TIPOS_DOCUMENTO,
+  TIPOS_IMAGEN,
+} from '../common/pipes/archivos';
 
 @Controller('propiedades')
 export class PropiedadesController {
@@ -36,10 +42,13 @@ export class PropiedadesController {
 
   @UseGuards(JwtAuthGuard)
   @Post()
-  @UseInterceptors(FilesInterceptor('fotografias', 20))
+  @UseInterceptors(
+    FilesInterceptor('fotografias', 20, { limits: { fileSize: MAX_BYTES } }),
+  )
   create(
     @Body() body: CreatePropiedadDto,
-    @UploadedFiles() files: Express.Multer.File[],
+    @UploadedFiles(archivosValidos(TIPOS_IMAGEN))
+    files: Express.Multer.File[],
     @Req() req: RequestWithUser,
   ) {
     return this.propiedadesService.create(body, files ?? [], req.user.id);
@@ -136,10 +145,13 @@ export class PropiedadesController {
   // Documentos
   @UseGuards(JwtAuthGuard)
   @Post(':id/documentos')
-  @UseInterceptors(FilesInterceptor('documentos', 10))
+  @UseInterceptors(
+    FilesInterceptor('documentos', 10, { limits: { fileSize: MAX_BYTES } }),
+  )
   subirDocumentos(
     @Param('id') id: string,
-    @UploadedFiles() files: Express.Multer.File[],
+    @UploadedFiles(archivosValidos(TIPOS_DOCUMENTO))
+    files: Express.Multer.File[],
     @Body() body: SubirDocumentoDto,
     @Req() req: RequestWithUser,
   ) {
@@ -159,6 +171,20 @@ export class PropiedadesController {
   @Get(':id/documentos')
   getDocumentos(@Param('id') id: string, @Req() req: RequestWithUser) {
     return this.propiedadesService.getDocumentos(id, req.user, contextoDe(req));
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('documentos/:docId/url')
+  async abrirDocumento(
+    @Param('docId') docId: string,
+    @Req() req: RequestWithUser,
+  ) {
+    const url = await this.propiedadesService.abrirDocumento(
+      docId,
+      req.user,
+      contextoDe(req),
+    );
+    return { url };
   }
 
   @UseGuards(JwtAuthGuard)

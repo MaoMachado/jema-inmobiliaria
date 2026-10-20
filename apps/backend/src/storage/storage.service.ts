@@ -122,7 +122,7 @@ export class StorageService {
   async crearUrlFirmada(
     bucket: string,
     path: string,
-    expiraEn = 900,
+    expiraEn = 300,
   ): Promise<string> {
     const cleanPath = this.extraerPath(path);
 

@@ -17,6 +17,11 @@ import { ChangeEstadoPagoDto, SolicitudPagoDto } from './dto/pagos.dto';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
+import {
+  archivosValidos,
+  MAX_BYTES,
+  TIPOS_DOCUMENTO,
+} from '../common/pipes/archivos';
 
 @Controller('pagos')
 export class PagosController {
@@ -30,10 +35,12 @@ export class PagosController {
 
   @UseGuards(JwtAuthGuard)
   @Post('comprobante')
-  @UseInterceptors(FileInterceptor('comprobante'))
+  @UseInterceptors(
+    FileInterceptor('comprobante', { limits: { fileSize: MAX_BYTES } }),
+  )
   subirComprobante(
     @Req() req: RequestWithUser,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile(archivosValidos(TIPOS_DOCUMENTO)) file: Express.Multer.File,
   ) {
     return this.pagosService.subirComprobante(req.user.id, file);
   }
