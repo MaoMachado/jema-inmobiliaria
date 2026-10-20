@@ -1,5 +1,10 @@
-import { createCipheriv, createDecipheriv, randomBytes } from 'crypto';
-import { Injectable } from '@nestjs/common';
+import {
+  createCipheriv,
+  createDecipheriv,
+  createHash,
+  randomBytes,
+} from 'crypto';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { authenticator } from 'otplib';
 import QRCode from 'qrcode';
 
@@ -64,5 +69,30 @@ export class TotpService {
     } catch {
       return false;
     }
+  }
+
+  // Códigos de recuperación: se muestran una vez y solo se guarda su hash.
+  generarRecuperacion() {
+    const codigos = Array.from({ length: 10 }, () =>
+      randomBytes(5).toString('hex').toUpperCase().match(/.{5}/g)!.join('-'),
+    );
+
+    return { codigos, hashes: codigos.map((c) => this.hashRecuperacion(c)) };
+  }
+
+  hashRecuperacion(codigo: string): string {
+    const pepper = process.env.OTP_PEPPER;
+
+    if (!pepper) {
+      throw new InternalServerErrorException(
+        'Error de configuración del servidor',
+      );
+    }
+
+    const limpio = codigo.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+
+    return createHash('sha256')
+      .update(`${pepper}:recuperacion:${limpio}`)
+      .digest('hex');
   }
 }

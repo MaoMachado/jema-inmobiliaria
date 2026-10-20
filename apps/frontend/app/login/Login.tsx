@@ -7,11 +7,15 @@ interface FormLoginProps {
   loading: boolean;
   error: string;
   success: string;
+  pideCodigo: boolean;
+  usarRecuperacion: boolean;
+  onRecuperacion: () => void;
 
   handleSubmitLogin: (
     e: React.FormEvent,
     email: string,
     password: string,
+    codigo: string,
   ) => void;
 }
 
@@ -19,10 +23,14 @@ export function Login({
   loading,
   error,
   success,
+  pideCodigo,
+  usarRecuperacion,
+  onRecuperacion,
   handleSubmitLogin,
 }: FormLoginProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [codigo, setCodigo] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
   return (
@@ -69,7 +77,7 @@ export function Login({
         )}
 
         <form
-          onSubmit={(e) => handleSubmitLogin(e, email, password)}
+          onSubmit={(e) => handleSubmitLogin(e, email, password, codigo)}
           className="space-y-4"
         >
           <div className="space-y-1.5">
@@ -161,6 +169,40 @@ export function Login({
               </button>
             </div>
           </div>
+
+          {pideCodigo && (
+            <div className="space-y-1.5">
+              <label
+                htmlFor="codigo"
+                className="block text-xs font-semibold text-gray-300"
+              >
+                {usarRecuperacion
+                  ? "Código de recuperación"
+                  : "Código de 6 dígitos"}
+              </label>
+              <input
+                type="text"
+                id="codigo"
+                autoFocus
+                required
+                autoComplete={usarRecuperacion ? "off" : "one-time-code"}
+                placeholder={usarRecuperacion ? "XXXXX-XXXXX" : "123456"}
+                value={codigo}
+                onChange={(e) => setCodigo(e.target.value)}
+                disabled={loading}
+                className="w-full bg-gray-950 border border-gray-700 text-white placeholder-gray-500 rounded-xl px-3.5 py-2.5 text-xs tracking-widest focus:border-sky-500 focus:ring-1 focus:ring-sky-500/30 outline-none transition"
+              />
+              <button
+                type="button"
+                onClick={onRecuperacion}
+                className="text-[11px] text-sky-400 hover:text-sky-300 font-semibold transition cursor-pointer"
+              >
+                {usarRecuperacion
+                  ? "Usar el código de la app"
+                  : "Usar un código de recuperación"}
+              </button>
+            </div>
+          )}
 
           <button
             type="submit"

@@ -22,6 +22,8 @@ describe('AuthService', () => {
     descifrar: jest.Mock;
     crear: jest.Mock;
     valido: jest.Mock;
+    generarRecuperacion: jest.Mock;
+    hashRecuperacion: jest.Mock;
   };
   let prisma: {
     usuario: {
@@ -41,6 +43,9 @@ describe('AuthService', () => {
     foto: null,
     role: Role.USER,
     tokenVersion: 0,
+    totpActivado: false,
+    totpSecret: null,
+    codigosRecuperacion: [],
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -63,6 +68,11 @@ describe('AuthService', () => {
         .fn()
         .mockResolvedValue({ secreto: 'ABC', qr: 'data:image/png' }),
       valido: jest.fn().mockReturnValue(true),
+      generarRecuperacion: jest.fn().mockReturnValue({
+        codigos: ['ABCDE-12345'],
+        hashes: ['hash-codigo'],
+      }),
+      hashRecuperacion: jest.fn().mockReturnValue('hash-codigo'),
     };
 
     prisma = {
@@ -137,11 +147,18 @@ describe('AuthService', () => {
           foto: mockUser.foto,
           role: mockUser.role,
           tokenVersion: mockUser.tokenVersion,
+          totpActivado: mockUser.totpActivado,
           createdAt: mockUser.createdAt,
           updatedAt: mockUser.updatedAt,
         },
       });
       expect((result.user as any).password).toBeUndefined();
+      expect(JSON.parse(JSON.stringify(result.user))).not.toHaveProperty(
+        'totpSecret',
+      );
+      expect(JSON.parse(JSON.stringify(result.user))).not.toHaveProperty(
+        'codigosRecuperacion',
+      );
     });
 
     it('debe lanzar BadRequestException si falta algún campo obligatorio', async () => {
@@ -241,6 +258,7 @@ describe('AuthService', () => {
           foto: mockUser.foto,
           role: mockUser.role,
           tokenVersion: mockUser.tokenVersion,
+          totpActivado: mockUser.totpActivado,
           createdAt: mockUser.createdAt,
           updatedAt: mockUser.updatedAt,
         },
@@ -272,6 +290,92 @@ describe('AuthService', () => {
       await expect(
         service.login('juan@test.com', 'wrongpassword'),
       ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('debe pedir el código TOTP cuando está activo', async () => {
+      prisma.usuario.findUnique.mockResolvedValue({
+        ...mockUser,
+        totpActivado: true,
+        totpSecret: 'cifrado',
+      });
+      jest.spyOn(bcrypt, 'compare').mockResolvedValue(true);
+
+      await expect(
+        service.login('juan@test.com', 'password123'),
+      ).rejects.toThrow(/TOTP_REQUIRED/);
+      expect(tokens.emitir).not.toHaveBeenCalled();
+    });
+
+    it('debe iniciar sesión con contraseña y código válidos', async () => {
+      prisma.usuario.findUnique.mockResolvedValue({
+        ...mockUser,
+        totpActivado: true,
+        totpSecret: 'cifrado',
+      });
+      jest.spyOn(bcrypt, 'compare').mockResolvedValue(true);
+
+      await service.login('juan@test.com', 'password123', '123456');
+
+      expect(totp.valido).toHaveBeenCalledWith('cifrado', '123456');
+      expect(tokens.emitir).toHaveBeenCalledWith(mockUser.id);
+    });
+
+    it('debe bloquear el login tras 5 códigos incorrectos', async () => {
+      prisma.usuario.findUnique.mockResolvedValue({
+        ...mockUser,
+        totpActivado: true,
+        totpSecret: 'cifrado',
+      });
+      jest.spyOn(bcrypt, 'compare').mockResolvedValue(true);
+      totp.valido.mockReturnValue(false);
+
+      for (let i = 0; i < 5; i += 1) {
+        await expect(
+          service.login('juan@test.com', 'password123', '000000'),
+        ).rejects.toThrow(UnauthorizedException);
+      }
+
+      await expect(
+        service.login('juan@test.com', 'password123', '000000'),
+      ).rejects.toMatchObject({ status: 429 });
+    });
+
+    it('debe iniciar sesión con un código de recuperación y consumirlo', async () => {
+      prisma.usuario.findUnique.mockResolvedValue({
+        ...mockUser,
+        totpActivado: true,
+        totpSecret: 'cifrado',
+        codigosRecuperacion: ['hash-codigo', 'otro-hash'],
+      });
+      jest.spyOn(bcrypt, 'compare').mockResolvedValue(true);
+
+      await service.login(
+        'juan@test.com',
+        'password123',
+        undefined,
+        'ABCDE-12345',
+      );
+
+      expect(prisma.usuario.update).toHaveBeenCalledWith({
+        where: { id: mockUser.id },
+        data: { codigosRecuperacion: { set: ['otro-hash'] } },
+      });
+      expect(tokens.emitir).toHaveBeenCalledWith(mockUser.id);
+    });
+
+    it('debe rechazar un código de recuperación ya usado', async () => {
+      prisma.usuario.findUnique.mockResolvedValue({
+        ...mockUser,
+        totpActivado: true,
+        totpSecret: 'cifrado',
+        codigosRecuperacion: ['otro-hash'],
+      });
+      jest.spyOn(bcrypt, 'compare').mockResolvedValue(true);
+
+      await expect(
+        service.login('juan@test.com', 'password123', undefined, 'ABCDE-12345'),
+      ).rejects.toThrow(UnauthorizedException);
+      expect(tokens.emitir).not.toHaveBeenCalled();
     });
   });
 
@@ -377,6 +481,18 @@ describe('AuthService', () => {
       totpSecret: null,
     };
 
+    it('debe informar los códigos de recuperación restantes', async () => {
+      prisma.usuario.findUnique.mockResolvedValue({
+        ...admin,
+        codigosRecuperacion: ['a', 'b'],
+      });
+
+      await expect(service.estadoTotp(admin.id)).resolves.toEqual({
+        activado: false,
+        recuperacionRestantes: 2,
+      });
+    });
+
     it('debe crear un secreto, guardarlo cifrado y devolver el QR', async () => {
       prisma.usuario.findUnique.mockResolvedValue(admin);
 
@@ -408,12 +524,16 @@ describe('AuthService', () => {
         totpSecret: 'cifrado',
       });
 
-      await service.confirmarTotp(admin.id, '123456');
+      const result = await service.confirmarTotp(admin.id, '123456');
 
       expect(prisma.usuario.update).toHaveBeenCalledWith({
         where: { id: admin.id },
-        data: { totpActivado: true },
+        data: {
+          totpActivado: true,
+          codigosRecuperacion: { set: ['hash-codigo'] },
+        },
       });
+      expect(result.codigosRecuperacion).toEqual(['ABCDE-12345']);
     });
 
     it('no debe activar TOTP con un código inválido', async () => {
@@ -441,7 +561,11 @@ describe('AuthService', () => {
 
       expect(prisma.usuario.update).toHaveBeenCalledWith({
         where: { id: admin.id },
-        data: { totpSecret: null, totpActivado: false },
+        data: {
+          totpSecret: null,
+          totpActivado: false,
+          codigosRecuperacion: { set: [] },
+        },
       });
     });
 
@@ -455,6 +579,41 @@ describe('AuthService', () => {
 
       await expect(
         service.desactivarTotp(admin.id, 'incorrecta'),
+      ).rejects.toThrow(UnauthorizedException);
+      expect(prisma.usuario.update).not.toHaveBeenCalled();
+    });
+
+    it('debe regenerar los códigos de recuperación', async () => {
+      prisma.usuario.findUnique.mockResolvedValue({
+        ...admin,
+        totpActivado: true,
+        totpSecret: 'cifrado',
+      });
+      jest.spyOn(bcrypt, 'compare').mockResolvedValue(true);
+
+      const result = await service.regenerarRecuperacion(
+        admin.id,
+        'password123',
+        '123456',
+      );
+
+      expect(prisma.usuario.update).toHaveBeenCalledWith({
+        where: { id: admin.id },
+        data: { codigosRecuperacion: { set: ['hash-codigo'] } },
+      });
+      expect(result.codigosRecuperacion).toEqual(['ABCDE-12345']);
+    });
+
+    it('no debe regenerar los códigos con contraseña incorrecta', async () => {
+      prisma.usuario.findUnique.mockResolvedValue({
+        ...admin,
+        totpActivado: true,
+        totpSecret: 'cifrado',
+      });
+      jest.spyOn(bcrypt, 'compare').mockResolvedValue(false);
+
+      await expect(
+        service.regenerarRecuperacion(admin.id, 'incorrecta', '123456'),
       ).rejects.toThrow(UnauthorizedException);
       expect(prisma.usuario.update).not.toHaveBeenCalled();
     });

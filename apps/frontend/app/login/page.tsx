@@ -12,6 +12,8 @@ export default function LoginPage() {
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [pideCodigo, setPideCodigo] = useState(false);
+  const [usarRecuperacion, setUsarRecuperacion] = useState(false);
 
   const router = useRouter();
 
@@ -19,6 +21,7 @@ export default function LoginPage() {
     e: React.FormEvent,
     email: string,
     password: string,
+    codigo: string,
   ) => {
     e.preventDefault();
     setError("");
@@ -29,24 +32,41 @@ export default function LoginPage() {
       return;
     }
 
+    if (pideCodigo && !codigo) {
+      setError("Ingresa el código");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      await api.post("/auth/login", { email, password });
+      await api.post(
+        "/auth/login",
+        usarRecuperacion
+          ? { email, password, codigoRecuperacion: codigo }
+          : { email, password, ...(codigo && { codigo }) },
+      );
       setSuccess("Inicio de sesión exitoso");
 
       setTimeout(() => {
         router.push("/dashboard");
       }, 1000);
     } catch (error: unknown) {
-      if (isAxiosError(error)) {
-        setError(
-          error.response?.data?.message ??
-            "Credenciales inválidas. Verifica tu correo y contraseña.",
-        );
-      } else {
-        setError("Error al iniciar sesión. Inténtalo de nuevo.");
+      const mensaje = isAxiosError(error)
+        ? error.response?.data?.message
+        : undefined;
+
+      if (typeof mensaje === "string" && mensaje.startsWith("TOTP_REQUIRED")) {
+        setPideCodigo(true);
+        setError("Ingresa el código de tu app autenticadora");
+        return;
       }
+
+      setError(
+        typeof mensaje === "string"
+          ? mensaje
+          : "Credenciales inválidas. Verifica tu correo y contraseña.",
+      );
     } finally {
       setLoading(false);
     }
@@ -66,6 +86,12 @@ export default function LoginPage() {
           loading={loading}
           error={error}
           success={success}
+          pideCodigo={pideCodigo}
+          usarRecuperacion={usarRecuperacion}
+          onRecuperacion={() => {
+            setUsarRecuperacion((prev) => !prev);
+            setError("");
+          }}
           handleSubmitLogin={handleSubmitLogin}
         />
       </div>

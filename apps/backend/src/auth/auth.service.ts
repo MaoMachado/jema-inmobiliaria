@@ -5,6 +5,7 @@ import {
   HttpException,
   HttpStatus,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import bcrypt from 'bcryptjs';
@@ -57,9 +58,17 @@ export class AuthService {
     const accessToken = this.firmarAccess(usuario);
     const refreshToken = await this.tokens.emitir(usuario.id);
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password: _, ...userPublic } = usuario;
-    return { accessToken, refreshToken, user: userPublic };
+    return { accessToken, refreshToken, user: this.publico(usuario) };
+  }
+
+  // Los secretos del segundo factor nunca salen al cliente.
+  private publico<T extends object>(usuario: T) {
+    return {
+      ...usuario,
+      password: undefined,
+      totpSecret: undefined,
+      codigosRecuperacion: undefined,
+    };
   }
 
   async register(
@@ -105,7 +114,12 @@ export class AuthService {
     }
   }
 
-  async login(email: string, password: string) {
+  async login(
+    email: string,
+    password: string,
+    codigo?: string,
+    codigoRecuperacion?: string,
+  ) {
     if (!email || !password) {
       throw new BadRequestException('Email y contraseña son obligatorios');
     }
@@ -127,7 +141,43 @@ export class AuthService {
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
+    if (user.totpActivado) {
+      this.verificarBloqueo(user.id);
+
+      if (codigoRecuperacion) {
+        await this.consumirRecuperacion(user, codigoRecuperacion);
+      } else if (!codigo) {
+        throw new UnauthorizedException(
+          'TOTP_REQUIRED: ingresa el código de tu app autenticadora',
+        );
+      } else if (
+        !user.totpSecret ||
+        !this.totp.valido(user.totpSecret, codigo)
+      ) {
+        this.registrarFallo(user.id);
+      }
+
+      this.intentos.delete(user.id);
+    }
+
     return this.emitirSession(user);
+  }
+
+  private async consumirRecuperacion(
+    usuario: { id: string; codigosRecuperacion: string[] },
+    codigo: string,
+  ) {
+    const hash = this.totp.hashRecuperacion(codigo);
+    const restantes = usuario.codigosRecuperacion.filter((h) => h !== hash);
+
+    if (restantes.length === usuario.codigosRecuperacion.length) {
+      this.registrarFallo(usuario.id);
+    }
+
+    await this.prisma.usuario.update({
+      where: { id: usuario.id },
+      data: { codigosRecuperacion: { set: restantes } },
+    });
   }
 
   async refresh(refreshToken?: string) {
@@ -147,9 +197,11 @@ export class AuthService {
     }
 
     const accessToken = this.firmarAccess(usuario);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password: _, ...userPublic } = usuario;
-    return { accessToken, refreshToken: nuevoRefresh, user: userPublic };
+    return {
+      accessToken,
+      refreshToken: nuevoRefresh,
+      user: this.publico(usuario),
+    };
   }
 
   async logout(refreshToken?: string) {
@@ -159,14 +211,7 @@ export class AuthService {
   }
 
   async reautenticar(usuarioId: string, password: string, codigo?: string) {
-    const registro = this.intentos.get(usuarioId);
-
-    if (registro && registro.bloqueadoHasta > Date.now()) {
-      throw new HttpException(
-        'Demasiados intentos fallidos. Espera 15 minutos.',
-        HttpStatus.TOO_MANY_REQUESTS,
-      );
-    }
+    this.verificarBloqueo(usuarioId);
 
     const usuario = await this.prisma.usuario.findUnique({
       where: { id: usuarioId },
@@ -208,6 +253,17 @@ export class AuthService {
 
   // --- Segundo factor (TOTP) ---
 
+  private verificarBloqueo(usuarioId: string): void {
+    const registro = this.intentos.get(usuarioId);
+
+    if (registro && registro.bloqueadoHasta > Date.now()) {
+      throw new HttpException(
+        'Demasiados intentos fallidos. Espera 15 minutos.',
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+  }
+
   private registrarFallo(usuarioId: string): never {
     const fallos = (this.intentos.get(usuarioId)?.fallos ?? 0) + 1;
 
@@ -222,26 +278,27 @@ export class AuthService {
     throw new UnauthorizedException('Contraseña o código incorrectos');
   }
 
-  private async adminPorId(usuarioId: string) {
+  private async usuarioPorId(usuarioId: string) {
     const usuario = await this.prisma.usuario.findUnique({
       where: { id: usuarioId },
     });
 
-    if (!usuario || usuario.role !== 'ADMIN') {
-      throw new ForbiddenException('Solo un administrador puede usar TOTP');
-    }
+    if (!usuario) throw new NotFoundException('Usuario no encontrado');
 
     return usuario;
   }
 
   async estadoTotp(usuarioId: string) {
-    const usuario = await this.adminPorId(usuarioId);
+    const usuario = await this.usuarioPorId(usuarioId);
 
-    return { activado: usuario.totpActivado };
+    return {
+      activado: usuario.totpActivado,
+      recuperacionRestantes: usuario.codigosRecuperacion.length,
+    };
   }
 
   async iniciarTotp(usuarioId: string) {
-    const usuario = await this.adminPorId(usuarioId);
+    const usuario = await this.usuarioPorId(usuarioId);
 
     if (usuario.totpActivado) {
       throw new ConflictException(
@@ -260,7 +317,7 @@ export class AuthService {
   }
 
   async confirmarTotp(usuarioId: string, codigo: string) {
-    const usuario = await this.adminPorId(usuarioId);
+    const usuario = await this.usuarioPorId(usuarioId);
 
     if (!usuario.totpSecret) {
       throw new BadRequestException('Inicia la activación primero');
@@ -270,16 +327,47 @@ export class AuthService {
       throw new UnauthorizedException('Código incorrecto');
     }
 
+    const { codigos, hashes } = this.totp.generarRecuperacion();
+
     await this.prisma.usuario.update({
       where: { id: usuario.id },
-      data: { totpActivado: true },
+      data: { totpActivado: true, codigosRecuperacion: { set: hashes } },
     });
 
-    return { activado: true };
+    return { activado: true, codigosRecuperacion: codigos };
+  }
+
+  async regenerarRecuperacion(
+    usuarioId: string,
+    password: string,
+    codigo: string,
+  ) {
+    const usuario = await this.usuarioPorId(usuarioId);
+
+    if (!usuario.totpActivado || !usuario.totpSecret) {
+      throw new BadRequestException('TOTP no está activo');
+    }
+
+    if (!(await bcrypt.compare(password, usuario.password))) {
+      throw new UnauthorizedException('Contraseña incorrecta');
+    }
+
+    if (!this.totp.valido(usuario.totpSecret, codigo)) {
+      throw new UnauthorizedException('Código incorrecto');
+    }
+
+    const { codigos, hashes } = this.totp.generarRecuperacion();
+
+    await this.prisma.usuario.update({
+      where: { id: usuario.id },
+      data: { codigosRecuperacion: { set: hashes } },
+    });
+
+    return { codigosRecuperacion: codigos };
   }
 
   async desactivarTotp(usuarioId: string, password: string) {
-    const usuario = await this.adminPorId(usuarioId);
+    const usuario = await this.usuarioPorId(usuarioId);
 
     if (!usuario.totpActivado) {
       throw new BadRequestException('TOTP no está activo');
@@ -289,9 +377,14 @@ export class AuthService {
       throw new UnauthorizedException('Contraseña incorrecta');
     }
 
+    // Sin TOTP los códigos de recuperación no sirven para nada.
     await this.prisma.usuario.update({
       where: { id: usuario.id },
-      data: { totpSecret: null, totpActivado: false },
+      data: {
+        totpSecret: null,
+        totpActivado: false,
+        codigosRecuperacion: { set: [] },
+      },
     });
 
     return { activado: false };

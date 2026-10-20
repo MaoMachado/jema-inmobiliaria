@@ -3,6 +3,7 @@ import { authenticator } from 'otplib';
 import { TotpService } from './totp.service';
 
 process.env.TOTP_ENC_KEY ??= randomBytes(32).toString('hex');
+process.env.OTP_PEPPER ??= 'test-pepper';
 
 describe('TotpService', () => {
   const service = new TotpService();
@@ -33,5 +34,22 @@ describe('TotpService', () => {
     const { qr } = await service.crear('admin@test.com');
 
     expect(qr.startsWith('data:image/png;base64,')).toBe(true);
+  });
+
+  it('debe generar 10 códigos de recuperación distintos', () => {
+    const { codigos, hashes } = service.generarRecuperacion();
+
+    expect(codigos).toHaveLength(10);
+    expect(new Set(codigos).size).toBe(10);
+    codigos.forEach((codigo) =>
+      expect(codigo).toMatch(/^[0-9A-F]{5}-[0-9A-F]{5}$/),
+    );
+    expect(hashes).toHaveLength(10);
+  });
+
+  it('debe normalizar el código de recuperación antes de hashear', () => {
+    expect(service.hashRecuperacion('abcde-12345')).toBe(
+      service.hashRecuperacion('ABCDE12345'),
+    );
   });
 });

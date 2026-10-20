@@ -15,6 +15,7 @@ describe('AuthController', () => {
     iniciarTotp: jest.Mock;
     confirmarTotp: jest.Mock;
     desactivarTotp: jest.Mock;
+    regenerarRecuperacion: jest.Mock;
   };
 
   const mockAuthResponse = {
@@ -47,6 +48,9 @@ describe('AuthController', () => {
       iniciarTotp: jest.fn().mockResolvedValue({ qr: 'data:image/png' }),
       confirmarTotp: jest.fn().mockResolvedValue({ activado: true }),
       desactivarTotp: jest.fn().mockResolvedValue({ activado: false }),
+      regenerarRecuperacion: jest
+        .fn()
+        .mockResolvedValue({ codigosRecuperacion: ['ABCDE-12345'] }),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -106,7 +110,12 @@ describe('AuthController', () => {
 
       const result = await controller.login(dto, mockRes as any);
 
-      expect(authService.login).toHaveBeenCalledWith(dto.email, dto.password);
+      expect(authService.login).toHaveBeenCalledWith(
+        dto.email,
+        dto.password,
+        undefined,
+        undefined,
+      );
       expect(mockRes.cookie).toHaveBeenCalledWith(
         'access_token',
         mockAuthResponse.accessToken,
@@ -188,6 +197,10 @@ describe('AuthController', () => {
       await controller.desactivarTotp(mockRequest as any, {
         password: 'password123',
       });
+      await controller.regenerarRecuperacion(mockRequest as any, {
+        password: 'password123',
+        codigo: '123456',
+      });
 
       expect(authService.iniciarTotp).toHaveBeenCalledWith('admin-1');
       expect(authService.confirmarTotp).toHaveBeenCalledWith(
@@ -197,6 +210,11 @@ describe('AuthController', () => {
       expect(authService.desactivarTotp).toHaveBeenCalledWith(
         'admin-1',
         'password123',
+      );
+      expect(authService.regenerarRecuperacion).toHaveBeenCalledWith(
+        'admin-1',
+        'password123',
+        '123456',
       );
     });
   });

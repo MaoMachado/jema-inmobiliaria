@@ -196,7 +196,7 @@ export default function PerfilEditar() {
 
         <hr className="border-gray-800" />
 
-        {perfil?.role === "ADMIN" && (
+        {perfil && (
           <>
             <TotpCard />
             <hr className="border-gray-800" />

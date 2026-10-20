@@ -15,7 +15,11 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { clearSession, leerCookie, setReauth, setSession } from './cookies';
 import { ReauthDto } from './dto/reauth.dto';
-import { DesactivarTotpDto, TotpCodigoDto } from './dto/totp.dto';
+import {
+  DesactivarTotpDto,
+  TotpCodigoDto,
+  RegenerarRecuperacionDto,
+} from './dto/totp.dto';
 
 interface RequestWithUser extends Request {
   user: {
@@ -52,7 +56,12 @@ export class AuthController {
     @Body() body: LoginDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const sesion = await this.authService.login(body.email, body.password);
+    const sesion = await this.authService.login(
+      body.email,
+      body.password,
+      body.codigo,
+      body.codigoRecuperacion,
+    );
     setSession(res, sesion.accessToken, sesion.refreshToken);
     return { user: sesion.user };
   }
@@ -121,5 +130,18 @@ export class AuthController {
   @Post('totp/desactivar')
   desactivarTotp(@Req() req: RequestWithUser, @Body() body: DesactivarTotpDto) {
     return this.authService.desactivarTotp(req.user.id, body.password);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('totp/recuperacion')
+  regenerarRecuperacion(
+    @Req() req: RequestWithUser,
+    @Body() body: RegenerarRecuperacionDto,
+  ) {
+    return this.authService.regenerarRecuperacion(
+      req.user.id,
+      body.password,
+      body.codigo,
+    );
   }
 }
