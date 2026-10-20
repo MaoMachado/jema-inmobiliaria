@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { usePerfil } from "../views/hooks/usePerfil";
 import { VerificacionCelular } from "./VerificarCelular";
+import TotpCard from "./TotpCard";
 import Image from "next/image";
 import Link from "next/link";
 import Button from "@/app/components/Button";
@@ -194,6 +195,13 @@ export default function PerfilEditar() {
         )}
 
         <hr className="border-gray-800" />
+
+        {perfil?.role === "ADMIN" && (
+          <>
+            <TotpCard />
+            <hr className="border-gray-800" />
+          </>
+        )}
 
         <form
           onSubmit={handleCambiarPassword}

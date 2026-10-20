@@ -105,6 +105,8 @@ model Usuario {
   documentoVerificado Boolean  @default(false)
   role                Role     @default(USER)
   tokenVersion        Int      @default(0)
+  totpSecret          String?
+  totpActivado        Boolean  @default(false)
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 

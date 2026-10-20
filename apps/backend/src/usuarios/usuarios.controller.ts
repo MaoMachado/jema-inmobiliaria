@@ -14,6 +14,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UsuariosService } from './usuarios.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ReauthGuard } from '../auth/guards/reauth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import type { RequestWithUser } from '../common/types/request-with-user';
@@ -39,7 +40,7 @@ export class UsuariosController {
     return this.usuariosService.getAll();
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ReauthGuard)
   @Roles('ADMIN')
   @Get(':id/documento')
   async getDocumentoUrl(@Param('id') id: string, @Req() req: RequestWithUser) {
@@ -51,7 +52,7 @@ export class UsuariosController {
     return { url };
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ReauthGuard)
   @Roles('ADMIN')
   @Get(':id/documentos-propiedad')
   async getDocumentosPropiedad(

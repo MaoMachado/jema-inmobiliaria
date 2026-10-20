@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Usuario } from "@/app/lib/types";
-import api from "@/app/lib/api";
+import api, { requiereReauth } from "@/app/lib/api";
 import Icon from "@/app/components/Icons";
+import ReauthModal from "./ReauthModal";
 
 export default function PropiedadesTabs({
   propiedades,
@@ -16,7 +17,16 @@ export default function PropiedadesTabs({
 }) {
   const [activeTab, setActiveTab] = useState(0);
   const [abriendo, setAbriendo] = useState<string | null>(null);
+  const [docPendiente, setDocPendiente] = useState<string | null>(null);
   const activa = propiedades?.[activeTab];
+
+  const descargarEnVentana = async (docId: string, ventana: Window) => {
+    const { data } = await api.get<{ url: string }>(
+      `/propiedades/documentos/${docId}/url`,
+    );
+
+    ventana.location.assign(data.url);
+  };
 
   // La URL se firma al abrir el documento: así el audit registra exactamente lo consultado.
   const abrirDocumento = async (docId: string) => {
@@ -32,16 +42,51 @@ export default function PropiedadesTabs({
     setAbriendo(docId);
 
     try {
-      const { data } = await api.get<{ url: string }>(
-        `/propiedades/documentos/${docId}/url`,
-      );
+      await descargarEnVentana(docId, ventana);
+    } catch (error) {
+      ventana.close();
 
-      ventana.location.assign(data.url);
+      if (requiereReauth(error)) {
+        setDocPendiente(docId);
+        return;
+      }
+
+      onError?.("No se pudo abrir el documento");
+    } finally {
+      setAbriendo(null);
+    }
+  };
+
+  // Una sola confirmación habilita los documentos de los próximos 5 minutos.
+  const confirmarReauth = async (credenciales: {
+    password: string;
+    codigo?: string;
+  }) => {
+    if (!docPendiente) return;
+
+    // Se abre en el clic, antes del await, para que el navegador no la bloquee.
+    const ventana = window.open("", "_blank");
+
+    try {
+      await api.post("/auth/reautenticar", credenciales);
+    } catch (error) {
+      ventana?.close();
+      throw error;
+    }
+
+    if (!ventana) {
+      setDocPendiente(null);
+      onError?.("El navegador bloqueó la ventana.");
+      return;
+    }
+
+    try {
+      await descargarEnVentana(docPendiente, ventana);
     } catch {
       ventana.close();
       onError?.("No se pudo abrir el documento");
     } finally {
-      setAbriendo(null);
+      setDocPendiente(null);
     }
   };
 
@@ -132,6 +177,13 @@ export default function PropiedadesTabs({
           </div>
         )}
       </div>
+
+      {docPendiente && (
+        <ReauthModal
+          onCancelar={() => setDocPendiente(null)}
+          onConfirmar={confirmarReauth}
+        />
+      )}
     </section>
   );
 }

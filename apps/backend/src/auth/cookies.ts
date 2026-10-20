@@ -3,6 +3,7 @@ import { CookieOptions, Request, Response } from 'express';
 const ES_PROD = process.env.NODE_ENV === 'production';
 const QUINCE_MIN = 15 * 60 * 1000;
 const TREINTA_DIAS = 30 * 24 * 60 * 60 * 1000;
+const CINCO_MIN = 5 * 60 * 1000;
 
 const base: CookieOptions = {
   httpOnly: true,
@@ -37,6 +38,10 @@ export function clearSession(res: Response): void {
     ...base,
     path: '/auth',
   });
+  res.clearCookie('reauth_token', {
+    ...base,
+    path: '/',
+  });
 }
 
 export function leerCookie(req: Request, nombre: string): string | undefined {
@@ -50,4 +55,12 @@ export function leerCookie(req: Request, nombre: string): string | undefined {
   }
 
   return undefined;
+}
+
+export function setReauth(res: Response, token: string): void {
+  res.cookie('reauth_token', token, {
+    ...base,
+    path: '/',
+    maxAge: CINCO_MIN,
+  });
 }

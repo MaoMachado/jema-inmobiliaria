@@ -15,6 +15,7 @@ import {
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ReauthGuard } from '../auth/guards/reauth.guard';
 import { PropiedadesService } from './propiedades.service';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -173,7 +174,7 @@ export class PropiedadesController {
     return this.propiedadesService.getDocumentos(id, req.user, contextoDe(req));
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, ReauthGuard)
   @Get('documentos/:docId/url')
   async abrirDocumento(
     @Param('docId') docId: string,
