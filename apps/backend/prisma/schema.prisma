@@ -149,6 +149,7 @@ model Propiedad {
   documentos     DocumentoPropiedad[]
   estado         EstadoPropiedad      @default(PENDIENTE)
   motivoRechazo  String?
+  rechazadoAt    DateTime?
   destacada      Boolean              @default(false)
   destacadaHasta DateTime?
 

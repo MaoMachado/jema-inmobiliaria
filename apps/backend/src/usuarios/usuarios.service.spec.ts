@@ -23,6 +23,8 @@ describe('UsuariosService', () => {
     getUrlDocumentoUsuario: jest.Mock;
     subirDocumento: jest.Mock;
     subirFotoPerfil: jest.Mock;
+    eliminarDocumentoUsuario: jest.Mock;
+    eliminarFotoPerfil: jest.Mock;
   };
   let auditoria: {
     registrarAccesos: jest.Mock;
@@ -64,6 +66,8 @@ describe('UsuariosService', () => {
         .mockImplementation(async (url: string) => `https://signed/${url}`),
       subirDocumento: jest.fn().mockResolvedValue('docs/new-doc.pdf'),
       subirFotoPerfil: jest.fn().mockResolvedValue('avatars/new-photo.png'),
+      eliminarDocumentoUsuario: jest.fn().mockResolvedValue(undefined),
+      eliminarFotoPerfil: jest.fn().mockResolvedValue(undefined),
     };
 
     auditoria = { registrarAccesos: jest.fn() };
@@ -159,6 +163,27 @@ describe('UsuariosService', () => {
       await expect(
         service.subirDocumento('usr-inexistente', mockFile),
       ).rejects.toThrow(NotFoundException);
+    });
+
+    it('debe borrar del storage la cédula anterior', async () => {
+      prisma.usuario.findUnique.mockResolvedValue(mockUser);
+      prisma.usuario.update.mockResolvedValue(mockUser);
+
+      await service.subirDocumento('usr-1', mockFile);
+
+      expect(storage.eliminarDocumentoUsuario).toHaveBeenCalledWith(
+        'docs/doc-1.pdf',
+      );
+    });
+
+    it('no debe fallar la subida si el storage no borra la cédula anterior', async () => {
+      prisma.usuario.findUnique.mockResolvedValue(mockUser);
+      prisma.usuario.update.mockResolvedValue(mockUser);
+      storage.eliminarDocumentoUsuario.mockRejectedValueOnce(new Error('boom'));
+
+      await expect(service.subirDocumento('usr-1', mockFile)).resolves.toEqual({
+        documentoUrl: 'docs/new-doc.pdf',
+      });
     });
   });
 
@@ -355,6 +380,17 @@ describe('UsuariosService', () => {
     it('debe lanzar BadRequestException si falta el archivo', async () => {
       await expect(service.subirFoto('usr-1', undefined as any)).rejects.toThrow(
         BadRequestException,
+      );
+    });
+
+    it('debe borrar del storage el avatar anterior', async () => {
+      prisma.usuario.findUnique.mockResolvedValue(mockUser);
+      prisma.usuario.update.mockResolvedValue(mockUser);
+
+      await service.subirFoto('usr-1', mockFile);
+
+      expect(storage.eliminarFotoPerfil).toHaveBeenCalledWith(
+        'https://storage/foto.png',
       );
     });
   });

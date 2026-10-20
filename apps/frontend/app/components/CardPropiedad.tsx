@@ -309,7 +309,7 @@ export function CardPropiedad({
               />
             )}
 
-            {onDelete && (
+            {onDelete && propiedad.estado !== "RECHAZADA" && (
               <Button
                 title="Eliminar"
                 placeHolder="Eliminar Propiedad"

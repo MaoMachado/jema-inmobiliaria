@@ -3,6 +3,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import {
@@ -31,6 +32,7 @@ export class PropiedadesService {
   ) {}
 
   private readonly LIMITE_DESTACADAS_PREMIUM = 3;
+  private readonly logger = new Logger(PropiedadesService.name);
 
   async create(
     propiedad: CreatePropiedadDto,
@@ -266,7 +268,7 @@ export class PropiedadesService {
 
     const puntaje = calcularPuntaje(cambios);
 
-    return this.prisma.propiedad.update({
+    const actualizada = await this.prisma.propiedad.update({
       where: { id },
       data: {
         ...(data.titulo !== undefined && { titulo: data.titulo }),
@@ -300,8 +302,26 @@ export class PropiedadesService {
         ...(data.video !== undefined && { video: data.video }),
         puntaje,
         estado: 'PENDIENTE',
+        rechazadoAt: null,
       },
     });
+
+    // Las fotos que salieron de la lista quedaron sin referencia.
+    const quitadas = (propiedad.fotografias ?? []).filter(
+      (foto) => !actualizada.fotografias.includes(foto),
+    );
+
+    if (quitadas.length > 0) {
+      try {
+        await this.storage.eliminarFotosPropiedad(quitadas);
+      } catch (error) {
+        this.logger.warn(
+          `No se pudieron borrar ${quitadas.length} fotos de ${id}: ${String(error)}`,
+        );
+      }
+    }
+
+    return actualizada;
   }
 
   async remove(id: string, userId: string) {
@@ -311,6 +331,38 @@ export class PropiedadesService {
         'No tienes permiso para eliminar esta propiedad',
       );
     }
+
+    // Una propiedad rechazada es evidencia del rechazo: se queda bloqueada.
+    // Sus documentos se purgan aparte (RetencionDocumentosService).
+    if (propiedad.estado === 'RECHAZADA') {
+      throw new ForbiddenException(
+        'Una propiedad rechazada no se puede eliminar',
+      );
+    }
+
+    // ReporteFraude tiene la FK en RESTRICT: sin este chequeo el borrado
+    // explotaría después de haber eliminado los archivos.
+    const reportes = await this.prisma.reporteFraude.count({
+      where: { propiedadId: id },
+    });
+
+    if (reportes > 0) {
+      throw new ForbiddenException(
+        'Una propiedad con reportes registrados no se puede eliminar',
+      );
+    }
+
+    const documentos = await this.prisma.documentoPropiedad.findMany({
+      where: { propiedadId: id },
+      select: { url: true },
+    });
+
+    // Los archivos van primero: si el storage falla, la propiedad sigue en pie
+    // con sus rutas y se puede reintentar el borrado completo.
+    await this.storage.eliminarDocumentosPropiedad(
+      documentos.map((doc) => doc.url),
+    );
+    await this.storage.eliminarFotosPropiedad(propiedad.fotografias ?? []);
 
     await this.prisma.propiedad.delete({ where: { id } });
 
@@ -444,6 +496,10 @@ export class PropiedadesService {
       );
     }
 
+    // Primero el blob y después la fila: si el storage falla, la fila sigue
+    // existiendo y el borrado se puede reintentar sin perder la ruta.
+    await this.storage.eliminarDocumentosPropiedad([doc.url]);
+
     await this.prisma.documentoPropiedad.delete({ where: { id: docId } });
     return { message: 'Documento eliminado' };
   }
@@ -525,7 +581,7 @@ export class PropiedadesService {
 
     await this.prisma.propiedad.update({
       where: { id },
-      data: { estado: 'APROBADA' },
+      data: { estado: 'APROBADA', rechazadoAt: null },
     });
 
     return { message: 'Propiedad aprobada' };
@@ -537,7 +593,11 @@ export class PropiedadesService {
 
     await this.prisma.propiedad.update({
       where: { id },
-      data: { estado: 'RECHAZADA', motivoRechazo: motivo.motivoRechazo },
+      data: {
+        estado: 'RECHAZADA',
+        motivoRechazo: motivo.motivoRechazo,
+        rechazadoAt: new Date(),
+      },
     });
 
     return { message: 'Propiedad rechazada' };

@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs';
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
@@ -14,6 +15,8 @@ import { AccionDocumento, RecursoDocumento } from '../generated/prisma';
 
 @Injectable()
 export class UsuariosService {
+  private readonly logger = new Logger(UsuariosService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
@@ -69,6 +72,18 @@ export class UsuariosService {
         documentoVerificado: false,
       },
     });
+
+    // La cédula anterior quedó sin referencia. Si el borrado del blob falla no
+    // se deshace la subida: solo queda un archivo huérfano y un aviso en el log.
+    if (usuario.documentoUrl) {
+      try {
+        await this.storage.eliminarDocumentoUsuario(usuario.documentoUrl);
+      } catch (error) {
+        this.logger.warn(
+          `No se pudo borrar la cédula anterior de ${userId}: ${String(error)}`,
+        );
+      }
+    }
 
     return { documentoUrl: documentoPath };
   }
@@ -253,6 +268,16 @@ export class UsuariosService {
         foto: fotoPath,
       },
     });
+
+    if (usuario.foto) {
+      try {
+        await this.storage.eliminarFotoPerfil(usuario.foto);
+      } catch (error) {
+        this.logger.warn(
+          `No se pudo borrar la foto anterior de ${userId}: ${String(error)}`,
+        );
+      }
+    }
 
     return { fotoUrl: fotoPath };
   }

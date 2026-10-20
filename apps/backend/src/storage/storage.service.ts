@@ -169,4 +169,36 @@ export class StorageService {
   async getUrlDocumentoUsuario(path: string): Promise<string> {
     return this.crearUrlFirmada(this.bucketUsuarios, path);
   }
+
+  async eliminarDocumentosPropiedad(paths: string[]): Promise<void> {
+    await this.eliminar(this.bucketPropiedadesDocumentos, paths);
+  }
+
+  async eliminarDocumentoUsuario(path: string): Promise<void> {
+    await this.eliminar(this.bucketUsuarios, [path]);
+  }
+
+  async eliminarFotosPropiedad(urls: string[]): Promise<void> {
+    await this.eliminar(this.bucketPropiedades, urls);
+  }
+
+  async eliminarFotoPerfil(url: string): Promise<void> {
+    await this.eliminar(this.bucketFotoPerfil, [url]);
+  }
+
+  // Borra varios objetos en una sola llamada. Supabase ignora los paths que ya
+  // no existen, así que reintentar después de un fallo parcial es seguro.
+  private async eliminar(bucket: string, paths: string[]): Promise<void> {
+    const limpios = paths
+      .map((path) => this.extraerPath(path))
+      .filter((path) => path.length > 0);
+
+    if (limpios.length === 0) return;
+
+    // shortcut: remove acepta hasta 1000 paths por llamada; trocear si una
+    // propiedad llega a superar ese número.
+    const { error } = await this.supabase.storage.from(bucket).remove(limpios);
+
+    if (error) throw new Error(error.message);
+  }
 }
