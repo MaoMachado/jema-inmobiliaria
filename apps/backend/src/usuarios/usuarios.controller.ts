@@ -20,6 +20,7 @@ import type { RequestWithUser } from '../common/types/request-with-user';
 import { VerificarDto } from './dto/verificar.dto';
 import { ActualizarPerfilDto } from './dto/actualizar-perfil.dto';
 import { CambiarPasswordDto } from './dto/cambiar-password.dto';
+import { contextoDe } from '../auditoria/contexto-acceso';
 
 @Controller('usuarios')
 export class UsuariosController {
@@ -28,23 +29,34 @@ export class UsuariosController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Get()
-  findAll() {
-    return this.usuariosService.getAll();
+  findAll(@Req() req: RequestWithUser) {
+    return this.usuariosService.getAll(req.user.id, contextoDe(req));
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Get(':id/documento')
-  async getDocumentoUrl(@Param('id') id: string) {
-    const url = await this.usuariosService.getUrlDocumentoUsuario(id);
+  async getDocumentoUrl(@Param('id') id: string, @Req() req: RequestWithUser) {
+    const url = await this.usuariosService.getUrlDocumentoUsuario(
+      id,
+      req.user.id,
+      contextoDe(req),
+    );
     return { url };
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Get(':id/documentos-propiedad')
-  async getDocumentosPropiedad(@Param('id') id: string) {
-    return this.usuariosService.getDocumentosPropiedadUsuario(id);
+  async getDocumentosPropiedad(
+    @Param('id') id: string,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.usuariosService.getDocumentosPropiedadUsuario(
+      id,
+      req.user.id,
+      contextoDe(req),
+    );
   }
 
   @UseGuards(JwtAuthGuard)

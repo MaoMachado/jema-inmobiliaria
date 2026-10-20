@@ -35,6 +35,8 @@ describe('PropiedadesController', () => {
 
   const mockUserReq = {
     user: { id: 'usr-1', role: 'USER' },
+    ip: '127.0.0.1',
+    headers: { 'user-agent': 'jest' },
   };
 
   beforeEach(async () => {
@@ -253,6 +255,7 @@ describe('PropiedadesController', () => {
       expect(service.getDocumentos).toHaveBeenCalledWith(
         'prop-1',
         mockUserReq.user,
+        { ip: '127.0.0.1', userAgent: 'jest' },
       );
     });
 
@@ -270,10 +273,16 @@ describe('PropiedadesController', () => {
 
     it('debe verificar documento de propiedad', async () => {
       const dto: VerificarDto = { verificado: true };
-      const result = await controller.verificarDocumento('doc-100', dto);
+      const result = await controller.verificarDocumento(
+        'doc-100',
+        dto,
+        mockUserReq as any,
+      );
       expect(service.verificarDocumentoPropiedad).toHaveBeenCalledWith(
         'doc-100',
         true,
+        'usr-1',
+        { ip: '127.0.0.1', userAgent: 'jest' },
       );
       expect(result.verificado).toBe(true);
     });

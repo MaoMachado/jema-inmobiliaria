@@ -1,10 +1,15 @@
+import { ContextoAcceso } from '../auditoria/contexto-acceso';
 import {
   BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '../generated/prisma/index';
+import {
+  AccionDocumento,
+  Prisma,
+  RecursoDocumento,
+} from '../generated/prisma/index';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
 import { calcularPuntaje } from './calcular-puntaje';
@@ -15,12 +20,14 @@ import {
   UpdatePropiedadDto,
 } from './dto/propiedades.dto';
 import { PLANES } from '../pagos/planes';
+import { AuditoriaService } from '../auditoria/auditoria.service';
 
 @Injectable()
 export class PropiedadesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
+    private readonly auditoria: AuditoriaService,
   ) {}
 
   private readonly LIMITE_DESTACADAS_PREMIUM = 3;
@@ -345,6 +352,7 @@ export class PropiedadesService {
   async getDocumentos(
     propiedadId: string,
     usuario: { id: string; role: string },
+    contexto: ContextoAcceso = {},
   ) {
     const propiedad = await this.findOne(propiedadId, usuario);
 
@@ -365,6 +373,18 @@ export class PropiedadesService {
       where: { propiedadId },
       orderBy: { createdAt: 'desc' },
     });
+
+    //! Se audita la ruta, nunca con la URL firmada
+    await this.auditoria.registrarAccesos(
+      documentos.map((doc) => ({
+        accion: AccionDocumento.VER,
+        recursoTipo: RecursoDocumento.PROPIEDAD_DOC,
+        recursoId: doc.id,
+        documento: doc.url,
+        usuarioId: usuario.id,
+      })),
+      contexto,
+    );
 
     return Promise.all(
       documentos.map(async (doc) => ({
@@ -391,7 +411,12 @@ export class PropiedadesService {
     return { message: 'Documento eliminado' };
   }
 
-  async verificarDocumentoPropiedad(docId: string, verificado: boolean) {
+  async verificarDocumentoPropiedad(
+    docId: string,
+    verificado: boolean,
+    adminId: string,
+    contexto: ContextoAcceso = {},
+  ) {
     const doc = await this.prisma.documentoPropiedad.findUnique({
       where: { id: docId },
     });
@@ -400,8 +425,25 @@ export class PropiedadesService {
 
     await this.prisma.documentoPropiedad.update({
       where: { id: docId },
-      data: { verificado },
+      data: {
+        verificado,
+        verificadoPorId: adminId,
+        verificadoAt: new Date(),
+      },
     });
+
+    await this.auditoria.registrarAccesos(
+      [
+        {
+          accion: AccionDocumento.VERIFICAR,
+          recursoTipo: RecursoDocumento.PROPIEDAD_DOC,
+          recursoId: docId,
+          documento: doc.url,
+          usuarioId: adminId,
+        },
+      ],
+      contexto,
+    );
 
     return { verificado };
   }

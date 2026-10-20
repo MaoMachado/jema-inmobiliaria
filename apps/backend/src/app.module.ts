@@ -9,6 +9,7 @@ import { ReporteFraude } from './reportes-fraude/reportes-fraude.module';
 import { IaModule } from './ia/ia.module';
 import { PagosModule } from './pagos/pagos.module';
 import { OtpModule } from './otp/otp.module';
+import { AuditoriaModule } from './auditoria/auditoria.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { OtpModule } from './otp/otp.module';
     IaModule,
     PagosModule,
     OtpModule,
+    AuditoriaModule,
   ],
   controllers: [AppController],
   providers: [AppService],

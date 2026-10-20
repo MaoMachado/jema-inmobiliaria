@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
+import { AuditoriaService } from '../auditoria/auditoria.service';
 import { UsuariosService } from './usuarios.service';
 
 describe('UsuariosService', () => {
@@ -22,6 +23,9 @@ describe('UsuariosService', () => {
     getUrlDocumentoUsuario: jest.Mock;
     subirDocumento: jest.Mock;
     subirFotoPerfil: jest.Mock;
+  };
+  let auditoria: {
+    registrarAccesos: jest.Mock;
   };
 
   const mockUser = {
@@ -62,11 +66,14 @@ describe('UsuariosService', () => {
       subirFotoPerfil: jest.fn().mockResolvedValue('avatars/new-photo.png'),
     };
 
+    auditoria = { registrarAccesos: jest.fn() };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         UsuariosService,
         { provide: PrismaService, useValue: prisma },
         { provide: StorageService, useValue: storage },
+        { provide: AuditoriaService, useValue: auditoria },
       ],
     }).compile();
 
@@ -101,7 +108,7 @@ describe('UsuariosService', () => {
       ];
       prisma.usuario.findMany.mockResolvedValue(mockUsuarios);
 
-      const result = await service.getAll();
+      const result = await service.getAll('adm-1');
 
       expect(prisma.usuario.findMany).toHaveBeenCalled();
       expect(storage.getUrlDocumentoPropiedad).toHaveBeenCalledWith(
@@ -109,6 +116,18 @@ describe('UsuariosService', () => {
       );
       expect(result[0].propiedades[0].documentos[0].url).toBe(
         'https://signed/escritura.pdf',
+      );
+      expect(auditoria.registrarAccesos).toHaveBeenCalledWith(
+        [
+          {
+            accion: 'VER',
+            recursoTipo: 'PROPIEDAD_DOC',
+            recursoId: 'doc-1',
+            documento: 'escritura.pdf',
+            usuarioId: 'adm-1',
+          },
+        ],
+        {},
       );
     });
   });
@@ -191,7 +210,10 @@ describe('UsuariosService', () => {
         },
       ]);
 
-      const result = await service.getDocumentosPropiedadUsuario('usr-1');
+      const result = await service.getDocumentosPropiedadUsuario(
+        'usr-1',
+        'adm-1',
+      );
 
       expect(prisma.propiedad.findMany).toHaveBeenCalledWith({
         where: { publicadoPorId: 'usr-1' },
@@ -199,6 +221,40 @@ describe('UsuariosService', () => {
       });
       expect(result[0].propiedadTitulo).toBe('Apartamento Centro');
       expect(result[0].url).toBe('https://signed/doc-tradicion.pdf');
+      expect(auditoria.registrarAccesos).toHaveBeenCalledWith(
+        [
+          {
+            accion: 'VER',
+            recursoTipo: 'PROPIEDAD_DOC',
+            recursoId: 'doc-1',
+            documento: 'doc-tradicion.pdf',
+            usuarioId: 'adm-1',
+          },
+        ],
+        {},
+      );
+    });
+  });
+
+  describe('getUrlDocumentoUsuario', () => {
+    it('debe auditar el acceso a la cédula del usuario', async () => {
+      prisma.usuario.findUnique.mockResolvedValue(mockUser);
+
+      const result = await service.getUrlDocumentoUsuario('usr-1', 'adm-1');
+
+      expect(result).toBe('https://signed/docs/doc-1.pdf');
+      expect(auditoria.registrarAccesos).toHaveBeenCalledWith(
+        [
+          {
+            accion: 'VER',
+            recursoTipo: 'USUARIO_DOC',
+            recursoId: 'usr-1',
+            documento: 'docs/doc-1.pdf',
+            usuarioId: 'adm-1',
+          },
+        ],
+        {},
+      );
     });
   });
 

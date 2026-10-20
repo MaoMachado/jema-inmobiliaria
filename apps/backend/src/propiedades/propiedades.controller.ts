@@ -28,6 +28,7 @@ import {
 } from './dto/propiedades.dto';
 import type { RequestWithUser } from '../common/types/request-with-user';
 import { VerificarDto } from '../usuarios/dto/verificar.dto';
+import { contextoDe } from '../auditoria/contexto-acceso';
 
 @Controller('propiedades')
 export class PropiedadesController {
@@ -157,7 +158,7 @@ export class PropiedadesController {
   @UseGuards(JwtAuthGuard)
   @Get(':id/documentos')
   getDocumentos(@Param('id') id: string, @Req() req: RequestWithUser) {
-    return this.propiedadesService.getDocumentos(id, req.user);
+    return this.propiedadesService.getDocumentos(id, req.user, contextoDe(req));
   }
 
   @UseGuards(JwtAuthGuard)
@@ -175,10 +176,13 @@ export class PropiedadesController {
   verificarDocumento(
     @Param('docId') docId: string,
     @Body() body: VerificarDto,
+    @Req() req: RequestWithUser,
   ) {
     return this.propiedadesService.verificarDocumentoPropiedad(
       docId,
       body.verificado,
+      req.user.id,
+      contextoDe(req),
     );
   }
 }

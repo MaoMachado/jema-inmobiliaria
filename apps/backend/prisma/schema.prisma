@@ -41,6 +41,31 @@ enum EstadoPago {
   RECHAZADO
 }
 
+enum AccionDocumento {
+  VER
+  VERIFICAR
+}
+
+enum RecursoDocumento {
+  PROPIEDAD_DOC
+  USUARIO_DOC
+}
+
+model AccesoDocumento {
+  id          String           @id @default(uuid())
+  accion      AccionDocumento
+  recursoTipo RecursoDocumento
+  recursoId   String
+  documento   String?
+  usuarioId   String
+  ip          String?
+  userAgent   String?
+  createAt    DateTime         @default(now())
+
+  @@index([recursoTipo, recursoId])
+  @@index([usuarioId, createAt])
+}
+
 model CodigoOt {
   id        String   @id @default(uuid())
   usuarioId String
@@ -54,17 +79,17 @@ model CodigoOt {
 }
 
 model Pago {
-  id          String     @id @default(uuid())
-  usuarioId   String
-  usuario     Usuario    @relation(fields: [usuarioId], references: [id])
-  monto       Float
-  plan        Plan
-  comprobante String?
-  referencia  String?
-  transaccionId String?  @unique
-  estado      EstadoPago @default(PENDIENTE)
-  createAt    DateTime   @default(now())
-  updateAt    DateTime   @updatedAt
+  id            String     @id @default(uuid())
+  usuarioId     String
+  usuario       Usuario    @relation(fields: [usuarioId], references: [id])
+  monto         Float
+  plan          Plan
+  comprobante   String?
+  referencia    String?
+  transaccionId String?    @unique
+  estado        EstadoPago @default(PENDIENTE)
+  createAt      DateTime   @default(now())
+  updateAt      DateTime   @updatedAt
 }
 
 model Usuario {
@@ -133,13 +158,15 @@ model Propiedad {
 }
 
 model DocumentoPropiedad {
-  id          String   @id @default(uuid())
-  url         String
-  tipo        String
-  verificado  Boolean  @default(false)
-  propiedadId String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              String    @id @default(uuid())
+  url             String
+  tipo            String
+  verificado      Boolean   @default(false)
+  propiedadId     String
+  verificadoPorId String?
+  verificadoAt    DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   //Relacion con propiedad
   propiedad Propiedad @relation(fields: [propiedadId], references: [id], onDelete: Cascade)

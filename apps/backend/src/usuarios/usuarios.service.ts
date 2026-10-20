@@ -8,15 +8,22 @@ import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
 import { ActualizarPerfilDto } from './dto/actualizar-perfil.dto';
 import { CambiarPasswordDto } from './dto/cambiar-password.dto';
+import {
+  AuditoriaService,
+  RegistroAcceso,
+} from '../auditoria/auditoria.service';
+import { ContextoAcceso } from '../auditoria/contexto-acceso';
+import { AccionDocumento, RecursoDocumento } from '../generated/prisma';
 
 @Injectable()
 export class UsuariosService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
+    private readonly auditoria: AuditoriaService,
   ) {}
 
-  async getAll() {
+  async getAll(adminId: string, contexto: ContextoAcceso = {}) {
     const usuarios = await this.prisma.usuario.findMany({
       select: {
         id: true,
@@ -43,17 +50,30 @@ export class UsuariosService {
       },
     });
 
+    const accesos: RegistroAcceso[] = [];
+
     for (const user of usuarios) {
       for (const prop of user.propiedades) {
         prop.documentos = await Promise.all(
-          prop.documentos.map(async (doc) => ({
-            ...doc,
-            url: await this.storage.getUrlDocumentoPropiedad(doc.url),
-          })),
+          prop.documentos.map(async (doc) => {
+            accesos.push({
+              accion: AccionDocumento.VER,
+              recursoTipo: RecursoDocumento.PROPIEDAD_DOC,
+              recursoId: doc.id,
+              documento: doc.url,
+              usuarioId: adminId,
+            });
+
+            return {
+              ...doc,
+              url: await this.storage.getUrlDocumentoPropiedad(doc.url),
+            };
+          }),
         );
       }
     }
 
+    await this.auditoria.registrarAccesos(accesos, contexto);
     return usuarios;
   }
 
@@ -102,7 +122,11 @@ export class UsuariosService {
     return { documentoVerificado: verificado };
   }
 
-  async getDocumentosPropiedadUsuario(userId: string) {
+  async getDocumentosPropiedadUsuario(
+    userId: string,
+    adminId: string,
+    contexto: ContextoAcceso = {},
+  ) {
     const propiedades = await this.prisma.propiedad.findMany({
       where: { publicadoPorId: userId },
       include: {
@@ -112,6 +136,17 @@ export class UsuariosService {
 
     const todosLosDocumentos = propiedades.flatMap((p) =>
       p.documentos.map((d) => ({ ...d, propiedadTitulo: p.titulo })),
+    );
+
+    await this.auditoria.registrarAccesos(
+      todosLosDocumentos.map((doc) => ({
+        accion: AccionDocumento.VER,
+        recursoTipo: RecursoDocumento.PROPIEDAD_DOC,
+        recursoId: doc.id,
+        documento: doc.url,
+        usuarioId: adminId,
+      })),
+      contexto,
     );
 
     return await Promise.all(
@@ -141,12 +176,29 @@ export class UsuariosService {
     return { celularVerificado: verificado };
   }
 
-  async getUrlDocumentoUsuario(userId: string) {
+  async getUrlDocumentoUsuario(
+    userId: string,
+    adminId: string,
+    contexto: ContextoAcceso = {},
+  ) {
     const usuario = await this.prisma.usuario.findUnique({
       where: { id: userId },
     });
 
     if (!usuario?.documentoUrl) return null;
+
+    await this.auditoria.registrarAccesos(
+      [
+        {
+          accion: AccionDocumento.VER,
+          recursoTipo: RecursoDocumento.USUARIO_DOC,
+          recursoId: usuario.id,
+          documento: usuario.documentoUrl,
+          usuarioId: adminId,
+        },
+      ],
+      contexto,
+    );
 
     return this.storage.getUrlDocumentoUsuario(usuario.documentoUrl);
   }

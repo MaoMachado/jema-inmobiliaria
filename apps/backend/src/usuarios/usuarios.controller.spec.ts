@@ -20,6 +20,8 @@ describe('UsuariosController', () => {
 
   const mockUserReq = {
     user: { id: 'usr-123', email: 'carlos@test.com', role: 'USER' },
+    ip: '127.0.0.1',
+    headers: { 'user-agent': 'jest' },
   };
 
   beforeEach(async () => {
@@ -66,16 +68,24 @@ describe('UsuariosController', () => {
 
   describe('findAll', () => {
     it('debe llamar a usuariosService.getAll', async () => {
-      await controller.findAll();
-      expect(usuariosService.getAll).toHaveBeenCalled();
+      await controller.findAll(mockUserReq as any);
+      expect(usuariosService.getAll).toHaveBeenCalledWith('usr-123', {
+        ip: '127.0.0.1',
+        userAgent: 'jest',
+      });
     });
   });
 
   describe('getDocumentoUrl', () => {
     it('debe retornar la url del documento del usuario', async () => {
-      const result = await controller.getDocumentoUrl('usr-123');
+      const result = await controller.getDocumentoUrl(
+        'usr-123',
+        mockUserReq as any,
+      );
       expect(usuariosService.getUrlDocumentoUsuario).toHaveBeenCalledWith(
         'usr-123',
+        'usr-123',
+        { ip: '127.0.0.1', userAgent: 'jest' },
       );
       expect(result).toEqual({ url: 'https://storage/doc.pdf' });
     });
@@ -83,10 +93,13 @@ describe('UsuariosController', () => {
 
   describe('getDocumentosPropiedad', () => {
     it('debe llamar a usuariosService.getDocumentosPropiedadUsuario', async () => {
-      await controller.getDocumentosPropiedad('usr-123');
+      await controller.getDocumentosPropiedad('usr-123', mockUserReq as any);
       expect(
         usuariosService.getDocumentosPropiedadUsuario,
-      ).toHaveBeenCalledWith('usr-123');
+      ).toHaveBeenCalledWith('usr-123', 'usr-123', {
+        ip: '127.0.0.1',
+        userAgent: 'jest',
+      });
     });
   });
 

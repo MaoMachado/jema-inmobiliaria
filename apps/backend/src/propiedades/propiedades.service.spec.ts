@@ -6,6 +6,7 @@ import {
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
+import { AuditoriaService } from '../auditoria/auditoria.service';
 import { PropiedadesService } from './propiedades.service';
 import { CreatePropiedadDto } from './dto/propiedades.dto';
 
@@ -36,6 +37,9 @@ describe('PropiedadesService', () => {
     subirFotos: jest.Mock;
     subirPropiedadDocumento: jest.Mock;
     getUrlDocumentoPropiedad: jest.Mock;
+  };
+  let auditoria: {
+    registrarAccesos: jest.Mock;
   };
 
   const mockUser = {
@@ -132,11 +136,14 @@ describe('PropiedadesService', () => {
         .mockImplementation(async (url: string) => `https://signed/${url}`),
     };
 
+    auditoria = { registrarAccesos: jest.fn() };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PropiedadesService,
         { provide: PrismaService, useValue: prisma },
         { provide: StorageService, useValue: storage },
+        { provide: AuditoriaService, useValue: auditoria },
       ],
     }).compile();
 
@@ -395,6 +402,18 @@ describe('PropiedadesService', () => {
         'escritura.pdf',
       );
       expect(result[0].url).toBe('https://signed/escritura.pdf');
+      expect(auditoria.registrarAccesos).toHaveBeenCalledWith(
+        [
+          {
+            accion: 'VER',
+            recursoTipo: 'PROPIEDAD_DOC',
+            recursoId: 'doc-1',
+            documento: 'escritura.pdf',
+            usuarioId: 'usr-1',
+          },
+        ],
+        {},
+      );
     });
 
     it('debe eliminar un documento de propiedad', async () => {
@@ -409,13 +428,48 @@ describe('PropiedadesService', () => {
     });
 
     it('debe verificar documento de propiedad por parte del admin', async () => {
-      prisma.documentoPropiedad.findUnique.mockResolvedValue({ id: 'doc-1' });
+      prisma.documentoPropiedad.findUnique.mockResolvedValue({
+        id: 'doc-1',
+        url: 'escritura.pdf',
+      });
       prisma.documentoPropiedad.update.mockResolvedValue({
         id: 'doc-1',
         verificado: true,
       });
 
-      const result = await service.verificarDocumentoPropiedad('doc-1', true);
+      const result = await service.verificarDocumentoPropiedad(
+        'doc-1',
+        true,
+        'adm-1',
+      );
+
+      const [llamada] = prisma.documentoPropiedad.update.mock.calls[0] as [
+        {
+          where: { id: string };
+          data: {
+            verificado: boolean;
+            verificadoPorId: string;
+            verificadoAt: Date;
+          };
+        },
+      ];
+
+      expect(llamada.where).toEqual({ id: 'doc-1' });
+      expect(llamada.data.verificado).toBe(true);
+      expect(llamada.data.verificadoPorId).toBe('adm-1');
+      expect(llamada.data.verificadoAt).toBeInstanceOf(Date);
+      expect(auditoria.registrarAccesos).toHaveBeenCalledWith(
+        [
+          {
+            accion: 'VERIFICAR',
+            recursoTipo: 'PROPIEDAD_DOC',
+            recursoId: 'doc-1',
+            documento: 'escritura.pdf',
+            usuarioId: 'adm-1',
+          },
+        ],
+        {},
+      );
       expect(result).toEqual({ verificado: true });
     });
   });
