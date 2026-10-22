@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
+import { AuditoriaService } from '../auditoria/auditoria.service';
 import { UsuariosService } from './usuarios.service';
 
 describe('UsuariosService', () => {
@@ -16,12 +17,18 @@ describe('UsuariosService', () => {
     propiedad: {
       findMany: jest.Mock;
     };
+    $transaction: jest.Mock;
   };
   let storage: {
     getUrlDocumentoPropiedad: jest.Mock;
     getUrlDocumentoUsuario: jest.Mock;
     subirDocumento: jest.Mock;
     subirFotoPerfil: jest.Mock;
+    eliminarDocumentoUsuario: jest.Mock;
+    eliminarFotoPerfil: jest.Mock;
+  };
+  let auditoria: {
+    registrarAccesos: jest.Mock;
   };
 
   const mockUser = {
@@ -49,6 +56,9 @@ describe('UsuariosService', () => {
       propiedad: {
         findMany: jest.fn(),
       },
+      $transaction: jest.fn((cb: (tx: typeof prisma) => Promise<unknown>) =>
+        cb(prisma),
+      ),
     };
 
     storage = {
@@ -60,13 +70,18 @@ describe('UsuariosService', () => {
         .mockImplementation(async (url: string) => `https://signed/${url}`),
       subirDocumento: jest.fn().mockResolvedValue('docs/new-doc.pdf'),
       subirFotoPerfil: jest.fn().mockResolvedValue('avatars/new-photo.png'),
+      eliminarDocumentoUsuario: jest.fn().mockResolvedValue(undefined),
+      eliminarFotoPerfil: jest.fn().mockResolvedValue(undefined),
     };
+
+    auditoria = { registrarAccesos: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         UsuariosService,
         { provide: PrismaService, useValue: prisma },
         { provide: StorageService, useValue: storage },
+        { provide: AuditoriaService, useValue: auditoria },
       ],
     }).compile();
 
@@ -92,7 +107,6 @@ describe('UsuariosService', () => {
                   id: 'doc-1',
                   tipo: 'ESCRITURA',
                   verificado: true,
-                  url: 'escritura.pdf',
                 },
               ],
             },
@@ -104,12 +118,14 @@ describe('UsuariosService', () => {
       const result = await service.getAll();
 
       expect(prisma.usuario.findMany).toHaveBeenCalled();
-      expect(storage.getUrlDocumentoPropiedad).toHaveBeenCalledWith(
-        'escritura.pdf',
-      );
-      expect(result[0].propiedades[0].documentos[0].url).toBe(
-        'https://signed/escritura.pdf',
-      );
+      // El listado no firma nada ni audita: eso ocurre al abrir cada documento.
+      expect(storage.getUrlDocumentoPropiedad).not.toHaveBeenCalled();
+      expect(auditoria.registrarAccesos).not.toHaveBeenCalled();
+      expect(result[0].propiedades[0].documentos[0]).toEqual({
+        id: 'doc-1',
+        tipo: 'ESCRITURA',
+        verificado: true,
+      });
     });
   });
 
@@ -152,9 +168,32 @@ describe('UsuariosService', () => {
         service.subirDocumento('usr-inexistente', mockFile),
       ).rejects.toThrow(NotFoundException);
     });
+
+    it('debe borrar del storage la cédula anterior', async () => {
+      prisma.usuario.findUnique.mockResolvedValue(mockUser);
+      prisma.usuario.update.mockResolvedValue(mockUser);
+
+      await service.subirDocumento('usr-1', mockFile);
+
+      expect(storage.eliminarDocumentoUsuario).toHaveBeenCalledWith(
+        'docs/doc-1.pdf',
+      );
+    });
+
+    it('no debe fallar la subida si el storage no borra la cédula anterior', async () => {
+      prisma.usuario.findUnique.mockResolvedValue(mockUser);
+      prisma.usuario.update.mockResolvedValue(mockUser);
+      storage.eliminarDocumentoUsuario.mockRejectedValueOnce(new Error('boom'));
+
+      await expect(service.subirDocumento('usr-1', mockFile)).resolves.toEqual({
+        documentoUrl: 'docs/new-doc.pdf',
+      });
+    });
   });
 
   describe('verificarDocumento', () => {
+    const contexto = { ip: '10.0.0.1', userAgent: 'jest' };
+
     it('debe actualizar el estado de verificación del documento', async () => {
       prisma.usuario.findUnique.mockResolvedValue(mockUser);
       prisma.usuario.update.mockResolvedValue({
@@ -162,20 +201,75 @@ describe('UsuariosService', () => {
         documentoVerificado: true,
       });
 
-      const result = await service.verificarDocumento('usr-1', true);
+      const result = await service.verificarDocumento(
+        'usr-1',
+        true,
+        'admin-1',
+        contexto,
+      );
 
       expect(prisma.usuario.update).toHaveBeenCalledWith({
         where: { id: 'usr-1' },
         data: { documentoVerificado: true },
       });
+      expect(prisma.$transaction).toHaveBeenCalled();
       expect(result).toEqual({ documentoVerificado: true });
+    });
+
+    it('debe auditar la aprobación y la revocación', async () => {
+      prisma.usuario.findUnique.mockResolvedValue(mockUser);
+
+      await service.verificarDocumento('usr-1', true, 'admin-1', contexto);
+      await service.verificarDocumento('usr-1', false, 'admin-1', contexto);
+
+      expect(auditoria.registrarAccesos).toHaveBeenCalledTimes(2);
+      expect(auditoria.registrarAccesos).toHaveBeenNthCalledWith(
+        1,
+        [
+          {
+            accion: 'VERIFICAR',
+            recursoTipo: 'USUARIO_DOC',
+            recursoId: 'usr-1',
+            verificado: true,
+            usuarioId: 'admin-1',
+          },
+        ],
+        contexto,
+        prisma,
+      );
+      expect(auditoria.registrarAccesos).toHaveBeenNthCalledWith(
+        2,
+        [
+          {
+            accion: 'VERIFICAR',
+            recursoTipo: 'USUARIO_DOC',
+            recursoId: 'usr-1',
+            verificado: false,
+            usuarioId: 'admin-1',
+          },
+        ],
+        contexto,
+        prisma,
+      );
+    });
+
+    it('debe propagar el fallo de auditoría para revertir el cambio', async () => {
+      prisma.usuario.findUnique.mockResolvedValue(mockUser);
+      auditoria.registrarAccesos.mockRejectedValue(new Error('db caída'));
+
+      await expect(
+        service.verificarDocumento('usr-1', true, 'admin-1', contexto),
+      ).rejects.toThrow('db caída');
+      expect(prisma.$transaction).toHaveBeenCalled();
     });
 
     it('debe lanzar NotFoundException si el usuario no existe', async () => {
       prisma.usuario.findUnique.mockResolvedValue(null);
       await expect(
-        service.verificarDocumento('usr-inexistente', true),
+        service.verificarDocumento('usr-inexistente', true, 'admin-1'),
       ).rejects.toThrow(NotFoundException);
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+      expect(auditoria.registrarAccesos).not.toHaveBeenCalled();
     });
   });
 
@@ -191,7 +285,10 @@ describe('UsuariosService', () => {
         },
       ]);
 
-      const result = await service.getDocumentosPropiedadUsuario('usr-1');
+      const result = await service.getDocumentosPropiedadUsuario(
+        'usr-1',
+        'adm-1',
+      );
 
       expect(prisma.propiedad.findMany).toHaveBeenCalledWith({
         where: { publicadoPorId: 'usr-1' },
@@ -199,6 +296,40 @@ describe('UsuariosService', () => {
       });
       expect(result[0].propiedadTitulo).toBe('Apartamento Centro');
       expect(result[0].url).toBe('https://signed/doc-tradicion.pdf');
+      expect(auditoria.registrarAccesos).toHaveBeenCalledWith(
+        [
+          {
+            accion: 'VER',
+            recursoTipo: 'PROPIEDAD_DOC',
+            recursoId: 'doc-1',
+            documento: 'doc-tradicion.pdf',
+            usuarioId: 'adm-1',
+          },
+        ],
+        {},
+      );
+    });
+  });
+
+  describe('getUrlDocumentoUsuario', () => {
+    it('debe auditar el acceso a la cédula del usuario', async () => {
+      prisma.usuario.findUnique.mockResolvedValue(mockUser);
+
+      const result = await service.getUrlDocumentoUsuario('usr-1', 'adm-1');
+
+      expect(result).toBe('https://signed/docs/doc-1.pdf');
+      expect(auditoria.registrarAccesos).toHaveBeenCalledWith(
+        [
+          {
+            accion: 'VER',
+            recursoTipo: 'USUARIO_DOC',
+            recursoId: 'usr-1',
+            documento: 'docs/doc-1.pdf',
+            usuarioId: 'adm-1',
+          },
+        ],
+        {},
+      );
     });
   });
 
@@ -308,8 +439,19 @@ describe('UsuariosService', () => {
     });
 
     it('debe lanzar BadRequestException si falta el archivo', async () => {
-      await expect(service.subirFoto('usr-1', undefined as any)).rejects.toThrow(
-        BadRequestException,
+      await expect(
+        service.subirFoto('usr-1', undefined as any),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('debe borrar del storage el avatar anterior', async () => {
+      prisma.usuario.findUnique.mockResolvedValue(mockUser);
+      prisma.usuario.update.mockResolvedValue(mockUser);
+
+      await service.subirFoto('usr-1', mockFile);
+
+      expect(storage.eliminarFotoPerfil).toHaveBeenCalledWith(
+        'https://storage/foto.png',
       );
     });
   });
@@ -318,7 +460,9 @@ describe('UsuariosService', () => {
     it('debe cambiar contraseña cuando la actual es válida y la nueva cumple condiciones', async () => {
       prisma.usuario.findUnique.mockResolvedValue(mockUser);
       jest.spyOn(bcrypt, 'compare').mockImplementation(async () => true);
-      jest.spyOn(bcrypt, 'hash').mockImplementation(async () => 'hashed-new-password');
+      jest
+        .spyOn(bcrypt, 'hash')
+        .mockImplementation(async () => 'hashed-new-password');
       prisma.usuario.update.mockResolvedValue(mockUser);
 
       const result = await service.cambiarPassword('usr-1', {

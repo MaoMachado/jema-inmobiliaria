@@ -10,6 +10,12 @@ describe('AuthController', () => {
   let authService: {
     register: jest.Mock;
     login: jest.Mock;
+    reautenticar: jest.Mock;
+    estadoTotp: jest.Mock;
+    iniciarTotp: jest.Mock;
+    confirmarTotp: jest.Mock;
+    desactivarTotp: jest.Mock;
+    regenerarRecuperacion: jest.Mock;
   };
 
   const mockAuthResponse = {
@@ -37,6 +43,14 @@ describe('AuthController', () => {
     authService = {
       register: jest.fn().mockResolvedValue(mockAuthResponse),
       login: jest.fn().mockResolvedValue(mockAuthResponse),
+      reautenticar: jest.fn().mockResolvedValue('reauth-token-xyz'),
+      estadoTotp: jest.fn().mockResolvedValue({ activado: false }),
+      iniciarTotp: jest.fn().mockResolvedValue({ qr: 'data:image/png' }),
+      confirmarTotp: jest.fn().mockResolvedValue({ activado: true }),
+      desactivarTotp: jest.fn().mockResolvedValue({ activado: false }),
+      regenerarRecuperacion: jest
+        .fn()
+        .mockResolvedValue({ codigosRecuperacion: ['ABCDE-12345'] }),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -96,7 +110,12 @@ describe('AuthController', () => {
 
       const result = await controller.login(dto, mockRes as any);
 
-      expect(authService.login).toHaveBeenCalledWith(dto.email, dto.password);
+      expect(authService.login).toHaveBeenCalledWith(
+        dto.email,
+        dto.password,
+        undefined,
+        undefined,
+      );
       expect(mockRes.cookie).toHaveBeenCalledWith(
         'access_token',
         mockAuthResponse.accessToken,
@@ -119,6 +138,84 @@ describe('AuthController', () => {
       const result = controller.me(mockRequest as any);
 
       expect(result).toEqual(mockRequest.user);
+    });
+  });
+
+  describe('reautenticar', () => {
+    it('debe emitir la cookie de elevación y la ventana de 5 minutos', async () => {
+      const mockRequest = { user: { id: 'admin-1', role: Role.ADMIN } };
+
+      const result = await controller.reautenticar(
+        mockRequest as any,
+        { password: 'password123' },
+        mockRes as any,
+      );
+
+      expect(authService.reautenticar).toHaveBeenCalledWith(
+        'admin-1',
+        'password123',
+        undefined,
+      );
+      expect(mockRes.cookie).toHaveBeenCalledWith(
+        'reauth_token',
+        'reauth-token-xyz',
+        expect.any(Object),
+      );
+      expect(result).toEqual({ expiraEn: 300 });
+    });
+
+    it('debe reenviar el código TOTP al servicio', async () => {
+      const mockRequest = { user: { id: 'admin-1', role: Role.ADMIN } };
+
+      await controller.reautenticar(
+        mockRequest as any,
+        { password: 'password123', codigo: '123456' },
+        mockRes as any,
+      );
+
+      expect(authService.reautenticar).toHaveBeenCalledWith(
+        'admin-1',
+        'password123',
+        '123456',
+      );
+    });
+  });
+
+  describe('totp', () => {
+    const mockRequest = { user: { id: 'admin-1', role: Role.ADMIN } };
+
+    it('debe consultar el estado', async () => {
+      const result = await controller.estadoTotp(mockRequest as any);
+
+      expect(authService.estadoTotp).toHaveBeenCalledWith('admin-1');
+      expect(result).toEqual({ activado: false });
+    });
+
+    it('debe delegar inicio, confirmación y desactivación', async () => {
+      await controller.iniciarTotp(mockRequest as any);
+      await controller.confirmarTotp(mockRequest as any, { codigo: '123456' });
+      await controller.desactivarTotp(mockRequest as any, {
+        password: 'password123',
+      });
+      await controller.regenerarRecuperacion(mockRequest as any, {
+        password: 'password123',
+        codigo: '123456',
+      });
+
+      expect(authService.iniciarTotp).toHaveBeenCalledWith('admin-1');
+      expect(authService.confirmarTotp).toHaveBeenCalledWith(
+        'admin-1',
+        '123456',
+      );
+      expect(authService.desactivarTotp).toHaveBeenCalledWith(
+        'admin-1',
+        'password123',
+      );
+      expect(authService.regenerarRecuperacion).toHaveBeenCalledWith(
+        'admin-1',
+        'password123',
+        '123456',
+      );
     });
   });
 });

@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
@@ -9,9 +10,11 @@ import { ReporteFraude } from './reportes-fraude/reportes-fraude.module';
 import { IaModule } from './ia/ia.module';
 import { PagosModule } from './pagos/pagos.module';
 import { OtpModule } from './otp/otp.module';
+import { AuditoriaModule } from './auditoria/auditoria.module';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     AuthModule,
     PrismaModule,
     PropiedadesModule,
@@ -20,6 +23,7 @@ import { OtpModule } from './otp/otp.module';
     IaModule,
     PagosModule,
     OtpModule,
+    AuditoriaModule,
   ],
   controllers: [AppController],
   providers: [AppService],

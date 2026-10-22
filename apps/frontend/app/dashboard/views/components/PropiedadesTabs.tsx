@@ -1,18 +1,94 @@
 import { useState } from "react";
 import { Usuario } from "@/app/lib/types";
+import api, { requiereReauth } from "@/app/lib/api";
 import Icon from "@/app/components/Icons";
+import ReauthModal from "./ReauthModal";
 
 export default function PropiedadesTabs({
   propiedades,
   onVerificar,
   verificandoId,
+  onError,
 }: {
   propiedades: Usuario["propiedades"];
   onVerificar: (docId: string, current: boolean) => void;
   verificandoId?: string | null;
+  onError?: (mensaje: string) => void;
 }) {
   const [activeTab, setActiveTab] = useState(0);
+  const [abriendo, setAbriendo] = useState<string | null>(null);
+  const [docPendiente, setDocPendiente] = useState<string | null>(null);
   const activa = propiedades?.[activeTab];
+
+  const descargarEnVentana = async (docId: string, ventana: Window) => {
+    const { data } = await api.get<{ url: string }>(
+      `/propiedades/documentos/${docId}/url`,
+    );
+
+    ventana.location.assign(data.url);
+  };
+
+  // La URL se firma al abrir el documento: así el audit registra exactamente lo consultado.
+  const abrirDocumento = async (docId: string) => {
+    const ventana = window.open("", "_blank");
+
+    if (!ventana) {
+      onError?.(
+        "El navegador bloqueó la ventana. Permite las ventanas emergentes para ver el documento.",
+      );
+      return;
+    }
+
+    setAbriendo(docId);
+
+    try {
+      await descargarEnVentana(docId, ventana);
+    } catch (error) {
+      ventana.close();
+
+      if (requiereReauth(error)) {
+        setDocPendiente(docId);
+        return;
+      }
+
+      onError?.("No se pudo abrir el documento");
+    } finally {
+      setAbriendo(null);
+    }
+  };
+
+  // Una sola confirmación habilita los documentos de los próximos 5 minutos.
+  const confirmarReauth = async (credenciales: {
+    password: string;
+    codigo?: string;
+  }) => {
+    if (!docPendiente) return;
+
+    // Se abre en el clic, antes del await, para que el navegador no la bloquee.
+    const ventana = window.open("", "_blank");
+
+    try {
+      await api.post("/auth/reautenticar", credenciales);
+    } catch (error) {
+      ventana?.close();
+      throw error;
+    }
+
+    if (!ventana) {
+      setDocPendiente(null);
+      onError?.("El navegador bloqueó la ventana.");
+      return;
+    }
+
+    try {
+      await descargarEnVentana(docPendiente, ventana);
+    } catch {
+      ventana.close();
+      onError?.("No se pudo abrir el documento");
+    } finally {
+      setDocPendiente(null);
+    }
+  };
 
   return (
     <section>
@@ -56,15 +132,16 @@ export default function PropiedadesTabs({
                 enCurso ? "bg-sky-950/40 animate-pulse" : ""
               }`}
             >
-              <a
-                href={doc.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 text-sky-400 hover:text-sky-300 hover:underline truncate min-h-9"
+              <button
+                type="button"
+                onClick={() => abrirDocumento(doc.id)}
+                disabled={abriendo === doc.id}
+                title="Abrir documento"
+                className="flex items-center gap-1.5 text-sky-400 hover:text-sky-300 hover:underline truncate min-h-9 cursor-pointer disabled:cursor-wait disabled:text-gray-500"
               >
                 <Icon name="document" className="w-3.5 h-3.5 shrink-0" />
                 <span className="truncate">{doc.tipo}</span>
-              </a>
+              </button>
 
               <button
                 onClick={() => onVerificar(doc.id, doc.verificado)}
@@ -100,6 +177,13 @@ export default function PropiedadesTabs({
           </div>
         )}
       </div>
+
+      {docPendiente && (
+        <ReauthModal
+          onCancelar={() => setDocPendiente(null)}
+          onConfirmar={confirmarReauth}
+        />
+      )}
     </section>
   );
 }

@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "AccesoDocumento" ALTER COLUMN "createAt" SET DEFAULT CURRENT_TIMESTAMP,
+ALTER COLUMN "userAgent" DROP NOT NULL;

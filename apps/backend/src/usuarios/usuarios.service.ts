@@ -2,22 +2,31 @@ import bcrypt from 'bcryptjs';
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
 import { ActualizarPerfilDto } from './dto/actualizar-perfil.dto';
 import { CambiarPasswordDto } from './dto/cambiar-password.dto';
+import { AuditoriaService } from '../auditoria/auditoria.service';
+import { ContextoAcceso } from '../auditoria/contexto-acceso';
+import { AccionDocumento, RecursoDocumento } from '../generated/prisma';
 
 @Injectable()
 export class UsuariosService {
+  private readonly logger = new Logger(UsuariosService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
+    private readonly auditoria: AuditoriaService,
   ) {}
 
+  // Sin URLs firmadas ni rutas de storage: el admin solo recibe metadatos.
+  // Cada documento se firma y se audita al abrirlo (GET /propiedades/documentos/:docId/url).
   async getAll() {
-    const usuarios = await this.prisma.usuario.findMany({
+    return this.prisma.usuario.findMany({
       select: {
         id: true,
         nombres: true,
@@ -26,7 +35,6 @@ export class UsuariosService {
         celularVerificado: true,
         email: true,
         foto: true,
-        documentoUrl: true,
         documentoVerificado: true,
         role: true,
         createdAt: true,
@@ -35,26 +43,11 @@ export class UsuariosService {
           select: {
             id: true,
             titulo: true,
-            documentos: {
-              select: { id: true, tipo: true, verificado: true, url: true },
-            },
+            documentos: { select: { id: true, tipo: true, verificado: true } },
           },
         },
       },
     });
-
-    for (const user of usuarios) {
-      for (const prop of user.propiedades) {
-        prop.documentos = await Promise.all(
-          prop.documentos.map(async (doc) => ({
-            ...doc,
-            url: await this.storage.getUrlDocumentoPropiedad(doc.url),
-          })),
-        );
-      }
-    }
-
-    return usuarios;
   }
 
   async subirDocumento(userId: string, file: Express.Multer.File) {
@@ -80,10 +73,27 @@ export class UsuariosService {
       },
     });
 
+    // La cédula anterior quedó sin referencia. Si el borrado del blob falla no
+    // se deshace la subida: solo queda un archivo huérfano y un aviso en el log.
+    if (usuario.documentoUrl) {
+      try {
+        await this.storage.eliminarDocumentoUsuario(usuario.documentoUrl);
+      } catch (error) {
+        this.logger.warn(
+          `No se pudo borrar la cédula anterior de ${userId}: ${String(error)}`,
+        );
+      }
+    }
+
     return { documentoUrl: documentoPath };
   }
 
-  async verificarDocumento(userId: string, verificado: boolean) {
+  async verificarDocumento(
+    userId: string,
+    verificado: boolean,
+    adminId: string,
+    contexto: ContextoAcceso = {},
+  ) {
     const usuario = await this.prisma.usuario.findUnique({
       where: { id: userId },
     });
@@ -92,17 +102,37 @@ export class UsuariosService {
       throw new NotFoundException('Usuario no encontrado');
     }
 
-    await this.prisma.usuario.update({
-      where: { id: userId },
-      data: {
-        documentoVerificado: verificado,
-      },
+    await this.prisma.$transaction(async (tx) => {
+      await tx.usuario.update({
+        where: { id: userId },
+        data: {
+          documentoVerificado: verificado,
+        },
+      });
+
+      await this.auditoria.registrarAccesos(
+        [
+          {
+            accion: AccionDocumento.VERIFICAR,
+            recursoTipo: RecursoDocumento.USUARIO_DOC,
+            recursoId: userId,
+            verificado,
+            usuarioId: adminId,
+          },
+        ],
+        contexto,
+        tx,
+      );
     });
 
     return { documentoVerificado: verificado };
   }
 
-  async getDocumentosPropiedadUsuario(userId: string) {
+  async getDocumentosPropiedadUsuario(
+    userId: string,
+    adminId: string,
+    contexto: ContextoAcceso = {},
+  ) {
     const propiedades = await this.prisma.propiedad.findMany({
       where: { publicadoPorId: userId },
       include: {
@@ -112,6 +142,17 @@ export class UsuariosService {
 
     const todosLosDocumentos = propiedades.flatMap((p) =>
       p.documentos.map((d) => ({ ...d, propiedadTitulo: p.titulo })),
+    );
+
+    await this.auditoria.registrarAccesos(
+      todosLosDocumentos.map((doc) => ({
+        accion: AccionDocumento.VER,
+        recursoTipo: RecursoDocumento.PROPIEDAD_DOC,
+        recursoId: doc.id,
+        documento: doc.url,
+        usuarioId: adminId,
+      })),
+      contexto,
     );
 
     return await Promise.all(
@@ -141,12 +182,29 @@ export class UsuariosService {
     return { celularVerificado: verificado };
   }
 
-  async getUrlDocumentoUsuario(userId: string) {
+  async getUrlDocumentoUsuario(
+    userId: string,
+    adminId: string,
+    contexto: ContextoAcceso = {},
+  ) {
     const usuario = await this.prisma.usuario.findUnique({
       where: { id: userId },
     });
 
     if (!usuario?.documentoUrl) return null;
+
+    await this.auditoria.registrarAccesos(
+      [
+        {
+          accion: AccionDocumento.VER,
+          recursoTipo: RecursoDocumento.USUARIO_DOC,
+          recursoId: usuario.id,
+          documento: usuario.documentoUrl,
+          usuarioId: adminId,
+        },
+      ],
+      contexto,
+    );
 
     return this.storage.getUrlDocumentoUsuario(usuario.documentoUrl);
   }
@@ -231,6 +289,16 @@ export class UsuariosService {
         foto: fotoPath,
       },
     });
+
+    if (usuario.foto) {
+      try {
+        await this.storage.eliminarFotoPerfil(usuario.foto);
+      } catch (error) {
+        this.logger.warn(
+          `No se pudo borrar la foto anterior de ${userId}: ${String(error)}`,
+        );
+      }
+    }
 
     return { fotoUrl: fotoPath };
   }

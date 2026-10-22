@@ -6,6 +6,7 @@ import {
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
+import { AuditoriaService } from '../auditoria/auditoria.service';
 import { PropiedadesService } from './propiedades.service';
 import { CreatePropiedadDto } from './dto/propiedades.dto';
 
@@ -30,12 +31,20 @@ describe('PropiedadesService', () => {
       update: jest.Mock;
       delete: jest.Mock;
     };
+    reporteFraude: {
+      count: jest.Mock;
+    };
     $transaction: jest.Mock;
   };
   let storage: {
     subirFotos: jest.Mock;
     subirPropiedadDocumento: jest.Mock;
     getUrlDocumentoPropiedad: jest.Mock;
+    eliminarDocumentosPropiedad: jest.Mock;
+    eliminarFotosPropiedad: jest.Mock;
+  };
+  let auditoria: {
+    registrarAccesos: jest.Mock;
   };
 
   const mockUser = {
@@ -113,11 +122,14 @@ describe('PropiedadesService', () => {
         count: jest.fn(),
       },
       documentoPropiedad: {
-        findMany: jest.fn(),
+        findMany: jest.fn().mockResolvedValue([]),
         findUnique: jest.fn(),
         create: jest.fn(),
         update: jest.fn(),
         delete: jest.fn(),
+      },
+      reporteFraude: {
+        count: jest.fn().mockResolvedValue(0),
       },
       $transaction: jest.fn().mockImplementation(async (cb) => cb(prisma)),
     };
@@ -130,13 +142,18 @@ describe('PropiedadesService', () => {
       getUrlDocumentoPropiedad: jest
         .fn()
         .mockImplementation(async (url: string) => `https://signed/${url}`),
+      eliminarDocumentosPropiedad: jest.fn().mockResolvedValue(undefined),
+      eliminarFotosPropiedad: jest.fn().mockResolvedValue(undefined),
     };
+
+    auditoria = { registrarAccesos: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PropiedadesService,
         { provide: PrismaService, useValue: prisma },
         { provide: StorageService, useValue: storage },
+        { provide: AuditoriaService, useValue: auditoria },
       ],
     }).compile();
 
@@ -333,6 +350,35 @@ describe('PropiedadesService', () => {
         service.update('prop-1', { precio: 550000000 }, 'usr-ajeno'),
       ).rejects.toThrow(ForbiddenException);
     });
+
+    it('debe borrar del storage las fotos que salieron de la lista', async () => {
+      prisma.propiedad.findUnique.mockResolvedValue(mockPropiedad);
+      prisma.usuario.findUnique.mockResolvedValue(mockUser);
+      prisma.propiedad.update.mockResolvedValue({
+        ...mockPropiedad,
+        fotografias: [],
+      });
+
+      await service.update('prop-1', { fotografias: [] }, 'usr-1');
+
+      expect(storage.eliminarFotosPropiedad).toHaveBeenCalledWith([
+        'https://storage/foto1.jpg',
+      ]);
+    });
+
+    it('no debe fallar la edición si el storage no puede borrar las fotos', async () => {
+      prisma.propiedad.findUnique.mockResolvedValue(mockPropiedad);
+      prisma.usuario.findUnique.mockResolvedValue(mockUser);
+      prisma.propiedad.update.mockResolvedValue({
+        ...mockPropiedad,
+        fotografias: [],
+      });
+      storage.eliminarFotosPropiedad.mockRejectedValueOnce(new Error('boom'));
+
+      await expect(
+        service.update('prop-1', { fotografias: [] }, 'usr-1'),
+      ).resolves.toBeDefined();
+    });
   });
 
   describe('remove', () => {
@@ -354,6 +400,51 @@ describe('PropiedadesService', () => {
       await expect(service.remove('prop-1', 'usr-ajeno')).rejects.toThrow(
         ForbiddenException,
       );
+    });
+
+    it('no debe eliminar una propiedad rechazada', async () => {
+      prisma.propiedad.findUnique.mockResolvedValue({
+        ...mockPropiedad,
+        estado: 'RECHAZADA',
+      });
+
+      await expect(service.remove('prop-1', 'usr-1')).rejects.toThrow(
+        ForbiddenException,
+      );
+
+      expect(storage.eliminarDocumentosPropiedad).not.toHaveBeenCalled();
+      expect(prisma.propiedad.delete).not.toHaveBeenCalled();
+    });
+
+    it('no debe eliminar una propiedad con reportes', async () => {
+      prisma.propiedad.findUnique.mockResolvedValue(mockPropiedad);
+      prisma.reporteFraude.count.mockResolvedValueOnce(1);
+
+      await expect(service.remove('prop-1', 'usr-1')).rejects.toThrow(
+        ForbiddenException,
+      );
+
+      expect(prisma.propiedad.delete).not.toHaveBeenCalled();
+    });
+
+    it('debe borrar del storage documentos y fotos antes de eliminar', async () => {
+      prisma.propiedad.findUnique.mockResolvedValue(mockPropiedad);
+      prisma.documentoPropiedad.findMany.mockResolvedValue([
+        { url: 'docs/escritura.pdf' },
+      ]);
+      prisma.propiedad.delete.mockResolvedValue(mockPropiedad);
+
+      await service.remove('prop-1', 'usr-1');
+
+      expect(storage.eliminarDocumentosPropiedad).toHaveBeenCalledWith([
+        'docs/escritura.pdf',
+      ]);
+      expect(storage.eliminarFotosPropiedad).toHaveBeenCalledWith(
+        mockPropiedad.fotografias,
+      );
+      expect(
+        storage.eliminarDocumentosPropiedad.mock.invocationCallOrder[0],
+      ).toBeLessThan(prisma.propiedad.delete.mock.invocationCallOrder[0]);
     });
   });
 
@@ -395,28 +486,167 @@ describe('PropiedadesService', () => {
         'escritura.pdf',
       );
       expect(result[0].url).toBe('https://signed/escritura.pdf');
+      expect(auditoria.registrarAccesos).toHaveBeenCalledWith(
+        [
+          {
+            accion: 'VER',
+            recursoTipo: 'PROPIEDAD_DOC',
+            recursoId: 'doc-1',
+            documento: 'escritura.pdf',
+            usuarioId: 'usr-1',
+          },
+        ],
+        {},
+      );
+    });
+
+    it('debe firmar y auditar un solo documento al abrirlo', async () => {
+      prisma.documentoPropiedad.findUnique.mockResolvedValue({
+        id: 'doc-1',
+        url: 'escritura.pdf',
+        propiedad: { publicadoPorId: 'usr-2' },
+      });
+
+      const result = await service.abrirDocumento('doc-1', {
+        id: 'adm-1',
+        role: 'ADMIN',
+      });
+
+      expect(result).toBe('https://signed/escritura.pdf');
+      expect(auditoria.registrarAccesos).toHaveBeenCalledWith(
+        [
+          {
+            accion: 'VER',
+            recursoTipo: 'PROPIEDAD_DOC',
+            recursoId: 'doc-1',
+            documento: 'escritura.pdf',
+            usuarioId: 'adm-1',
+          },
+        ],
+        {},
+      );
+    });
+
+    it('no firma ni audita si el usuario no es dueño ni admin', async () => {
+      prisma.documentoPropiedad.findUnique.mockResolvedValue({
+        id: 'doc-1',
+        url: 'escritura.pdf',
+        propiedad: { publicadoPorId: 'usr-2' },
+      });
+
+      await expect(
+        service.abrirDocumento('doc-1', { id: 'usr-1', role: 'USER' }),
+      ).rejects.toThrow(ForbiddenException);
+
+      expect(storage.getUrlDocumentoPropiedad).not.toHaveBeenCalled();
+      expect(auditoria.registrarAccesos).not.toHaveBeenCalled();
     });
 
     it('debe eliminar un documento de propiedad', async () => {
       prisma.documentoPropiedad.findUnique.mockResolvedValue({
         id: 'doc-1',
+        url: 'escritura.pdf',
         propiedad: { publicadoPorId: 'usr-1' },
       });
       prisma.documentoPropiedad.delete.mockResolvedValue({ id: 'doc-1' });
 
       const result = await service.eliminarDocumento('doc-1', 'usr-1');
+
       expect(result).toEqual({ message: 'Documento eliminado' });
+      expect(storage.eliminarDocumentosPropiedad).toHaveBeenCalledWith([
+        'escritura.pdf',
+      ]);
+      expect(
+        storage.eliminarDocumentosPropiedad.mock.invocationCallOrder[0],
+      ).toBeLessThan(
+        prisma.documentoPropiedad.delete.mock.invocationCallOrder[0],
+      );
     });
 
     it('debe verificar documento de propiedad por parte del admin', async () => {
-      prisma.documentoPropiedad.findUnique.mockResolvedValue({ id: 'doc-1' });
+      prisma.documentoPropiedad.findUnique.mockResolvedValue({
+        id: 'doc-1',
+        url: 'escritura.pdf',
+      });
       prisma.documentoPropiedad.update.mockResolvedValue({
         id: 'doc-1',
         verificado: true,
       });
 
-      const result = await service.verificarDocumentoPropiedad('doc-1', true);
+      const result = await service.verificarDocumentoPropiedad(
+        'doc-1',
+        true,
+        'adm-1',
+      );
+
+      const [llamada] = prisma.documentoPropiedad.update.mock.calls[0] as [
+        {
+          where: { id: string };
+          data: {
+            verificado: boolean;
+            verificadoPorId: string;
+            verificadoAt: Date;
+          };
+        },
+      ];
+
+      expect(llamada.where).toEqual({ id: 'doc-1' });
+      expect(llamada.data.verificado).toBe(true);
+      expect(llamada.data.verificadoPorId).toBe('adm-1');
+      expect(llamada.data.verificadoAt).toBeInstanceOf(Date);
+      expect(prisma.$transaction).toHaveBeenCalled();
+      expect(auditoria.registrarAccesos).toHaveBeenCalledWith(
+        [
+          {
+            accion: 'VERIFICAR',
+            recursoTipo: 'PROPIEDAD_DOC',
+            recursoId: 'doc-1',
+            documento: 'escritura.pdf',
+            verificado: true,
+            usuarioId: 'adm-1',
+          },
+        ],
+        {},
+        prisma,
+      );
       expect(result).toEqual({ verificado: true });
+    });
+
+    it('debe guardar el resultado al revocar la verificación', async () => {
+      prisma.documentoPropiedad.findUnique.mockResolvedValue({
+        id: 'doc-1',
+        url: 'escritura.pdf',
+      });
+
+      await service.verificarDocumentoPropiedad('doc-1', false, 'adm-1');
+
+      expect(auditoria.registrarAccesos).toHaveBeenCalledWith(
+        [
+          {
+            accion: 'VERIFICAR',
+            recursoTipo: 'PROPIEDAD_DOC',
+            recursoId: 'doc-1',
+            documento: 'escritura.pdf',
+            verificado: false,
+            usuarioId: 'adm-1',
+          },
+        ],
+        {},
+        prisma,
+      );
+    });
+
+    it('debe propagar el fallo de auditoría para revertir el cambio', async () => {
+      prisma.documentoPropiedad.findUnique.mockResolvedValue({
+        id: 'doc-1',
+        url: 'escritura.pdf',
+      });
+      auditoria.registrarAccesos.mockRejectedValue(new Error('db caída'));
+
+      await expect(
+        service.verificarDocumentoPropiedad('doc-1', true, 'adm-1'),
+      ).rejects.toThrow('db caída');
+      expect(prisma.$transaction).toHaveBeenCalled();
     });
   });
 
@@ -454,7 +684,7 @@ describe('PropiedadesService', () => {
       const result = await service.aprobar('prop-1');
       expect(prisma.propiedad.update).toHaveBeenCalledWith({
         where: { id: 'prop-1' },
-        data: { estado: 'APROBADA' },
+        data: { estado: 'APROBADA', rechazadoAt: null },
       });
       expect(result).toEqual({ message: 'Propiedad aprobada' });
     });
@@ -472,7 +702,11 @@ describe('PropiedadesService', () => {
       });
       expect(prisma.propiedad.update).toHaveBeenCalledWith({
         where: { id: 'prop-1' },
-        data: { estado: 'RECHAZADA', motivoRechazo: 'Fotos borrosas' },
+        data: {
+          estado: 'RECHAZADA',
+          motivoRechazo: 'Fotos borrosas',
+          rechazadoAt: expect.any(Date) as Date,
+        },
       });
       expect(result).toEqual({ message: 'Propiedad rechazada' });
     });

@@ -23,6 +23,7 @@ interface PerfilData {
   foto: string | null;
   celularVerificado: boolean;
   documentoVerificado: boolean;
+  role: string;
 }
 
 export function usePerfil() {

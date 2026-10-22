@@ -13,7 +13,13 @@ import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-import { clearSession, leerCookie, setSession } from './cookies';
+import { clearSession, leerCookie, setReauth, setSession } from './cookies';
+import { ReauthDto } from './dto/reauth.dto';
+import {
+  DesactivarTotpDto,
+  TotpCodigoDto,
+  RegenerarRecuperacionDto,
+} from './dto/totp.dto';
 
 interface RequestWithUser extends Request {
   user: {
@@ -50,7 +56,12 @@ export class AuthController {
     @Body() body: LoginDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const sesion = await this.authService.login(body.email, body.password);
+    const sesion = await this.authService.login(
+      body.email,
+      body.password,
+      body.codigo,
+      body.codigoRecuperacion,
+    );
     setSession(res, sesion.accessToken, sesion.refreshToken);
     return { user: sesion.user };
   }
@@ -78,5 +89,59 @@ export class AuthController {
   @Get('me')
   me(@Req() req: RequestWithUser) {
     return req.user;
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('reautenticar')
+  async reautenticar(
+    @Req() req: RequestWithUser,
+    @Body() body: ReauthDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const token = await this.authService.reautenticar(
+      req.user.id,
+      body.password,
+      body.codigo,
+    );
+
+    setReauth(res, token);
+    return { expiraEn: 300 };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('totp')
+  estadoTotp(@Req() req: RequestWithUser) {
+    return this.authService.estadoTotp(req.user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('totp/iniciar')
+  iniciarTotp(@Req() req: RequestWithUser) {
+    return this.authService.iniciarTotp(req.user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('totp/confirmar')
+  confirmarTotp(@Req() req: RequestWithUser, @Body() body: TotpCodigoDto) {
+    return this.authService.confirmarTotp(req.user.id, body.codigo);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('totp/desactivar')
+  desactivarTotp(@Req() req: RequestWithUser, @Body() body: DesactivarTotpDto) {
+    return this.authService.desactivarTotp(req.user.id, body.password);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('totp/recuperacion')
+  regenerarRecuperacion(
+    @Req() req: RequestWithUser,
+    @Body() body: RegenerarRecuperacionDto,
+  ) {
+    return this.authService.regenerarRecuperacion(
+      req.user.id,
+      body.password,
+      body.codigo,
+    );
   }
 }

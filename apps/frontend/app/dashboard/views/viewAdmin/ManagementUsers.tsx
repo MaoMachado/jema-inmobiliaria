@@ -161,6 +161,7 @@ export default function ManagementUsers() {
                       propiedades={user.propiedades}
                       onVerificar={handleVerificar}
                       verificandoId={verificandoId}
+                      onError={setError}
                     />
                   ) : (
                     <p className="text-xs text-gray-500 italic">

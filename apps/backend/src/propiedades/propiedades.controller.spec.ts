@@ -29,12 +29,15 @@ describe('PropiedadesController', () => {
     remove: jest.Mock;
     subirDocumentos: jest.Mock;
     getDocumentos: jest.Mock;
+    abrirDocumento: jest.Mock;
     eliminarDocumento: jest.Mock;
     verificarDocumentoPropiedad: jest.Mock;
   };
 
   const mockUserReq = {
     user: { id: 'usr-1', role: 'USER' },
+    ip: '127.0.0.1',
+    headers: { 'user-agent': 'jest' },
   };
 
   beforeEach(async () => {
@@ -55,6 +58,7 @@ describe('PropiedadesController', () => {
       remove: jest.fn().mockResolvedValue({ message: 'Propiedad eliminada' }),
       subirDocumentos: jest.fn().mockResolvedValue([{ id: 'doc-1' }]),
       getDocumentos: jest.fn().mockResolvedValue([]),
+      abrirDocumento: jest.fn().mockResolvedValue('https://signed/doc.pdf'),
       eliminarDocumento: jest
         .fn()
         .mockResolvedValue({ message: 'Documento eliminado' }),
@@ -253,7 +257,22 @@ describe('PropiedadesController', () => {
       expect(service.getDocumentos).toHaveBeenCalledWith(
         'prop-1',
         mockUserReq.user,
+        { ip: '127.0.0.1', userAgent: 'jest' },
       );
+    });
+
+    it('debe abrir un documento firmando y auditando solo ese acceso', async () => {
+      const result = await controller.abrirDocumento(
+        'doc-1',
+        mockUserReq as any,
+      );
+
+      expect(service.abrirDocumento).toHaveBeenCalledWith(
+        'doc-1',
+        mockUserReq.user,
+        { ip: '127.0.0.1', userAgent: 'jest' },
+      );
+      expect(result).toEqual({ url: 'https://signed/doc.pdf' });
     });
 
     it('debe eliminar documento pasando docId correctamente', async () => {
@@ -270,10 +289,16 @@ describe('PropiedadesController', () => {
 
     it('debe verificar documento de propiedad', async () => {
       const dto: VerificarDto = { verificado: true };
-      const result = await controller.verificarDocumento('doc-100', dto);
+      const result = await controller.verificarDocumento(
+        'doc-100',
+        dto,
+        mockUserReq as any,
+      );
       expect(service.verificarDocumentoPropiedad).toHaveBeenCalledWith(
         'doc-100',
         true,
+        'usr-1',
+        { ip: '127.0.0.1', userAgent: 'jest' },
       );
       expect(result.verificado).toBe(true);
     });

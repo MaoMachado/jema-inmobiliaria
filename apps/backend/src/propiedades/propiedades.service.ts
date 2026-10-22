@@ -1,10 +1,16 @@
+import { ContextoAcceso } from '../auditoria/contexto-acceso';
 import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '../generated/prisma/index';
+import {
+  AccionDocumento,
+  Prisma,
+  RecursoDocumento,
+} from '../generated/prisma/index';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
 import { calcularPuntaje } from './calcular-puntaje';
@@ -15,15 +21,18 @@ import {
   UpdatePropiedadDto,
 } from './dto/propiedades.dto';
 import { PLANES } from '../pagos/planes';
+import { AuditoriaService } from '../auditoria/auditoria.service';
 
 @Injectable()
 export class PropiedadesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
+    private readonly auditoria: AuditoriaService,
   ) {}
 
   private readonly LIMITE_DESTACADAS_PREMIUM = 3;
+  private readonly logger = new Logger(PropiedadesService.name);
 
   async create(
     propiedad: CreatePropiedadDto,
@@ -259,7 +268,7 @@ export class PropiedadesService {
 
     const puntaje = calcularPuntaje(cambios);
 
-    return this.prisma.propiedad.update({
+    const actualizada = await this.prisma.propiedad.update({
       where: { id },
       data: {
         ...(data.titulo !== undefined && { titulo: data.titulo }),
@@ -293,8 +302,26 @@ export class PropiedadesService {
         ...(data.video !== undefined && { video: data.video }),
         puntaje,
         estado: 'PENDIENTE',
+        rechazadoAt: null,
       },
     });
+
+    // Las fotos que salieron de la lista quedaron sin referencia.
+    const quitadas = (propiedad.fotografias ?? []).filter(
+      (foto) => !actualizada.fotografias.includes(foto),
+    );
+
+    if (quitadas.length > 0) {
+      try {
+        await this.storage.eliminarFotosPropiedad(quitadas);
+      } catch (error) {
+        this.logger.warn(
+          `No se pudieron borrar ${quitadas.length} fotos de ${id}: ${String(error)}`,
+        );
+      }
+    }
+
+    return actualizada;
   }
 
   async remove(id: string, userId: string) {
@@ -304,6 +331,38 @@ export class PropiedadesService {
         'No tienes permiso para eliminar esta propiedad',
       );
     }
+
+    // Una propiedad rechazada es evidencia del rechazo: se queda bloqueada.
+    // Sus documentos se purgan aparte (RetencionDocumentosService).
+    if (propiedad.estado === 'RECHAZADA') {
+      throw new ForbiddenException(
+        'Una propiedad rechazada no se puede eliminar',
+      );
+    }
+
+    // ReporteFraude tiene la FK en RESTRICT: sin este chequeo el borrado
+    // explotaría después de haber eliminado los archivos.
+    const reportes = await this.prisma.reporteFraude.count({
+      where: { propiedadId: id },
+    });
+
+    if (reportes > 0) {
+      throw new ForbiddenException(
+        'Una propiedad con reportes registrados no se puede eliminar',
+      );
+    }
+
+    const documentos = await this.prisma.documentoPropiedad.findMany({
+      where: { propiedadId: id },
+      select: { url: true },
+    });
+
+    // Los archivos van primero: si el storage falla, la propiedad sigue en pie
+    // con sus rutas y se puede reintentar el borrado completo.
+    await this.storage.eliminarDocumentosPropiedad(
+      documentos.map((doc) => doc.url),
+    );
+    await this.storage.eliminarFotosPropiedad(propiedad.fotografias ?? []);
 
     await this.prisma.propiedad.delete({ where: { id } });
 
@@ -345,6 +404,7 @@ export class PropiedadesService {
   async getDocumentos(
     propiedadId: string,
     usuario: { id: string; role: string },
+    contexto: ContextoAcceso = {},
   ) {
     const propiedad = await this.findOne(propiedadId, usuario);
 
@@ -366,12 +426,61 @@ export class PropiedadesService {
       orderBy: { createdAt: 'desc' },
     });
 
+    //! Se audita la ruta, nunca con la URL firmada
+    await this.auditoria.registrarAccesos(
+      documentos.map((doc) => ({
+        accion: AccionDocumento.VER,
+        recursoTipo: RecursoDocumento.PROPIEDAD_DOC,
+        recursoId: doc.id,
+        documento: doc.url,
+        usuarioId: usuario.id,
+      })),
+      contexto,
+    );
+
     return Promise.all(
       documentos.map(async (doc) => ({
         ...doc,
         url: await this.storage.getUrlDocumentoPropiedad(doc.url),
       })),
     );
+  }
+
+  // Firma un solo documento y audita exactamente ese acceso.
+  async abrirDocumento(
+    docId: string,
+    usuario: { id: string; role: string },
+    contexto: ContextoAcceso = {},
+  ) {
+    const doc = await this.prisma.documentoPropiedad.findUnique({
+      where: { id: docId },
+      include: { propiedad: { select: { publicadoPorId: true } } },
+    });
+
+    if (!doc) throw new NotFoundException('Documento no encontrado');
+
+    const esDueno = doc.propiedad.publicadoPorId === usuario.id;
+    const esAdmin = usuario.role === 'ADMIN';
+
+    if (!(esDueno || esAdmin)) {
+      throw new ForbiddenException('No tienes permiso para ver este documento');
+    }
+
+    //! Se audita la ruta, nunca la URL firmada
+    await this.auditoria.registrarAccesos(
+      [
+        {
+          accion: AccionDocumento.VER,
+          recursoTipo: RecursoDocumento.PROPIEDAD_DOC,
+          recursoId: doc.id,
+          documento: doc.url,
+          usuarioId: usuario.id,
+        },
+      ],
+      contexto,
+    );
+
+    return this.storage.getUrlDocumentoPropiedad(doc.url);
   }
 
   async eliminarDocumento(docId: string, userId: string) {
@@ -387,20 +496,50 @@ export class PropiedadesService {
       );
     }
 
+    // Primero el blob y después la fila: si el storage falla, la fila sigue
+    // existiendo y el borrado se puede reintentar sin perder la ruta.
+    await this.storage.eliminarDocumentosPropiedad([doc.url]);
+
     await this.prisma.documentoPropiedad.delete({ where: { id: docId } });
     return { message: 'Documento eliminado' };
   }
 
-  async verificarDocumentoPropiedad(docId: string, verificado: boolean) {
+  async verificarDocumentoPropiedad(
+    docId: string,
+    verificado: boolean,
+    adminId: string,
+    contexto: ContextoAcceso = {},
+  ) {
     const doc = await this.prisma.documentoPropiedad.findUnique({
       where: { id: docId },
     });
 
     if (!doc) throw new NotFoundException('Documento no encontrado');
 
-    await this.prisma.documentoPropiedad.update({
-      where: { id: docId },
-      data: { verificado },
+    await this.prisma.$transaction(async (tx) => {
+      await tx.documentoPropiedad.update({
+        where: { id: docId },
+        data: {
+          verificado,
+          verificadoPorId: adminId,
+          verificadoAt: new Date(),
+        },
+      });
+
+      await this.auditoria.registrarAccesos(
+        [
+          {
+            accion: AccionDocumento.VERIFICAR,
+            recursoTipo: RecursoDocumento.PROPIEDAD_DOC,
+            recursoId: docId,
+            documento: doc.url,
+            verificado,
+            usuarioId: adminId,
+          },
+        ],
+        contexto,
+        tx,
+      );
     });
 
     return { verificado };
@@ -446,7 +585,7 @@ export class PropiedadesService {
 
     await this.prisma.propiedad.update({
       where: { id },
-      data: { estado: 'APROBADA' },
+      data: { estado: 'APROBADA', rechazadoAt: null },
     });
 
     return { message: 'Propiedad aprobada' };
@@ -458,7 +597,11 @@ export class PropiedadesService {
 
     await this.prisma.propiedad.update({
       where: { id },
-      data: { estado: 'RECHAZADA', motivoRechazo: motivo.motivoRechazo },
+      data: {
+        estado: 'RECHAZADA',
+        motivoRechazo: motivo.motivoRechazo,
+        rechazadoAt: new Date(),
+      },
     });
 
     return { message: 'Propiedad rechazada' };

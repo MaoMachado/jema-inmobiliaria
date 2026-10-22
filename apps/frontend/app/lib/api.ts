@@ -1,4 +1,8 @@
-import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
+import axios, {
+  AxiosError,
+  isAxiosError,
+  type InternalAxiosRequestConfig,
+} from "axios";
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001",
@@ -86,3 +90,9 @@ api.interceptors.response.use(
 );
 
 export default api;
+
+// 403 con este prefijo = el admin debe confirmar su contraseña antes de ver documentos.
+export const requiereReauth = (error: unknown): boolean =>
+  isAxiosError(error) &&
+  error.response?.status === 403 &&
+  String(error.response.data?.message ?? "").startsWith("REAUTH_REQUIRED");
