@@ -31,10 +31,11 @@ export class AuditoriaService {
   async registrarAccesos(
     registros: RegistroAcceso[],
     contexto: ContextoAcceso,
+    cliente: Prisma.TransactionClient = this.prisma,
   ): Promise<void> {
     if (registros.length === 0) return;
 
-    await this.prisma.accesoDocumento.createMany({
+    await cliente.accesoDocumento.createMany({
       data: registros.map((registro) => ({
         ...registro,
         ip: contexto.ip,

@@ -594,6 +594,7 @@ describe('PropiedadesService', () => {
       expect(llamada.data.verificado).toBe(true);
       expect(llamada.data.verificadoPorId).toBe('adm-1');
       expect(llamada.data.verificadoAt).toBeInstanceOf(Date);
+      expect(prisma.$transaction).toHaveBeenCalled();
       expect(auditoria.registrarAccesos).toHaveBeenCalledWith(
         [
           {
@@ -605,8 +606,22 @@ describe('PropiedadesService', () => {
           },
         ],
         {},
+        prisma,
       );
       expect(result).toEqual({ verificado: true });
+    });
+
+    it('debe propagar el fallo de auditoría para revertir el cambio', async () => {
+      prisma.documentoPropiedad.findUnique.mockResolvedValue({
+        id: 'doc-1',
+        url: 'escritura.pdf',
+      });
+      auditoria.registrarAccesos.mockRejectedValue(new Error('db caída'));
+
+      await expect(
+        service.verificarDocumentoPropiedad('doc-1', true, 'adm-1'),
+      ).rejects.toThrow('db caída');
+      expect(prisma.$transaction).toHaveBeenCalled();
     });
   });
 

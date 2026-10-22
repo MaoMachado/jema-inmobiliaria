@@ -516,27 +516,30 @@ export class PropiedadesService {
 
     if (!doc) throw new NotFoundException('Documento no encontrado');
 
-    await this.prisma.documentoPropiedad.update({
-      where: { id: docId },
-      data: {
-        verificado,
-        verificadoPorId: adminId,
-        verificadoAt: new Date(),
-      },
-    });
-
-    await this.auditoria.registrarAccesos(
-      [
-        {
-          accion: AccionDocumento.VERIFICAR,
-          recursoTipo: RecursoDocumento.PROPIEDAD_DOC,
-          recursoId: docId,
-          documento: doc.url,
-          usuarioId: adminId,
+    await this.prisma.$transaction(async (tx) => {
+      await tx.documentoPropiedad.update({
+        where: { id: docId },
+        data: {
+          verificado,
+          verificadoPorId: adminId,
+          verificadoAt: new Date(),
         },
-      ],
-      contexto,
-    );
+      });
+
+      await this.auditoria.registrarAccesos(
+        [
+          {
+            accion: AccionDocumento.VERIFICAR,
+            recursoTipo: RecursoDocumento.PROPIEDAD_DOC,
+            recursoId: docId,
+            documento: doc.url,
+            usuarioId: adminId,
+          },
+        ],
+        contexto,
+        tx,
+      );
+    });
 
     return { verificado };
   }

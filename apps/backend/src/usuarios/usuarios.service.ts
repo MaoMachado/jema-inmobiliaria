@@ -102,24 +102,27 @@ export class UsuariosService {
       throw new NotFoundException('Usuario no encontrado');
     }
 
-    await this.prisma.usuario.update({
-      where: { id: userId },
-      data: {
-        documentoVerificado: verificado,
-      },
-    });
-
-    await this.auditoria.registrarAccesos(
-      [
-        {
-          accion: AccionDocumento.VERIFICAR,
-          recursoTipo: RecursoDocumento.USUARIO_DOC,
-          recursoId: userId,
-          usuarioId: adminId,
+    await this.prisma.$transaction(async (tx) => {
+      await tx.usuario.update({
+        where: { id: userId },
+        data: {
+          documentoVerificado: verificado,
         },
-      ],
-      contexto,
-    );
+      });
+
+      await this.auditoria.registrarAccesos(
+        [
+          {
+            accion: AccionDocumento.VERIFICAR,
+            recursoTipo: RecursoDocumento.USUARIO_DOC,
+            recursoId: userId,
+            usuarioId: adminId,
+          },
+        ],
+        contexto,
+        tx,
+      );
+    });
 
     return { documentoVerificado: verificado };
   }

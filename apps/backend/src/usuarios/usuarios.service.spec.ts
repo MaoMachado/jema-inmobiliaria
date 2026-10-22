@@ -17,6 +17,7 @@ describe('UsuariosService', () => {
     propiedad: {
       findMany: jest.Mock;
     };
+    $transaction: jest.Mock;
   };
   let storage: {
     getUrlDocumentoPropiedad: jest.Mock;
@@ -55,6 +56,9 @@ describe('UsuariosService', () => {
       propiedad: {
         findMany: jest.fn(),
       },
+      $transaction: jest.fn((cb: (tx: typeof prisma) => Promise<unknown>) =>
+        cb(prisma),
+      ),
     };
 
     storage = {
@@ -208,6 +212,7 @@ describe('UsuariosService', () => {
         where: { id: 'usr-1' },
         data: { documentoVerificado: true },
       });
+      expect(prisma.$transaction).toHaveBeenCalled();
       expect(result).toEqual({ documentoVerificado: true });
     });
 
@@ -228,7 +233,18 @@ describe('UsuariosService', () => {
           },
         ],
         contexto,
+        prisma,
       );
+    });
+
+    it('debe propagar el fallo de auditoría para revertir el cambio', async () => {
+      prisma.usuario.findUnique.mockResolvedValue(mockUser);
+      auditoria.registrarAccesos.mockRejectedValue(new Error('db caída'));
+
+      await expect(
+        service.verificarDocumento('usr-1', true, 'admin-1', contexto),
+      ).rejects.toThrow('db caída');
+      expect(prisma.$transaction).toHaveBeenCalled();
     });
 
     it('debe lanzar NotFoundException si el usuario no existe', async () => {
@@ -236,6 +252,7 @@ describe('UsuariosService', () => {
       await expect(
         service.verificarDocumento('usr-inexistente', true, 'admin-1'),
       ).rejects.toThrow(NotFoundException);
+      expect(prisma.$transaction).not.toHaveBeenCalled();
       expect(auditoria.registrarAccesos).not.toHaveBeenCalled();
     });
   });
