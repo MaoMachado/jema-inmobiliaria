@@ -223,12 +223,28 @@ describe('UsuariosService', () => {
       await service.verificarDocumento('usr-1', false, 'admin-1', contexto);
 
       expect(auditoria.registrarAccesos).toHaveBeenCalledTimes(2);
-      expect(auditoria.registrarAccesos).toHaveBeenCalledWith(
+      expect(auditoria.registrarAccesos).toHaveBeenNthCalledWith(
+        1,
         [
           {
             accion: 'VERIFICAR',
             recursoTipo: 'USUARIO_DOC',
             recursoId: 'usr-1',
+            verificado: true,
+            usuarioId: 'admin-1',
+          },
+        ],
+        contexto,
+        prisma,
+      );
+      expect(auditoria.registrarAccesos).toHaveBeenNthCalledWith(
+        2,
+        [
+          {
+            accion: 'VERIFICAR',
+            recursoTipo: 'USUARIO_DOC',
+            recursoId: 'usr-1',
+            verificado: false,
             usuarioId: 'admin-1',
           },
         ],

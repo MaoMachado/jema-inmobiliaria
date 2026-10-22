@@ -57,6 +57,7 @@ model AccesoDocumento {
   recursoTipo RecursoDocumento
   recursoId   String
   documento   String?
+  verificado  Boolean?
   usuarioId   String
   ip          String?
   userAgent   String?

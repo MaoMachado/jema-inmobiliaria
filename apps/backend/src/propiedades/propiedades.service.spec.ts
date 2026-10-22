@@ -602,6 +602,7 @@ describe('PropiedadesService', () => {
             recursoTipo: 'PROPIEDAD_DOC',
             recursoId: 'doc-1',
             documento: 'escritura.pdf',
+            verificado: true,
             usuarioId: 'adm-1',
           },
         ],
@@ -609,6 +610,30 @@ describe('PropiedadesService', () => {
         prisma,
       );
       expect(result).toEqual({ verificado: true });
+    });
+
+    it('debe guardar el resultado al revocar la verificación', async () => {
+      prisma.documentoPropiedad.findUnique.mockResolvedValue({
+        id: 'doc-1',
+        url: 'escritura.pdf',
+      });
+
+      await service.verificarDocumentoPropiedad('doc-1', false, 'adm-1');
+
+      expect(auditoria.registrarAccesos).toHaveBeenCalledWith(
+        [
+          {
+            accion: 'VERIFICAR',
+            recursoTipo: 'PROPIEDAD_DOC',
+            recursoId: 'doc-1',
+            documento: 'escritura.pdf',
+            verificado: false,
+            usuarioId: 'adm-1',
+          },
+        ],
+        {},
+        prisma,
+      );
     });
 
     it('debe propagar el fallo de auditoría para revertir el cambio', async () => {

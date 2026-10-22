@@ -8,6 +8,8 @@ export interface RegistroAcceso {
   recursoTipo: RecursoDocumento;
   recursoId: string;
   documento?: string | null;
+  /** Solo en VERIFICAR: true aprueba, false revoca, null/undefined no consta. */
+  verificado?: boolean | null;
   usuarioId: string;
 }
 

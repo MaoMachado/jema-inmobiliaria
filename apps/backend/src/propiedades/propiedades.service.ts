@@ -533,6 +533,7 @@ export class PropiedadesService {
             recursoTipo: RecursoDocumento.PROPIEDAD_DOC,
             recursoId: docId,
             documento: doc.url,
+            verificado,
             usuarioId: adminId,
           },
         ],

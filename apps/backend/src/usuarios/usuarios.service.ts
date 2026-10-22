@@ -116,6 +116,7 @@ export class UsuariosService {
             accion: AccionDocumento.VERIFICAR,
             recursoTipo: RecursoDocumento.USUARIO_DOC,
             recursoId: userId,
+            verificado,
             usuarioId: adminId,
           },
         ],
