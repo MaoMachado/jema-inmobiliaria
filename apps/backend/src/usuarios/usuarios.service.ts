@@ -88,7 +88,12 @@ export class UsuariosService {
     return { documentoUrl: documentoPath };
   }
 
-  async verificarDocumento(userId: string, verificado: boolean) {
+  async verificarDocumento(
+    userId: string,
+    verificado: boolean,
+    adminId: string,
+    contexto: ContextoAcceso = {},
+  ) {
     const usuario = await this.prisma.usuario.findUnique({
       where: { id: userId },
     });
@@ -103,6 +108,18 @@ export class UsuariosService {
         documentoVerificado: verificado,
       },
     });
+
+    await this.auditoria.registrarAccesos(
+      [
+        {
+          accion: AccionDocumento.VERIFICAR,
+          recursoTipo: RecursoDocumento.USUARIO_DOC,
+          recursoId: userId,
+          usuarioId: adminId,
+        },
+      ],
+      contexto,
+    );
 
     return { documentoVerificado: verificado };
   }

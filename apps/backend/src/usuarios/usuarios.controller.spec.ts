@@ -124,12 +124,16 @@ describe('UsuariosController', () => {
 
   describe('verificarDocumento', () => {
     it('debe verificar documento', async () => {
-      const result = await controller.verificarDocumento('usr-123', {
-        verificado: true,
-      });
+      const result = await controller.verificarDocumento(
+        'usr-123',
+        { verificado: true },
+        mockUserReq as any,
+      );
       expect(usuariosService.verificarDocumento).toHaveBeenCalledWith(
         'usr-123',
         true,
+        'usr-123',
+        { ip: '127.0.0.1', userAgent: 'jest' },
       );
       expect(result).toEqual({ documentoVerificado: true });
     });
@@ -189,10 +193,7 @@ describe('UsuariosController', () => {
   describe('cambiarPassword', () => {
     it('debe cambiar la contraseña', async () => {
       const dto = { actual: 'passOld123', nueva: 'passNew456' };
-      const result = await controller.cambiarPassword(
-        mockUserReq as any,
-        dto,
-      );
+      const result = await controller.cambiarPassword(mockUserReq as any, dto);
 
       expect(usuariosService.cambiarPassword).toHaveBeenCalledWith(
         'usr-123',

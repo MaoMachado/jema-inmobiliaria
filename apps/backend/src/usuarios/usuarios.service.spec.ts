@@ -188,6 +188,8 @@ describe('UsuariosService', () => {
   });
 
   describe('verificarDocumento', () => {
+    const contexto = { ip: '10.0.0.1', userAgent: 'jest' };
+
     it('debe actualizar el estado de verificación del documento', async () => {
       prisma.usuario.findUnique.mockResolvedValue(mockUser);
       prisma.usuario.update.mockResolvedValue({
@@ -195,7 +197,12 @@ describe('UsuariosService', () => {
         documentoVerificado: true,
       });
 
-      const result = await service.verificarDocumento('usr-1', true);
+      const result = await service.verificarDocumento(
+        'usr-1',
+        true,
+        'admin-1',
+        contexto,
+      );
 
       expect(prisma.usuario.update).toHaveBeenCalledWith({
         where: { id: 'usr-1' },
@@ -204,11 +211,32 @@ describe('UsuariosService', () => {
       expect(result).toEqual({ documentoVerificado: true });
     });
 
+    it('debe auditar la aprobación y la revocación', async () => {
+      prisma.usuario.findUnique.mockResolvedValue(mockUser);
+
+      await service.verificarDocumento('usr-1', true, 'admin-1', contexto);
+      await service.verificarDocumento('usr-1', false, 'admin-1', contexto);
+
+      expect(auditoria.registrarAccesos).toHaveBeenCalledTimes(2);
+      expect(auditoria.registrarAccesos).toHaveBeenCalledWith(
+        [
+          {
+            accion: 'VERIFICAR',
+            recursoTipo: 'USUARIO_DOC',
+            recursoId: 'usr-1',
+            usuarioId: 'admin-1',
+          },
+        ],
+        contexto,
+      );
+    });
+
     it('debe lanzar NotFoundException si el usuario no existe', async () => {
       prisma.usuario.findUnique.mockResolvedValue(null);
       await expect(
-        service.verificarDocumento('usr-inexistente', true),
+        service.verificarDocumento('usr-inexistente', true, 'admin-1'),
       ).rejects.toThrow(NotFoundException);
+      expect(auditoria.registrarAccesos).not.toHaveBeenCalled();
     });
   });
 
@@ -378,9 +406,9 @@ describe('UsuariosService', () => {
     });
 
     it('debe lanzar BadRequestException si falta el archivo', async () => {
-      await expect(service.subirFoto('usr-1', undefined as any)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        service.subirFoto('usr-1', undefined as any),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('debe borrar del storage el avatar anterior', async () => {
@@ -399,7 +427,9 @@ describe('UsuariosService', () => {
     it('debe cambiar contraseña cuando la actual es válida y la nueva cumple condiciones', async () => {
       prisma.usuario.findUnique.mockResolvedValue(mockUser);
       jest.spyOn(bcrypt, 'compare').mockImplementation(async () => true);
-      jest.spyOn(bcrypt, 'hash').mockImplementation(async () => 'hashed-new-password');
+      jest
+        .spyOn(bcrypt, 'hash')
+        .mockImplementation(async () => 'hashed-new-password');
       prisma.usuario.update.mockResolvedValue(mockUser);
 
       const result = await service.cambiarPassword('usr-1', {

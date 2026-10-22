@@ -82,11 +82,20 @@ export class UsuariosController {
     return this.usuariosService.subirDocumento(req.user.id, file);
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ReauthGuard)
   @Roles('ADMIN')
   @Patch(':id/verificar-documento')
-  verificarDocumento(@Param('id') id: string, @Body() body: VerificarDto) {
-    return this.usuariosService.verificarDocumento(id, body.verificado);
+  verificarDocumento(
+    @Param('id') id: string,
+    @Body() body: VerificarDto,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.usuariosService.verificarDocumento(
+      id,
+      body.verificado,
+      req.user.id,
+      contextoDe(req),
+    );
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
