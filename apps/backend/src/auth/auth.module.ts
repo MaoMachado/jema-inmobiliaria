@@ -27,6 +27,6 @@ import { ReauthStrategy } from './strategies/reauth.strategy';
     ReauthStrategy,
   ],
   controllers: [AuthController],
-  exports: [AuthService, PassportModule, JwtStrategy],
+  exports: [AuthService],
 })
 export class AuthModule {}

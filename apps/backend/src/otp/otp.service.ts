@@ -8,8 +8,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { createHash, randomInt, timingSafeEqual } from 'crypto';
+import twilio from 'twilio';
 import { PrismaService } from '../prisma/prisma.service';
-import { SmsProviderFactory } from './sms-provider';
 
 const COOLDOWN_MS = 60_000;
 const EXPIRA_MS = 5 * 60_000;
@@ -19,10 +19,7 @@ const MAX_INTENTOS = 5;
 export class OtpService {
   private readonly logger = new Logger(OtpService.name);
 
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly smsProviderFactory: SmsProviderFactory,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   private hashCodigo(codigo: string): string {
     const pepper = process.env.OTP_PEPPER;
@@ -101,9 +98,8 @@ export class OtpService {
       },
     });
 
-    const sms = this.smsProviderFactory.crear();
     try {
-      await sms.enviarCodigo(celular, codigo);
+      await this.enviarSms(celular, codigo);
     } catch (error) {
       this.logger.error(
         `Error al enviar SMS para el usuario ${userId}:`,
@@ -166,5 +162,28 @@ export class OtpService {
       message: 'Celular verificado exitosamente',
       celularVerificado: true,
     };
+  }
+
+  // Un solo proveedor real: Twilio si hay credenciales, si no solo log local.
+  private async enviarSms(celular: string, codigo: string): Promise<void> {
+    const sid = process.env.TWILIO_SID;
+    const token = process.env.TWILIO_TOKEN;
+    const from = process.env.TWILIO_FROM;
+
+    if (!sid || !token || !from) {
+      this.logger.log(`[DEV] OTP para ${celular}: ${codigo}`);
+      return;
+    }
+
+    try {
+      await twilio(sid, token).messages.create({
+        body: `Tu código OTP es: ${codigo}`,
+        from,
+        to: celular,
+      });
+    } catch (error) {
+      this.logger.error('Error al enviar SMS con Twilio:', error);
+      throw new Error('No se pudo enviar el SMS. Inténtalo de nuevo.');
+    }
   }
 }

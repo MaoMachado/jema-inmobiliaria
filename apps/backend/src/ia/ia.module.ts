@@ -5,6 +5,5 @@ import { IaService } from './ia.service';
 @Module({
   controllers: [IaController],
   providers: [IaService],
-  exports: [IaService],
 })
 export class IaModule {}

@@ -71,41 +71,21 @@ export class PropiedadesService {
     const fotosUrls =
       files.length > 0 ? await this.storage.subirFotos(files) : [];
 
-    const propiedadParaPuntaje: CreatePropiedadDto = {
-      ...propiedad,
-      fotografias: fotosUrls,
-    };
-
-    const puntaje = calcularPuntaje(propiedadParaPuntaje);
+    // El DTO ya mapea 1:1 con las columnas; el puntaje siempre se calcula en el
+    // servidor (nunca se confía en el que envía el cliente).
+    const puntaje = calcularPuntaje({ ...propiedad, fotografias: fotosUrls });
 
     const prop = await this.prisma.propiedad.create({
       data: {
-        titulo: propiedad.titulo,
-        descripcion: propiedad.descripcion,
-        precio: propiedad.precio,
-        ciudad: propiedad.ciudad,
-        barrio: propiedad.barrio,
-        direccion: propiedad.direccion,
-        estrato: propiedad.estrato,
-        tipo: propiedad.tipo,
-        habitaciones: propiedad.habitaciones,
-        banos: propiedad.banos,
-        parqueaderos: propiedad.parqueaderos ?? 0,
-        area: propiedad.area,
-        antiguedad: propiedad.antiguedad,
+        ...propiedad,
         fotografias: fotosUrls,
-        video: propiedad.video ?? null,
-        ubicacionLat: propiedad.ubicacionLat ?? null,
-        ubicacionLong: propiedad.ubicacionLong ?? null,
         puntaje,
-        publicadoPorId: userId,
         estado: 'PENDIENTE',
-      },
+        publicadoPorId: userId,
+      } as Prisma.PropiedadUncheckedCreateInput,
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { createdAt, updatedAt, ...result } = prop;
-    return result;
+    return prop;
   }
 
   async findAll(filtros: FiltroPropiedadesDto) {
@@ -246,7 +226,8 @@ export class PropiedadesService {
       }
     }
 
-    const cambios: CreatePropiedadDto = {
+    // Campos consolidados para el puntaje: los del patch caen sobre los actuales.
+    const cambios = {
       titulo: data.titulo ?? propiedad.titulo,
       descripcion: data.descripcion ?? propiedad.descripcion,
       precio: data.precio ?? propiedad.precio,
@@ -263,47 +244,25 @@ export class PropiedadesService {
       parqueaderos: data.parqueaderos ?? propiedad.parqueaderos ?? 0,
       ubicacionLat: data.ubicacionLat ?? propiedad.ubicacionLat ?? null,
       ubicacionLong: data.ubicacionLong ?? propiedad.ubicacionLong ?? null,
-      video: data.video ?? propiedad.video ?? '',
+      video: data.video ?? propiedad.video ?? null,
     };
 
     const puntaje = calcularPuntaje(cambios);
 
+    // A Prisma solo le llegan los campos presentes en el patch: una clave con
+    // undefined es un no-op, no hay que enumerarla una por una.
+    const datos = Object.fromEntries(
+      Object.entries(data).filter(([, valor]) => valor !== undefined),
+    );
+
     const actualizada = await this.prisma.propiedad.update({
       where: { id },
       data: {
-        ...(data.titulo !== undefined && { titulo: data.titulo }),
-        ...(data.descripcion !== undefined && {
-          descripcion: data.descripcion,
-        }),
-        ...(data.precio !== undefined && { precio: data.precio }),
-        ...(data.ciudad !== undefined && { ciudad: data.ciudad }),
-        ...(data.barrio !== undefined && { barrio: data.barrio }),
-        ...(data.direccion !== undefined && { direccion: data.direccion }),
-        ...(data.estrato !== undefined && { estrato: data.estrato }),
-        ...(data.tipo !== undefined && { tipo: data.tipo }),
-        ...(data.habitaciones !== undefined && {
-          habitaciones: data.habitaciones,
-        }),
-        ...(data.banos !== undefined && { banos: data.banos }),
-        ...(data.area !== undefined && { area: data.area }),
-        ...(data.antiguedad !== undefined && { antiguedad: data.antiguedad }),
-        ...(data.fotografias !== undefined && {
-          fotografias: data.fotografias,
-        }),
-        ...(data.parqueaderos !== undefined && {
-          parqueaderos: data.parqueaderos,
-        }),
-        ...(data.ubicacionLat !== undefined && {
-          ubicacionLat: data.ubicacionLat,
-        }),
-        ...(data.ubicacionLong !== undefined && {
-          ubicacionLong: data.ubicacionLong,
-        }),
-        ...(data.video !== undefined && { video: data.video }),
+        ...datos,
         puntaje,
         estado: 'PENDIENTE',
         rechazadoAt: null,
-      },
+      } as Prisma.PropiedadUpdateInput,
     });
 
     // Las fotos que salieron de la lista quedaron sin referencia.

@@ -8,13 +8,11 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { createHash } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { OtpService } from './otp.service';
-import { SmsProviderFactory } from './sms-provider';
 
 describe('OtpService', () => {
   let service: OtpService;
   let prisma: any;
-  let smsFactory: any;
-  let mockSmsProvider: any;
+  let enviarSms: jest.SpyInstance;
 
   beforeEach(async () => {
     process.env.OTP_PEPPER = 'test_pepper';
@@ -35,23 +33,17 @@ describe('OtpService', () => {
         .mockImplementation((actions) => Promise.all(actions)),
     };
 
-    mockSmsProvider = {
-      enviarCodigo: jest.fn().mockResolvedValue(undefined),
-    };
-
-    smsFactory = {
-      crear: jest.fn().mockReturnValue(mockSmsProvider),
-    };
-
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        OtpService,
-        { provide: PrismaService, useValue: prisma },
-        { provide: SmsProviderFactory, useValue: smsFactory },
-      ],
+      providers: [OtpService, { provide: PrismaService, useValue: prisma }],
     }).compile();
 
     service = module.get<OtpService>(OtpService);
+
+    // La lógica de envío real (twilio / log) se probó aislada: aquí solo
+    // verificamos que solicitar le delega el envío.
+    enviarSms = jest
+      .spyOn(service as any, 'enviarSms')
+      .mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -127,7 +119,7 @@ describe('OtpService', () => {
       const res = await service.solicitar('user-1');
       expect(res.message).toBe('Código enviado a tu celular');
       expect(prisma.codigoOt.create).toHaveBeenCalled();
-      expect(mockSmsProvider.enviarCodigo).toHaveBeenCalledWith(
+      expect(enviarSms).toHaveBeenCalledWith(
         '+573001234567',
         expect.any(String),
       );

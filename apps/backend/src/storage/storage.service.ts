@@ -11,25 +11,32 @@ export class StorageService {
 
   constructor(private readonly supabase: SupabaseClient) {}
 
-  async subirFoto(file: Express.Multer.File): Promise<string> {
+  // Sube a un bucket y devuelve la ruta. Fotos y perfil devuelven ademas la URL publica.
+  private async subirBase(
+    bucket: string,
+    file: Express.Multer.File,
+    upsert = false,
+  ): Promise<string> {
     const ruta = this.generarRuta(file.originalname);
 
     const { error } = await this.supabase.storage
-      .from(this.bucketPropiedades)
-      .upload(ruta, file.buffer, {
-        contentType: file.mimetype,
-        upsert: true,
-      });
+      .from(bucket)
+      .upload(ruta, file.buffer, { contentType: file.mimetype, upsert });
 
     if (error) {
       throw new Error(error.message);
     }
 
-    const { data } = this.supabase.storage
-      .from(this.bucketPropiedades)
-      .getPublicUrl(ruta);
+    return ruta;
+  }
 
-    return data.publicUrl;
+  private urlPublica(bucket: string, ruta: string): string {
+    return this.supabase.storage.from(bucket).getPublicUrl(ruta).data.publicUrl;
+  }
+
+  async subirFoto(file: Express.Multer.File): Promise<string> {
+    const ruta = await this.subirBase(this.bucketPropiedades, file, true);
+    return this.urlPublica(this.bucketPropiedades, ruta);
   }
 
   async subirFotos(files: Express.Multer.File[]): Promise<string[]> {
@@ -37,73 +44,20 @@ export class StorageService {
   }
 
   async subirFotoPerfil(file: Express.Multer.File): Promise<string> {
-    const ruta = this.generarRuta(file.originalname);
-
-    const { error } = await this.supabase.storage
-      .from(this.bucketFotoPerfil)
-      .upload(ruta, file.buffer, { contentType: file.mimetype, upsert: true });
-
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    const { data } = this.supabase.storage
-      .from(this.bucketFotoPerfil)
-      .getPublicUrl(ruta);
-
-    return data.publicUrl;
+    const ruta = await this.subirBase(this.bucketFotoPerfil, file, true);
+    return this.urlPublica(this.bucketFotoPerfil, ruta);
   }
 
   async subirDocumento(file: Express.Multer.File): Promise<string> {
-    const ruta = this.generarRuta(file.originalname);
-
-    const { error } = await this.supabase.storage
-      .from(this.bucketUsuarios)
-      .upload(ruta, file.buffer, {
-        contentType: file.mimetype,
-      });
-
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    return ruta;
+    return this.subirBase(this.bucketUsuarios, file);
   }
 
   async subirPropiedadDocumento(file: Express.Multer.File): Promise<string> {
-    const ruta = this.generarRuta(file.originalname);
-
-    const { error } = await this.supabase.storage
-      .from(this.bucketPropiedadesDocumentos)
-      .upload(ruta, file.buffer, {
-        contentType: file.mimetype,
-      });
-
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    return ruta;
+    return this.subirBase(this.bucketPropiedadesDocumentos, file);
   }
 
   async subirComprobantePago(file: Express.Multer.File): Promise<string> {
-    const ruta = this.generarRuta(file.originalname);
-
-    const { error } = await this.supabase.storage
-      .from(this.bucketPagosComprobantes)
-      .upload(ruta, file.buffer, {
-        contentType: file.mimetype,
-      });
-
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    return ruta;
-  }
-
-  async getUrlComprobantePago(path: string): Promise<string> {
-    return this.crearUrlFirmada(this.bucketPagosComprobantes, path);
+    return this.subirBase(this.bucketPagosComprobantes, file);
   }
 
   private generarRuta(original: string): string {
@@ -170,20 +124,8 @@ export class StorageService {
     return this.crearUrlFirmada(this.bucketUsuarios, path);
   }
 
-  async eliminarDocumentosPropiedad(paths: string[]): Promise<void> {
-    await this.eliminar(this.bucketPropiedadesDocumentos, paths);
-  }
-
-  async eliminarDocumentoUsuario(path: string): Promise<void> {
-    await this.eliminar(this.bucketUsuarios, [path]);
-  }
-
-  async eliminarFotosPropiedad(urls: string[]): Promise<void> {
-    await this.eliminar(this.bucketPropiedades, urls);
-  }
-
-  async eliminarFotoPerfil(url: string): Promise<void> {
-    await this.eliminar(this.bucketFotoPerfil, [url]);
+  async getUrlComprobantePago(path: string): Promise<string> {
+    return this.crearUrlFirmada(this.bucketPagosComprobantes, path);
   }
 
   // Borra varios objetos en una sola llamada. Supabase ignora los paths que ya
@@ -200,5 +142,21 @@ export class StorageService {
     const { error } = await this.supabase.storage.from(bucket).remove(limpios);
 
     if (error) throw new Error(error.message);
+  }
+
+  eliminarDocumentosPropiedad(paths: string[]): Promise<void> {
+    return this.eliminar(this.bucketPropiedadesDocumentos, paths);
+  }
+
+  eliminarDocumentoUsuario(path: string): Promise<void> {
+    return this.eliminar(this.bucketUsuarios, [path]);
+  }
+
+  eliminarFotosPropiedad(urls: string[]): Promise<void> {
+    return this.eliminar(this.bucketPropiedades, urls);
+  }
+
+  eliminarFotoPerfil(url: string): Promise<void> {
+    return this.eliminar(this.bucketFotoPerfil, [url]);
   }
 }

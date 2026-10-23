@@ -137,7 +137,6 @@ export class IaService {
           tipo: true,
           habitaciones: true,
           area: true,
-          puntaje: true,
         },
       });
 

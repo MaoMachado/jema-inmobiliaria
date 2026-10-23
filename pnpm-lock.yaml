@@ -195,9 +195,6 @@ importers:
       '@prisma/client':
         specifier: ^7.9.1
         version: 7.9.1(prisma@7.9.1(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.9.3))(typescript@5.9.3)
-      '@prisma/client-runtime-utils':
-        specifier: ^7.9.1
-        version: 7.9.1
       '@supabase/supabase-js':
         specifier: ^2.112.3
         version: 2.112.3
@@ -210,6 +207,9 @@ importers:
       class-validator:
         specifier: ^0.15.1
         version: 0.15.1
+      dotenv:
+        specifier: ^17.4.2
+        version: 17.4.2
       otplib:
         specifier: ^12.0.1
         version: 12.0.1
@@ -271,12 +271,6 @@ importers:
       '@types/supertest':
         specifier: ^7.0.0
         version: 7.2.1
-      add:
-        specifier: ^2.0.9
-        version: 2.0.9
-      dotenv:
-        specifier: ^17.4.2
-        version: 17.4.2
       eslint:
         specifier: ^9.18.0
         version: 9.39.5(jiti@2.7.0)(supports-color@8.1.1)
@@ -292,12 +286,6 @@ importers:
       jest:
         specifier: ^30.0.0
         version: 30.4.2(@types/node@24.13.3)(supports-color@8.1.1)(ts-node@10.9.2(@types/node@24.13.3)(typescript@5.9.3))
-      multer:
-        specifier: ^2.2.0
-        version: 2.2.0
-      pnpm:
-        specifier: ^11.20.0
-        version: 11.20.0
       prettier:
         specifier: ^3.4.2
         version: 3.9.6
@@ -328,9 +316,6 @@ importers:
       typescript-eslint:
         specifier: ^8.20.0
         version: 8.66.0(eslint@9.39.5(jiti@2.7.0)(supports-color@8.1.1))(supports-color@8.1.1)(typescript@5.9.3)
-      y:
-        specifier: ^0.3.2
-        version: 0.3.2
 
   apps/frontend:
     dependencies:
@@ -2128,9 +2113,6 @@ packages:
     resolution: {integrity: sha512-lGq+9yr1/GuAWaVYIHRjvvySG5/4VfKIvC8EWxStPdcDh/Ka7FG3twP6v4d5BkravUilhIAsG4Qj83t02LWUPQ==}
     engines: {node: '>=0.4.0'}
     hasBin: true
-
-  add@2.0.9:
-    resolution: {integrity: sha512-a6+u7hP0xmII7EBQenAIb6oMp9/vcW6EmrsD0ngUbLnE69Xtwj4yCbmHLUi5LZ6ggJB+AufHTaDbW1XBiYJwFw==}
 
   agent-base@6.0.2:
     resolution: {integrity: sha512-RZNwNclF7+MS/8bDg70amg32dyeZGZxiDuQmZxKLAlQjr3jGyLx+4Kkk58UO7D2QdgFIQCovuSuZESne6RG6XQ==}
@@ -4381,11 +4363,6 @@ packages:
     resolution: {integrity: sha512-40QW5YalBNfQo5yRYmiw7Yz6TKKVr3h6970B2YE+3fQpsWcrbj1PzJgxeJ19DRQjhMbKPIuMY8rFaXc8moolVw==}
     engines: {node: '>=10.13.0'}
 
-  pnpm@11.20.0:
-    resolution: {integrity: sha512-mm8zCpW2ZEbqCI+vFSFAWooB8H/ecSTMmVjf7VLUu0NnN+ZbCPhfN7Rvy6N1CSVYrFEmK4FoRLIvY0Bu0Wa/7g==}
-    engines: {node: '>=22.13'}
-    hasBin: true
-
   possible-typed-array-names@1.1.0:
     resolution: {integrity: sha512-/+5VFTchJDoVj3bhoqi6UeymcD00DAwb1nJwamzPvHEszJ4FpF6SNNbUbOS8yI56qHzdV8eK0qEfOSiodkTdxg==}
     engines: {node: '>= 0.4'}
@@ -5296,9 +5273,6 @@ packages:
   y18n@5.0.8:
     resolution: {integrity: sha512-0pfFzegeDWJHJIAmTLRP2DwHjdF5s7jo9tuztdQxAhINCdvS+3nGINqPd00AphqJR/0LhANUS6/+7SCb98YOfA==}
     engines: {node: '>=10'}
-
-  y@0.3.2:
-    resolution: {integrity: sha512-OJQTQuD3iqJqXzYKs2AgZqQrfPuTOjIFm3jvIc+2SxP6QSB5Ab9Ja9A5mWEDngjaJiEgsHbp2Q2RR/U2pTpTEw==}
 
   yallist@3.1.1:
     resolution: {integrity: sha512-a4UGQaWPH59mOXUYnAG2ewncQS4i4F43Tv3JoAM+s2VDAmS9NsK8GpDMLrCHPksFT7h3K6TOoUNn2pb7RoXx4g==}
@@ -7264,8 +7238,6 @@ snapshots:
       acorn: 8.18.0
 
   acorn@8.18.0: {}
-
-  add@2.0.9: {}
 
   agent-base@6.0.2(supports-color@8.1.1):
     dependencies:
@@ -9869,8 +9841,6 @@ snapshots:
 
   pngjs@5.0.0: {}
 
-  pnpm@11.20.0: {}
-
   possible-typed-array-names@1.1.0: {}
 
   postcss@8.5.23:
@@ -10894,8 +10864,6 @@ snapshots:
   y18n@4.0.3: {}
 
   y18n@5.0.8: {}
-
-  y@0.3.2: {}
 
   yallist@3.1.1: {}
 
