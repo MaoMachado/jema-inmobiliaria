@@ -79,7 +79,10 @@ export class WompiClient {
     return (await response.json()) as T;
   }
 
-  private async tokensAceptacion(): Promise<{ acceptance: string; data: string }> {
+  private async tokensAceptacion(): Promise<{
+    acceptance: string;
+    data: string;
+  }> {
     const info = await this.llamar<{
       data: {
         presigned_acceptance: { acceptance_token: string };

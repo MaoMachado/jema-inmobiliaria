@@ -213,10 +213,7 @@ describe('IaService', () => {
         text: 'La propiedad tiene un precio competitivo y alta probabilidad de venta.',
       });
 
-      const resultado = await service.estimacionPropiedad(
-        propiedadId,
-        userId,
-      );
+      const resultado = await service.estimacionPropiedad(propiedadId, userId);
 
       expect(resultado).toHaveProperty('valores');
       expect(resultado.valores).toHaveProperty('probabilidadVenta');
@@ -242,10 +239,7 @@ describe('IaService', () => {
         new Error('Gemini Down'),
       );
 
-      const resultado = await service.estimacionPropiedad(
-        propiedadId,
-        userId,
-      );
+      const resultado = await service.estimacionPropiedad(propiedadId, userId);
 
       expect(resultado.valores).toBeDefined();
       expect(resultado.mensajeIA).toBeNull();

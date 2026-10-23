@@ -166,11 +166,17 @@ export class OtpService {
 
   // Un solo proveedor real: Twilio si hay credenciales, si no solo log local.
   private async enviarSms(celular: string, codigo: string): Promise<void> {
+    const provider = (process.env.OTP_SMS_PROVIDER ?? 'auto').toLowerCase();
     const sid = process.env.TWILIO_SID;
     const token = process.env.TWILIO_TOKEN;
     const from = process.env.TWILIO_FROM;
 
-    if (!sid || !token || !from) {
+    const usarTwilio =
+      provider !== 'dev' &&
+      (provider === 'twilio' || provider === 'auto') &&
+      Boolean(sid && token && from);
+
+    if (!usarTwilio) {
       this.logger.log(`[DEV] OTP para ${celular}: ${codigo}`);
       return;
     }

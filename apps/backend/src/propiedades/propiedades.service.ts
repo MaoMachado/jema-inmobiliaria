@@ -82,7 +82,7 @@ export class PropiedadesService {
         puntaje,
         estado: 'PENDIENTE',
         publicadoPorId: userId,
-      } as Prisma.PropiedadUncheckedCreateInput,
+      },
     });
 
     return prop;
@@ -262,7 +262,7 @@ export class PropiedadesService {
         puntaje,
         estado: 'PENDIENTE',
         rechazadoAt: null,
-      } as Prisma.PropiedadUpdateInput,
+      },
     });
 
     // Las fotos que salieron de la lista quedaron sin referencia.
