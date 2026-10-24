@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { PropiedadesModule } from './propiedades/propiedades.module';
@@ -11,6 +10,7 @@ import { IaModule } from './ia/ia.module';
 import { PagosModule } from './pagos/pagos.module';
 import { OtpModule } from './otp/otp.module';
 import { AuditoriaModule } from './auditoria/auditoria.module';
+import { MetricasModule } from './metricas/metricas.module';
 
 @Module({
   imports: [
@@ -24,8 +24,8 @@ import { AuditoriaModule } from './auditoria/auditoria.module';
     PagosModule,
     OtpModule,
     AuditoriaModule,
+    MetricasModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
 })
 export class AppModule {}

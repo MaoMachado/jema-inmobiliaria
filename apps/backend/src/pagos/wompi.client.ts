@@ -7,7 +7,6 @@ import {
 import { createHash, timingSafeEqual } from 'crypto';
 
 const URL_SANDBOX = 'https://sandbox.wompi.co/v1';
-const URL_PRODUCTION = 'https://production.wompi.co/v1';
 
 export type StateWompi =
   'PENDING' | 'APPROVED' | 'DECLINED' | 'VOIDED' | 'ERROR';
@@ -80,7 +79,10 @@ export class WompiClient {
     return (await response.json()) as T;
   }
 
-  async tokensAceptacion(): Promise<{ acceptance: string; data: string }> {
+  private async tokensAceptacion(): Promise<{
+    acceptance: string;
+    data: string;
+  }> {
     const info = await this.llamar<{
       data: {
         presigned_acceptance: { acceptance_token: string };
@@ -96,7 +98,7 @@ export class WompiClient {
     };
   }
 
-  firmaIntegridad(referencia: string, montoCentavos: number): string {
+  private firmaIntegridad(referencia: string, montoCentavos: number): string {
     const secreto = this.require('WOMPI_INTEGRITY_SECRET');
 
     return createHash('sha256')
@@ -186,5 +188,3 @@ export class WompiClient {
     return timingSafeEqual(bufferCalculado, bufferRecibido);
   }
 }
-
-export { URL_SANDBOX, URL_PRODUCTION };

@@ -2,19 +2,18 @@ import {
   BadRequestException,
   HttpException,
   InternalServerErrorException,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { createHash } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { OtpService } from './otp.service';
-import { SmsProviderFactory } from './sms-provider';
 
 describe('OtpService', () => {
   let service: OtpService;
   let prisma: any;
-  let smsFactory: any;
-  let mockSmsProvider: any;
+  let enviarSms: jest.SpyInstance;
 
   beforeEach(async () => {
     process.env.OTP_PEPPER = 'test_pepper';
@@ -35,23 +34,17 @@ describe('OtpService', () => {
         .mockImplementation((actions) => Promise.all(actions)),
     };
 
-    mockSmsProvider = {
-      enviarCodigo: jest.fn().mockResolvedValue(undefined),
-    };
-
-    smsFactory = {
-      crear: jest.fn().mockReturnValue(mockSmsProvider),
-    };
-
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        OtpService,
-        { provide: PrismaService, useValue: prisma },
-        { provide: SmsProviderFactory, useValue: smsFactory },
-      ],
+      providers: [OtpService, { provide: PrismaService, useValue: prisma }],
     }).compile();
 
     service = module.get<OtpService>(OtpService);
+
+    // La lógica de envío real (twilio / log) se probó aislada: aquí solo
+    // verificamos que solicitar le delega el envío.
+    enviarSms = jest
+      .spyOn(service as any, 'enviarSms')
+      .mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -127,7 +120,7 @@ describe('OtpService', () => {
       const res = await service.solicitar('user-1');
       expect(res.message).toBe('Código enviado a tu celular');
       expect(prisma.codigoOt.create).toHaveBeenCalled();
-      expect(mockSmsProvider.enviarCodigo).toHaveBeenCalledWith(
+      expect(enviarSms).toHaveBeenCalledWith(
         '+573001234567',
         expect.any(String),
       );
@@ -217,6 +210,56 @@ describe('OtpService', () => {
       expect(res.celularVerificado).toBe(true);
       expect(res.message).toBe('Celular verificado exitosamente');
       expect(prisma.$transaction).toHaveBeenCalled();
+    });
+  });
+
+  describe('enviarSms (selección de proveedor)', () => {
+    let loggerSpy: jest.SpyInstance;
+    let serviceInternals: {
+      logger: Logger;
+      enviarSms: (celular: string, codigo: string) => Promise<void>;
+    };
+
+    beforeEach(() => {
+      enviarSms.mockRestore();
+      serviceInternals = service as unknown as {
+        logger: Logger;
+        enviarSms: (celular: string, codigo: string) => Promise<void>;
+      };
+      loggerSpy = jest
+        .spyOn(serviceInternals.logger, 'log')
+        .mockImplementation();
+      process.env.TWILIO_SID = 'AC_test';
+      process.env.TWILIO_TOKEN = 'token_test';
+      process.env.TWILIO_FROM = '+15005550006';
+    });
+
+    afterEach(() => {
+      delete process.env.TWILIO_SID;
+      delete process.env.TWILIO_TOKEN;
+      delete process.env.TWILIO_FROM;
+      delete process.env.OTP_SMS_PROVIDER;
+    });
+
+    it('no debe enviar SMS por Twilio si OTP_SMS_PROVIDER=dev, aunque existan credenciales', async () => {
+      process.env.OTP_SMS_PROVIDER = 'dev';
+
+      await serviceInternals.enviarSms('+573001234567', '123456');
+
+      expect(loggerSpy).toHaveBeenCalledWith(
+        '[DEV] OTP para +573001234567: 123456',
+      );
+    });
+
+    it('usa modo dev si faltan credenciales incluso con proveedor auto', async () => {
+      process.env.OTP_SMS_PROVIDER = 'auto';
+      delete process.env.TWILIO_TOKEN;
+
+      await serviceInternals.enviarSms('+573001234567', '123456');
+
+      expect(loggerSpy).toHaveBeenCalledWith(
+        '[DEV] OTP para +573001234567: 123456',
+      );
     });
   });
 });

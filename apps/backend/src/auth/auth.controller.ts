@@ -8,7 +8,6 @@ import {
   Res,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import { Role } from '../generated/prisma';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RegisterDto } from './dto/register.dto';
@@ -20,14 +19,7 @@ import {
   TotpCodigoDto,
   RegenerarRecuperacionDto,
 } from './dto/totp.dto';
-
-interface RequestWithUser extends Request {
-  user: {
-    id: string;
-    email: string;
-    role: Role;
-  };
-}
+import type { RequestWithUser } from '../common/types/request-with-user';
 
 @Controller('auth')
 export class AuthController {

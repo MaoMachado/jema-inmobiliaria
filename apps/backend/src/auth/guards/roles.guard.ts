@@ -5,16 +5,7 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { Request } from 'express';
-import { Role } from '../../generated/prisma';
-
-interface RequestWithUser extends Request {
-  user?: {
-    id: string;
-    email: string;
-    role: Role;
-  };
-}
+import type { RequestWithUser } from '../../common/types/request-with-user';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
